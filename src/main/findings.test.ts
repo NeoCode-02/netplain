@@ -41,7 +41,7 @@ describe('findings', () => {
       { name: 'alice', enabled: true, last: null, sid: 'S-1-5-21-1-1001', admin: true, me: true }
     ],
     services: [{ name: 'Audiosrv', display: 'Windows Audio', desc: '', state: 'Running', start: 'Auto', account: 'LocalSystem', path: '', exe: 'C:\\WINDOWS\\system32\\svchost.exe', signer: valid }],
-    startup: [{ id: 'run|HKCU|x|Steam', kind: 'run', hive: 'HKCU', name: 'Steam', command: '', enabled: true, exe: 'C:\\Program Files\\Steam\\steam.exe', signer: { status: 'valid', publisher: 'Valve Corp.' } }],
+    startup: [{ id: 'run|HKCU|x|Steam', kind: 'run', hive: 'HKCU', approved: 'x', name: 'Steam', command: '', enabled: true, exe: 'C:\\Program Files\\Steam\\steam.exe', signer: { status: 'valid', publisher: 'Valve Corp.' } }],
     firewall: [
       { name: 'Domain', on: true },
       { name: 'Private', on: true },

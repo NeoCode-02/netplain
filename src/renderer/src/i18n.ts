@@ -136,6 +136,18 @@ const en = {
     open: 'Details',
     fix: { firewallOn: 'Turn the firewall on', openDefender: 'Open Windows Security' },
     fixed: 'Done. Checking again…',
+    startup: {
+      lead: 'Programs that start by themselves when Windows starts or you sign in. The switch is the one Task Manager uses, so it can always be undone.',
+      kinds: { run: 'Registry (Run)', folder: 'Startup folder', task: 'Scheduled task' },
+      scope: { HKCU: 'Only you', HKLM: 'Every user' } as Record<string, string>,
+      suspicious: 'Unsigned, starts from a personal folder',
+      once: 'Runs once at the next start',
+      services: (n: number) => `${n} services not from Microsoft also start automatically.`,
+      servicesGo: 'Open Services',
+      empty: 'Nothing starts by itself.',
+      on: 'Starts automatically',
+      off: 'Turned off'
+    },
     services: {
       lead: 'Programs that run in the background, without a window. The description is Windows’s own.',
       filters: { third: 'Not from Microsoft', running: 'Running', all: 'All' },
@@ -686,6 +698,18 @@ const uz: Dict = {
     open: 'Batafsil',
     fix: { firewallOn: 'Firewall’ni yoqish', openDefender: 'Windows Security’ni ochish' },
     fixed: 'Bajarildi. Qayta tekshirilmoqda…',
+    startup: {
+      lead: 'Windows ishga tushganda yoki tizimga kirganingizda o‘zi ishga tushadigan dasturlar. Kalit Task Manager ishlatadigan kalitning o‘zi, shuning uchun har doim qaytarish mumkin.',
+      kinds: { run: 'Registr (Run)', folder: 'Startup papkasi', task: 'Rejalashtirilgan vazifa' },
+      scope: { HKCU: 'Faqat siz', HKLM: 'Barcha foydalanuvchilar' },
+      suspicious: 'Imzosiz, shaxsiy papkadan ishga tushadi',
+      once: 'Keyingi ishga tushishda bir marta bajariladi',
+      services: (n) => `Microsoft’dan bo‘lmagan ${n} ta xizmat ham avtomatik ishga tushadi.`,
+      servicesGo: 'Xizmatlarni ochish',
+      empty: 'O‘zi ishga tushadigan hech narsa yo‘q.',
+      on: 'Avtomatik ishga tushadi',
+      off: 'O‘chirilgan'
+    },
     services: {
       lead: 'Oynasiz, fonda ishlaydigan dasturlar. Tavsif Windows’ning o‘ziniki.',
       filters: { third: 'Microsoft’dan emas', running: 'Ishlayotgan', all: 'Hammasi' },

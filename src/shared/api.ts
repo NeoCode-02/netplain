@@ -99,6 +99,8 @@ export interface Api {
   updateDefinitions(): Promise<void>
   /** Has Defender clean every active threat (UAC). */
   removeThreats(): Promise<void>
+  /** Turns a startup entry on or off (Task Manager's reversible switch; UAC for machine-wide entries). */
+  setStartup(id: string, on: boolean): Promise<void>
   /** Starts/stops a service or sets how it starts (UAC). */
   setService(name: string, action: 'start' | 'stop' | 'auto' | 'manual' | 'disabled'): Promise<void>
   /** Turns an account off/on or takes its admin rights (UAC). Throws E_SELF / E_LAST_ADMIN to prevent a lock-out. */

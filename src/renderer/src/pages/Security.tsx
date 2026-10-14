@@ -6,8 +6,7 @@ import { Empty, Icon, type IconName } from '../ui'
 
 const WINDOWS = /Windows/.test(navigator.userAgent)
 const MARK: Record<Finding['level'], IconName> = { bad: 'alert', warn: 'alert', info: 'dot', ok: 'shield' }
-/** Tabs that exist so far; the rest arrive with their own commits. */
-const TABS: SecurityTab[] = ['status', 'antivirus', 'users', 'services']
+const TABS: SecurityTab[] = ['status', 'antivirus', 'users', 'services', 'startup']
 
 function Status({ sec, t, onTab, onFixed }: { sec: Data; t: Dict; onTab(tab: SecurityTab): void; onFixed(): void }) {
   const s = t.security
@@ -230,6 +229,85 @@ function Antivirus({ sec, t, onChanged }: { sec: Data; t: Dict; onChanged(): voi
           </div>
         )}
       </section>
+    </>
+  )
+}
+
+function Startup({ sec, t, onChanged, onTab }: { sec: Data; t: Dict; onChanged(): void; onTab(tab: SecurityTab): void }) {
+  const v = t.security.startup
+  const sv = t.security.services
+  const [busy, setBusy] = useState<string | null>(null)
+  const [err, setErr] = useState<unknown>(null)
+  const toggle = async (id: string, on: boolean) => {
+    setBusy(id)
+    setErr(null)
+    try {
+      await window.netplain.setStartup(id, on)
+      onChanged()
+    } catch (e) {
+      setErr(e)
+    } finally {
+      setBusy(null)
+    }
+  }
+  const autoServices = sec.services.filter((s) => s.start === 'Auto' && !microsoft(s)).length
+  const entries = [...sec.startup].sort((a, b) => Number(b.enabled) - Number(a.enabled) || a.name.localeCompare(b.name))
+  return (
+    <>
+      <p className="muted section-lead">{v.lead}</p>
+      {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      {entries.length === 0 ? (
+        <p className="list-empty">{v.empty}</p>
+      ) : (
+        <div className="list">
+          {entries.map((x) => {
+            const odd = !!x.exe && x.signer?.status !== undefined && x.signer.status !== 'valid' && /\\(AppData|Temp|Downloads|Users\\Public)\\/i.test(x.exe)
+            const switchable = x.kind === 'task' || !!x.approved
+            return (
+              <div className={`list-row finding ${x.enabled ? '' : 'muted-row'}`} key={x.id}>
+                <span className={`ad-icon ${odd ? 'level-warn' : ''}`}>
+                  <Icon name={x.kind === 'task' ? 'clock' : 'box'} size={16} />
+                </span>
+                <div className="app-main">
+                  <div className="row">
+                    <span className="alert-title ellipsis">{x.kind === 'task' ? x.name.split('\\').pop() : x.name}</span>
+                    <span className="tag">{v.kinds[x.kind]}</span>
+                    {v.scope[x.hive] && <span className="tag">{v.scope[x.hive]}</span>}
+                    {odd && <span className="tag warn">{v.suspicious}</span>}
+                  </div>
+                  <p className="mono small faint ellipsis" title={x.command}>
+                    {x.command}
+                  </p>
+                  <p className="small faint">
+                    {[x.signer ? (x.signer.status === 'valid' ? sv.signed(x.signer.publisher ?? '?') : sv.unsigned) : null, !switchable ? v.once : null].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                {switchable && (
+                  <div className="row finding-actions">
+                    <span className="small faint">{x.enabled ? v.on : v.off}</span>
+                    <button
+                      className={`switch ${x.enabled ? 'on' : ''}`}
+                      role="switch"
+                      aria-checked={x.enabled}
+                      aria-label={x.name}
+                      disabled={busy !== null}
+                      onClick={() => void toggle(x.id, !x.enabled)}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {autoServices > 0 && (
+        <div className="note row section">
+          <span className="spacer">{v.services(autoServices)}</span>
+          <button className="btn sm" onClick={() => onTab('services')}>
+            {v.servicesGo}
+          </button>
+        </div>
+      )}
     </>
   )
 }
@@ -461,6 +539,7 @@ export default function Security() {
       {sec && tab === 'antivirus' && <Antivirus sec={sec} t={t} onChanged={() => load(true)} />}
       {sec && tab === 'users' && <Users sec={sec} t={t} onChanged={() => load(true)} />}
       {sec && tab === 'services' && <Services sec={sec} t={t} onChanged={() => load(true)} />}
+      {sec && tab === 'startup' && <Startup sec={sec} t={t} onChanged={() => load(true)} onTab={setTab} />}
     </div>
   )
 }

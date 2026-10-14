@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import type { Adapter, SecUser } from '../shared/types'
+import type { Adapter, SecStartup, SecUser } from '../shared/types'
 import { run } from './exec'
 
 /** Adapter names that are safe inside a quoted command line (no quotes, no shell operators). */
@@ -93,4 +93,25 @@ export function serviceCommand(name: string, action: ServiceAction): string {
   if (!safeService(name)) throw new Error('E_BAD_ARGS')
   if (action === 'start' || action === 'stop') return `sc.exe ${action} "${name}"`
   return `sc.exe config "${name}" start= ${action === 'manual' ? 'demand' : action}`
+}
+
+/** Startup entry names and task paths go into commands; no quotes, shell operators or leading slash. */
+export const safeStartup = (s: string) => /^[^"%&|<>^\r\n]{1,260}$/.test(s) && !s.startsWith('/')
+
+/**
+ * How to switch a startup entry, the same way Task Manager does: Run keys and the Startup folder get a
+ * StartupApproved value (02… on, 03… off — reversible), tasks are enabled or disabled. `direct` runs
+ * without admin rights; `line` is the same change for an elevated retry.
+ */
+export function startupChange(e: Pick<SecStartup, 'kind' | 'hive' | 'name'> & { approved: string }, on: boolean): { direct: [string, string[]] | null; line: string } {
+  if (!safeStartup(e.name) || (e.kind !== 'task' && !safeStartup(e.approved))) throw new Error('E_BAD_ARGS')
+  if (e.kind === 'task') {
+    const flag = on ? '/ENABLE' : '/DISABLE'
+    return { direct: ['schtasks.exe', ['/Change', '/TN', e.name, flag]], line: `schtasks.exe /Change /TN "${e.name}" ${flag}` }
+  }
+  if (!e.approved) throw new Error('E_BAD_ARGS') // RunOnce entries have no switch
+  const key = `${e.hive}\\${e.approved}`
+  const data = (on ? '02' : '03') + '0'.repeat(22)
+  const args = ['add', key, '/v', e.name, '/t', 'REG_BINARY', '/d', data, '/f']
+  return { direct: e.hive === 'HKCU' ? ['reg.exe', args] : null, line: `reg.exe add "${key}" /v "${e.name}" /t REG_BINARY /d ${data} /f` }
 }

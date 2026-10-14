@@ -1,6 +1,6 @@
 import net from 'node:net'
 import { describe, expect, it } from 'vitest'
-import { safeName, serviceCommand, uacScript, userCommand, userGuard } from './admin'
+import { safeName, serviceCommand, startupChange, uacScript, userCommand, userGuard } from './admin'
 import { checkPort, isHost, lookup, parsePing, parseTestConnection, parseTrace, ping } from './tools'
 
 describe('parsers', () => {
@@ -108,5 +108,25 @@ describe('service changes', () => {
     expect(serviceCommand('pgbouncer', 'manual')).toBe('sc.exe config "pgbouncer" start= demand')
     expect(serviceCommand('DiagTrack', 'disabled')).toBe('sc.exe config "DiagTrack" start= disabled')
     expect(() => serviceCommand('x" & del', 'stop')).toThrow('E_BAD_ARGS')
+  })
+})
+
+describe('startup changes', () => {
+  const sa = 'Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run'
+  it('uses the StartupApproved switch for Run entries and schtasks for tasks', () => {
+    expect(startupChange({ kind: 'run', hive: 'HKCU', name: 'Steam', approved: sa }, false)).toEqual({
+      direct: ['reg.exe', ['add', `HKCU\\${sa}`, '/v', 'Steam', '/t', 'REG_BINARY', '/d', `03${'0'.repeat(22)}`, '/f']],
+      line: `reg.exe add "HKCU\\${sa}" /v "Steam" /t REG_BINARY /d 03${'0'.repeat(22)} /f`
+    })
+    expect(startupChange({ kind: 'run', hive: 'HKLM', name: 'SecurityHealth', approved: sa }, true).direct).toBeNull()
+    expect(startupChange({ kind: 'task', hive: '', name: '\\HP\\Printer Health Monitor', approved: '' }, false)).toEqual({
+      direct: ['schtasks.exe', ['/Change', '/TN', '\\HP\\Printer Health Monitor', '/DISABLE']],
+      line: 'schtasks.exe /Change /TN "\\HP\\Printer Health Monitor" /DISABLE'
+    })
+  })
+  it('refuses RunOnce entries and odd names', () => {
+    expect(() => startupChange({ kind: 'run', hive: 'HKCU', name: 'Once', approved: '' }, false)).toThrow('E_BAD_ARGS')
+    expect(() => startupChange({ kind: 'run', hive: 'HKCU', name: 'a" & calc', approved: sa }, false)).toThrow('E_BAD_ARGS')
+    expect(() => startupChange({ kind: 'task', hive: '', name: '/Delete', approved: '' }, false)).toThrow('E_BAD_ARGS')
   })
 })

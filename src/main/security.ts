@@ -144,6 +144,7 @@ export function createSecurity(deps: Deps) {
         id: `${x.key === 'StartupFolder' ? 'folder' : 'run'}|${x.hive}|${x.approved}|${x.name}`,
         kind: (x.key === 'StartupFolder' ? 'folder' : 'run') as SecStartup['kind'],
         hive: x.hive,
+        approved: x.approved,
         name: x.name,
         command: x.command,
         enabled: x.enabled,
@@ -152,7 +153,7 @@ export function createSecurity(deps: Deps) {
       })),
       ...list(raw.tasks).map((x) => {
         const command = list(x.exec)[0] ?? ''
-        return { id: `task||${x.path}|`, kind: 'task' as const, hive: '', name: x.path, command, enabled: x.state !== 'Disabled', exe: exeOf(command), signer: null }
+        return { id: `task||${x.path}|`, kind: 'task' as const, hive: '', approved: '', name: x.path, command, enabled: x.state !== 'Disabled', exe: exeOf(command), signer: null }
       })
     ]
     const online = await deps.online().catch(() => [])

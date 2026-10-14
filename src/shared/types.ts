@@ -326,6 +326,8 @@ export interface SecStartup {
   id: string
   kind: 'run' | 'folder' | 'task'
   hive: string
+  /** StartupApproved key holding the on/off switch; '' for RunOnce and tasks. */
+  approved: string
   name: string
   command: string
   enabled: boolean

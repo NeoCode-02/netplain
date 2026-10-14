@@ -246,6 +246,9 @@ try {
       await until('Services tab', clickText, 'Services')
       await until('the services', () => document.querySelectorAll('.svc-row').length > 0)
       await shot('security-services')
+      await until('Startup tab', clickText, 'Startup')
+      await until('startup entries', () => document.querySelectorAll('.list-row.finding').length > 0 || document.body.innerText.includes('Nothing starts by itself'))
+      await shot('security-startup')
     }
   })
 

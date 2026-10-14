@@ -47,6 +47,7 @@ const names: Record<keyof Api, true> = {
   startScan: true,
   updateDefinitions: true,
   removeThreats: true,
+  setStartup: true,
   setService: true,
   setUser: true
 }

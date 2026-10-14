@@ -7,7 +7,7 @@ import type { Snapshot } from '../shared/types'
 import { createAlerts } from './alerts'
 import { collector } from './collectors'
 import { join } from './connections'
-import { cached } from './exec'
+import { cached, run } from './exec'
 import { createGeo } from './geodb'
 import { internetIp, realDevices, sweep } from './net'
 import { allowCaptureLinux, createTrafficWatch } from './traffic'
@@ -15,7 +15,7 @@ import { vendorTable } from './tshark'
 import { isSettings, loadSettings, saveSettings } from './settings'
 import { createUsage } from './usage'
 import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './tools'
-import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, userCommand, userGuard } from './admin'
+import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
 import { createSecurity } from './security'
 import { createScanner } from './defender'
 
@@ -237,6 +237,15 @@ const handlers: Api = {
   startScan: (kind, admin) => scanner.start(kind, admin),
   updateDefinitions: () => scanner.updateDefinitions(),
   removeThreats: () => scanner.removeThreats(),
+  setStartup: async (id, on) => {
+    const e = (await security!.get()).startup.find((x) => x.id === id)
+    if (!e) throw new Error('E_BAD_ARGS')
+    const change = startupChange(e, on)
+    // Your own entries switch without admin rights; others ask through UAC.
+    const done = change.direct ? await run(...change.direct).then(() => true, () => false) : false
+    if (!done) await elevate(change.line)
+    await security!.get(true)
+  },
   setService: async (name, action) => {
     if (!(await security!.get()).services.some((x) => x.name === name)) throw new Error('E_BAD_ARGS')
     await elevate(serviceCommand(name, action))
@@ -312,6 +321,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   startScan: (a) => (a[0] === 'quick' || a[0] === 'full') && typeof a[1] === 'boolean',
   updateDefinitions: none,
   removeThreats: none,
+  setStartup: (a) => typeof a[0] === 'string' && a[0].length <= 1000 && typeof a[1] === 'boolean',
   setService: (a) => typeof a[0] === 'string' && safeService(a[0]) && ['start', 'stop', 'auto', 'manual', 'disabled'].includes(a[1] as string),
   setUser: (a) => typeof a[0] === 'string' && safeUser(a[0]) && (a[1] === 'disable' || a[1] === 'enable' || a[1] === 'unadmin')
 }
