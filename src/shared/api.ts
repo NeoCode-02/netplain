@@ -18,6 +18,10 @@ import type {
   ScanState,
   Security,
   Settings,
+  ShareOptions,
+  ShareRequest,
+  ShareRequestDetail,
+  ShareState,
   Snapshot,
   Traffic,
   Usage,
@@ -25,7 +29,7 @@ import type {
 } from './types'
 
 /** Main → renderer pushes. */
-export const CHANNELS = { snapshot: 'np:snapshot', problem: 'np:problem', traffic: 'np:traffic', alert: 'np:alert' } as const
+export const CHANNELS = { snapshot: 'np:snapshot', problem: 'np:problem', traffic: 'np:traffic', alert: 'np:alert', share: 'np:share' } as const
 
 /**
  * Everything the UI can ask the main process for. Each method is one IPC handler of the same name
@@ -108,4 +112,16 @@ export interface Api {
   setService(name: string, action: 'start' | 'stop' | 'auto' | 'manual' | 'disabled'): Promise<void>
   /** Turns an account off/on or takes its admin rights (UAC). Throws E_SELF / E_LAST_ADMIN to prevent a lock-out. */
   setUser(name: string, action: 'disable' | 'enable' | 'unadmin'): Promise<void>
+  /** The shared local site, if any (changes are also pushed on the share channel). */
+  shareState(): Promise<ShareState>
+  /** Gives localhost:port a public https:// link. Throws E_NO_CLOUDFLARED; tunnel failures arrive in the state. */
+  shareStart(o: ShareOptions): Promise<void>
+  shareStop(): void
+  /** Visitors' requests after request `after` (pass 0 at first). */
+  shareRequests(after: number): ShareRequest[]
+  shareRequest(id: number): ShareRequestDetail | null
+  /** Sends a logged request to the local site again. */
+  shareReplay(id: number): Promise<void>
+  /** Downloads Cloudflare's tunnel program (~55 MB from GitHub). Throws E_CLOUDFLARED_DOWNLOAD / E_CLOUDFLARED_SIGNATURE. */
+  installCloudflared(): Promise<void>
 }

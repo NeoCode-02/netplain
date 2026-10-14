@@ -394,3 +394,53 @@ export interface ScanState {
   /** The last finished scan: MpCmdRun's exit code (0 = nothing found, 2 = threats found). */
   last: { kind: ScanKind; at: number; code: number } | null
 }
+
+/** Who carries a shared local site to the internet: Cloudflare Quick Tunnel or localhost.run over ssh. */
+export type ShareProvider = 'cloudflare' | 'ssh'
+
+export interface ShareOptions {
+  port: number
+  /** The local site itself speaks https (self-signed certificates are accepted on this computer). */
+  https: boolean
+  provider: ShareProvider
+  /** Ask visitors for a password (HTTP Basic). */
+  password: boolean
+}
+
+export interface ShareState {
+  status: 'off' | 'starting' | 'on' | 'reconnecting'
+  options: ShareOptions | null
+  /** The public https:// link. */
+  url: string | null
+  /** Login visitors need when `options.password` is on. */
+  login: { user: string; password: string } | null
+  /** Why the last start or connection failed: an E_ code. */
+  error: string | null
+  /** cloudflared: where it was found, or null when it has to be downloaded. */
+  cloudflared: 'system' | 'app' | null
+}
+
+/** One request a visitor made through the shared link. */
+export interface ShareRequest {
+  id: number
+  at: number
+  method: string
+  path: string
+  /** null while the answer is still coming, or when the local site did not answer. */
+  status: number | null
+  ms: number | null
+  /** Bytes sent back to the visitor. */
+  bytes: number
+  /** The visitor's address as the tunnel reports it; 'replay' for a request sent again from Netplain. */
+  ip: string | null
+  country: string | null
+  error: string | null
+}
+
+export interface ShareRequestDetail extends ShareRequest {
+  reqHeaders: [string, string][]
+  /** Up to 64 KB of each body, as text. */
+  reqBody: string
+  resHeaders: [string, string][]
+  resBody: string
+}

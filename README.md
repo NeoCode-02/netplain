@@ -15,6 +15,7 @@ See what your computer does on the network, in plain language — without `ipcon
 - **History** — data per hour and day, per app and adapter, kept 90 days.
 - **Alerts** — a new app went online, a new port opened to the network, unencrypted traffic, a known-bad address (your own list or FireHOL level 1).
 - **Tools** — the terminal as buttons: "is the internet not working?" (adapter → address → router → DNS → internet), ping, traceroute, DNS lookup, port check, public IP; fixes: clear DNS cache, renew IP, restart adapter.
+- **Share** — give a site on localhost an https:// link that opens anywhere, like ngrok without an account: Cloudflare Quick Tunnel or localhost.run, an optional password, and every visit with its headers and body, sent again with one click.
 - **Security** (Windows) — a "was I hacked?" check (antivirus, firewall, UAC, admins, unsigned startup programs and services, unsigned programs online, hosts redirects, proxy, DNS, updates), honest that no list proves a computer clean; Microsoft Defender scans and threat history; turn accounts, services and startup programs off and on. Changes ask for admin rights through the system's own prompt.
 
 | Apps | Connections |
@@ -39,7 +40,8 @@ Optional: [Wireshark](https://www.wireshark.org/) — Netplain uses its engine (
 
 Everything is read on your computer; there is no telemetry. Netplain goes online only:
 
-- when you press a button that says so — the location database ([DB-IP Lite](https://db-ip.com), ~9 MB), FireHOL level 1 from GitHub, your public IP from api.ipify.org;
+- when you press a button that says so — the location database ([DB-IP Lite](https://db-ip.com), ~9 MB), FireHOL level 1 from GitHub, your public IP from api.ipify.org, Cloudflare's `cloudflared` from its GitHub releases (checksum and, on Windows, Cloudflare's signature are checked);
+- while you share a local site — through Cloudflare or localhost.run, which carry the visits to it;
 - once at start, to ask the GitHub API whether a new version is out (off in Settings).
 
 ## Development

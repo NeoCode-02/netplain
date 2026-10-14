@@ -57,12 +57,14 @@ async function inPage(fn, ...a) {
   return r.result?.result?.value
 }
 
+/** `what` is a label, or [label, ms] for a longer wait than 30 s. */
 async function until(what, fn, ...a) {
-  const end = Date.now() + 30_000
+  const [label, ms] = Array.isArray(what) ? what : [what, 30_000]
+  const end = Date.now() + ms
   for (;;) {
     const v = await inPage(fn, ...a).catch(() => undefined)
     if (v) return v
-    if (Date.now() > end) throw new Error(`Timed out waiting for: ${what}`)
+    if (Date.now() > end) throw new Error(`Timed out waiting for: ${label}`)
     await new Promise((r) => setTimeout(r, 200))
   }
 }
@@ -311,6 +313,70 @@ try {
     }
     await shot('tools')
   })
+
+  await step('share page', async () => {
+    await until('Share', clickText, 'Share')
+    await until('the share form', () => document.querySelector('.share-port') !== null)
+    await shot('share')
+  })
+
+  // Opt-in, because it opens a public link: E2E_SHARE=ssh (localhost.run) or E2E_SHARE=cloudflare
+  // (downloads cloudflared, ~55 MB, the first time). A local page is shared and fetched through the link.
+  if (process.env.E2E_SHARE)
+    await step(`sharing over ${process.env.E2E_SHARE}`, async () => {
+      const http = await import('node:http')
+      const site = http.createServer((_q, r) => r.end('hello from netplain e2e'))
+      await new Promise((r) => site.listen(0, '127.0.0.1', r))
+      try {
+        const setPort = (p) => {
+          const el = document.querySelector('.share-port')
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, String(p))
+          el.dispatchEvent(new Event('input', { bubbles: true }))
+          return true
+        }
+        await inPage(setPort, site.address().port)
+        const provider = process.env.E2E_SHARE === 'cloudflare' ? 'Cloudflare' : 'localhost.run'
+        await until(provider, clickText, provider)
+        if (provider === 'Cloudflare' && (await inPage(hasText, 'Download cloudflared'))) {
+          await until('download', clickText, 'Download cloudflared')
+          const end = Date.now() + 300_000
+          while (!(await inPage(hasText, 'cloudflared is ready'))) {
+            if (Date.now() > end || (await inPage(() => document.querySelector('.note.danger')?.textContent))) throw new Error(`cloudflared: ${await inPage(() => document.querySelector('.note.danger')?.textContent)}`)
+            await new Promise((r) => setTimeout(r, 1000))
+          }
+        }
+        await until('the Share button', () => {
+          const b = document.querySelector('.share-go .btn.primary')
+          if (!b || b.disabled) return false
+          b.click()
+          return true
+        })
+        const url = await until(['the public link', 120_000], () => document.querySelector('.share-link a')?.textContent || document.querySelector('.note.danger')?.textContent.replace(/^/, 'ERROR '))
+        if (url.startsWith('ERROR')) throw new Error(url)
+        const login = await inPage(() => [...document.querySelectorAll('.share-login .tag')].map((t) => t.textContent.split(': ')[1]))
+        const auth = `Basic ${Buffer.from(login.join(':')).toString('base64')}`
+        // A new tunnel's name takes a few seconds to resolve everywhere.
+        let body = ''
+        for (let i = 0; i < 20 && body !== 'hello from netplain e2e'; i++) {
+          await new Promise((r) => setTimeout(r, 2000))
+          body = await fetch(url, { headers: { authorization: auth } }).then(
+            (r) => r.text(),
+            (e) => `(${e.cause?.code ?? e.message})`
+          )
+        }
+        if (body !== 'hello from netplain e2e') throw new Error(`${url} answered: ${body.slice(0, 200)}`)
+        if ((await fetch(url).then((r) => r.status)) !== 401) throw new Error('the link opened without the password')
+        await until('the visit in the list', () => document.querySelectorAll('.share-row').length >= 2)
+        process.stdout.write(`(${url}) `)
+        await inPage(() => [...document.querySelectorAll('.share-row')].find((r) => r.textContent.includes('200'))?.click())
+        await until('the visit details', () => document.querySelectorAll('.share-pre').length === 4)
+        await shot('share-live')
+        await until('Stop sharing', clickText, 'Stop sharing')
+        await until('the form again', () => document.querySelector('.share-port') !== null)
+      } finally {
+        site.close()
+      }
+    })
 
   await step('Uzbek', async () => {
     await until('Settings', clickText, 'Settings')

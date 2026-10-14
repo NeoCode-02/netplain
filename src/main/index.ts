@@ -19,6 +19,9 @@ import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serv
 import { createSecurity } from './security'
 import { createScanner } from './defender'
 import { checkRelease } from './update'
+import { findCloudflared, installCloudflared } from './cloudflared'
+import { createShare } from './share'
+import type { ShareOptions } from '../shared/types'
 
 // Separate data folder for tests / portable use.
 if (process.env.NETPLAIN_DATA) app.setPath('userData', process.env.NETPLAIN_DATA)
@@ -100,6 +103,14 @@ const security =
         geo: geo.lookup
       })
     : null
+const binDir = path.join(app.getPath('userData'), 'bin')
+const share = createShare({
+  cloudflared: () => findCloudflared(binDir),
+  knownHosts: path.join(app.getPath('userData'), 'known_hosts'),
+  country: (ip) => geo.lookup(ip).country,
+  push: (s) => send(CHANNELS.share, s)
+})
+
 // After a scan the threat list and the last-scan dates change.
 const scanner = createScanner(() => void security?.get(true).catch(console.error))
 
@@ -261,6 +272,16 @@ const handlers: Api = {
     await elevate(userCommand(name, action))
     await security!.get(true)
   },
+  shareState: () => share.state(),
+  shareStart: (o) => share.start(o),
+  shareStop: () => share.stop(),
+  shareRequests: (after) => share.requests(after),
+  shareRequest: (id) => share.request(id),
+  shareReplay: (id) => share.replay(id),
+  installCloudflared: async () => {
+    await installCloudflared(binDir)
+    await share.state()
+  },
   fixFinding: async (fix) => {
     if (fix === 'openDefender') return void shell.openExternal('windowsdefender:')
     await elevate('netsh advfirewall set allprofiles state on')
@@ -274,6 +295,10 @@ function adapter(id: string) {
 }
 
 const none = (a: unknown[]) => a.length === 0
+const isShare = (v: unknown): v is ShareOptions => {
+  const o = v as ShareOptions
+  return typeof v === 'object' && v !== null && Number.isInteger(o.port) && o.port > 0 && o.port < 65536 && typeof o.https === 'boolean' && ['cloudflare', 'ssh'].includes(o.provider) && typeof o.password === 'boolean'
+}
 const int = (v: unknown) => Number.isSafeInteger(v) && (v as number) >= 0
 const httpsUrl = (v: unknown) => {
   try {
@@ -327,7 +352,14 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   removeThreats: none,
   setStartup: (a) => typeof a[0] === 'string' && a[0].length <= 1000 && typeof a[1] === 'boolean',
   setService: (a) => typeof a[0] === 'string' && safeService(a[0]) && ['start', 'stop', 'auto', 'manual', 'disabled'].includes(a[1] as string),
-  setUser: (a) => typeof a[0] === 'string' && safeUser(a[0]) && (a[1] === 'disable' || a[1] === 'enable' || a[1] === 'unadmin')
+  setUser: (a) => typeof a[0] === 'string' && safeUser(a[0]) && (a[1] === 'disable' || a[1] === 'enable' || a[1] === 'unadmin'),
+  shareState: none,
+  shareStart: (a) => isShare(a[0]),
+  shareStop: none,
+  shareRequests: (a) => int(a[0]),
+  shareRequest: (a) => int(a[0]),
+  shareReplay: (a) => int(a[0]),
+  installCloudflared: none
 }
 
 /** Only our own window's page may call the main process. */
@@ -364,6 +396,7 @@ if (primary) void app.whenReady().then(createWindow)
 app.on('before-quit', () => {
   stopWatch()
   traffic?.stop()
+  share.stop()
   usage.save()
 })
 app.on('window-all-closed', () => app.quit())

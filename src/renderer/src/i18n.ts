@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 
 const en = {
   lang: 'English',
-  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', security: 'Security', tools: 'Tools', settings: 'Settings' },
+  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', security: 'Security', tools: 'Tools', share: 'Share', settings: 'Settings' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobile', loopback: 'Loopback', other: 'Other' },
   /** What each kind of adapter is, for someone who has never opened ipconfig. */
   what: {
@@ -101,6 +101,43 @@ const en = {
     device: 'Device',
     ip: 'IP address',
     mac: 'MAC address'
+  },
+  share: {
+    title: 'Share',
+    lead: 'Give a site running on this computer (localhost) an https:// link that opens anywhere — no account, no terminal.',
+    port: 'Local port',
+    portHint: 'The port your site runs on, such as 3000 or 5173.',
+    https: 'The local site itself uses https',
+    password: 'Ask visitors for a password',
+    passwordWhy: 'Recommended. Turn it off for webhooks and APIs that cannot log in.',
+    provider: 'Link made by',
+    cloudflare: 'Cloudflare',
+    cloudflareWhy: 'Fast and steady, no time limit. Cloudflare’s free Quick Tunnel.',
+    ssh: 'localhost.run',
+    sshWhy: 'Nothing to download: uses this computer’s ssh. The free link may change after a while.',
+    needCf: 'Cloudflare’s connector (cloudflared, about 55 MB) is downloaded once from Cloudflare’s GitHub page, and its signature is checked.',
+    foundCf: (where: 'app' | 'system'): string => (where === 'system' ? 'cloudflared is installed on this computer.' : 'cloudflared is ready.'),
+    getCf: 'Download cloudflared',
+    gettingCf: 'Downloading…',
+    start: 'Share',
+    stop: 'Stop sharing',
+    starting: 'Opening the link…',
+    reconnecting: 'The connection dropped — reconnecting…',
+    live: (port: number) => `localhost:${port} is open to anyone who has this link.`,
+    copy: 'Copy',
+    open: 'Open',
+    login: 'Visitors log in with',
+    user: 'User',
+    pass: 'Password',
+    warn: 'Anyone with the link can open the site while sharing is on. Stop when you are done.',
+    requests: 'Visits',
+    none: 'No visits yet. Open the link and the requests show up here.',
+    replay: 'Send again',
+    request: 'Request',
+    response: 'Response',
+    empty: '(empty)',
+    noAnswer: 'The local site did not answer',
+    replayed: 'Sent again'
   },
   update: {
     text: (v: string) => `Netplain ${v} is out.`,
@@ -564,6 +601,11 @@ const en = {
     E_PUBLIC_IP: 'Could not get the public address. Check the internet connection.',
     E_NO_TRACE: 'No route tool on this computer: install the “traceroute” package.',
     E_FILTER: (m: string) => `Wireshark did not understand the filter: ${m}`,
+    E_NO_CLOUDFLARED: 'Download Cloudflare’s connector first, or choose localhost.run.',
+    E_NO_SSH: 'This computer has no ssh program. Choose Cloudflare, or install OpenSSH.',
+    E_SHARE_START: (m: string) => `The link could not be opened.${m ? ` The tunnel said: ${m}` : ''}`,
+    E_CLOUDFLARED_DOWNLOAD: 'cloudflared could not be downloaded. Check the internet connection and try again.',
+    E_CLOUDFLARED_SIGNATURE: 'The downloaded file is not signed by Cloudflare, so it was deleted.',
     unknown: (m: string) => `Something went wrong: ${m}`
   }
 }
@@ -572,7 +614,7 @@ export type Dict = typeof en
 
 const uz: Dict = {
   lang: 'O‘zbekcha',
-  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', security: 'Xavfsizlik', tools: 'Asboblar', settings: 'Sozlamalar' },
+  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', security: 'Xavfsizlik', tools: 'Asboblar', share: 'Ulashish', settings: 'Sozlamalar' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobil', loopback: 'Loopback', other: 'Boshqa' },
   what: {
     wifi: 'Simsiz adapter: kompyuterni Wi-Fi tarmoqlariga ulaydi.',
@@ -670,6 +712,43 @@ const uz: Dict = {
     device: 'Qurilma',
     ip: 'IP manzil',
     mac: 'MAC manzil'
+  },
+  share: {
+    title: 'Ulashish',
+    lead: 'Shu kompyuterda ishlayotgan saytga (localhost) istalgan joyda ochiladigan https:// havola bering — akkaunt ham, terminal ham kerak emas.',
+    port: 'Lokal port',
+    portHint: 'Saytingiz ishlayotgan port, masalan 3000 yoki 5173.',
+    https: 'Lokal saytning o‘zi https ishlatadi',
+    password: 'Tashrif buyuruvchidan parol so‘rash',
+    passwordWhy: 'Tavsiya etiladi. Login qila olmaydigan webhook va API’lar uchun o‘chiring.',
+    provider: 'Havolani kim beradi',
+    cloudflare: 'Cloudflare',
+    cloudflareWhy: 'Tez va barqaror, vaqt cheklovi yo‘q. Cloudflare’ning bepul Quick Tunnel xizmati.',
+    ssh: 'localhost.run',
+    sshWhy: 'Hech narsa yuklanmaydi: kompyuterning o‘z ssh’i ishlatiladi. Bepul havola vaqt o‘tib o‘zgarishi mumkin.',
+    needCf: 'Cloudflare ulagichi (cloudflared, taxminan 55 MB) Cloudflare’ning GitHub sahifasidan bir marta yuklanadi va imzosi tekshiriladi.',
+    foundCf: (where) => (where === 'system' ? 'cloudflared bu kompyuterda o‘rnatilgan.' : 'cloudflared tayyor.'),
+    getCf: 'cloudflared’ni yuklab olish',
+    gettingCf: 'Yuklanmoqda…',
+    start: 'Ulashish',
+    stop: 'Ulashishni to‘xtatish',
+    starting: 'Havola ochilmoqda…',
+    reconnecting: 'Ulanish uzildi — qayta ulanmoqda…',
+    live: (port) => `localhost:${port} shu havolaga ega har kimga ochiq.`,
+    copy: 'Nusxa olish',
+    open: 'Ochish',
+    login: 'Kirish uchun',
+    user: 'Foydalanuvchi',
+    pass: 'Parol',
+    warn: 'Ulashish yoniq ekan, havolani bilgan har kim saytni ocha oladi. Ish tugagach to‘xtating.',
+    requests: 'Tashriflar',
+    none: 'Hali tashrif yo‘q. Havolani oching — so‘rovlar shu yerda ko‘rinadi.',
+    replay: 'Qayta yuborish',
+    request: 'So‘rov',
+    response: 'Javob',
+    empty: '(bo‘sh)',
+    noAnswer: 'Lokal sayt javob bermadi',
+    replayed: 'Qayta yuborildi'
   },
   update: {
     text: (v) => `Netplain ${v} chiqdi.`,
@@ -1129,6 +1208,11 @@ const uz: Dict = {
     E_PUBLIC_IP: 'Ommaviy manzilni olib bo‘lmadi. Internet ulanishini tekshiring.',
     E_NO_TRACE: 'Bu kompyuterda marshrut asbobi yo‘q: “traceroute” paketini o‘rnating.',
     E_FILTER: (m) => `Wireshark filtrni tushunmadi: ${m}`,
+    E_NO_CLOUDFLARED: 'Avval Cloudflare ulagichini yuklab oling yoki localhost.run’ni tanlang.',
+    E_NO_SSH: 'Bu kompyuterda ssh dasturi yo‘q. Cloudflare’ni tanlang yoki OpenSSH o‘rnating.',
+    E_SHARE_START: (m) => `Havolani ochib bo‘lmadi.${m ? ` Tunnel javobi: ${m}` : ''}`,
+    E_CLOUDFLARED_DOWNLOAD: 'cloudflared’ni yuklab bo‘lmadi. Internet ulanishini tekshirib, qayta urinib ko‘ring.',
+    E_CLOUDFLARED_SIGNATURE: 'Yuklangan fayl Cloudflare imzosiga ega emas, shuning uchun o‘chirildi.',
     unknown: (m) => `Nimadir xato ketdi: ${m}`
   }
 }
