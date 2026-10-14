@@ -1,0 +1,100 @@
+{
+  "name": "netplain",
+  "productName": "Netplain",
+  "version": "0.0.0",
+  "private": true,
+  "description": "See what your computer does on the network, in plain language: adapters, Wi-Fi, apps, connections, devices and packets.",
+  "license": "MIT",
+  "author": "NeoCode-02 <shin71958@gmail.com>",
+  "homepage": "https://github.com/NeoCode-02/netplain",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NeoCode-02/netplain.git"
+  },
+  "keywords": [
+    "network",
+    "monitor",
+    "wireshark",
+    "tshark",
+    "traffic",
+    "electron"
+  ],
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --dir src",
+    "dist": "electron-vite build && electron-builder",
+    "e2e": "electron-vite build && node e2e/run.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^7.3.7",
+    "vitest": "^5.0.4"
+  },
+  "build": {
+    "appId": "io.github.neocode02.netplain",
+    "productName": "Netplain",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Network"
+    },
+    "electronLanguages": [
+      "en-US",
+      "uz"
+    ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    }
+  }
+}
