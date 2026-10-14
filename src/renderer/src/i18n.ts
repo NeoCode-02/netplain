@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 
 const en = {
   lang: 'English',
-  nav: { network: 'Network', connections: 'Connections', devices: 'Devices', settings: 'Settings' },
+  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', devices: 'Devices', settings: 'Settings' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobile', loopback: 'Loopback', other: 'Other' },
   /** What each kind of adapter is, for someone who has never opened ipconfig. */
   what: {
@@ -117,7 +117,54 @@ const en = {
     geoDownload: 'Download (≈9 MB)',
     geoUpdate: 'Update',
     geoBusy: 'Downloading…',
-    geoCredit: 'IP geolocation by DB-IP (CC BY 4.0)'
+    geoCredit: 'IP geolocation by DB-IP (CC BY 4.0)',
+    capture: 'Watch traffic per app',
+    captureWhy: 'Uses Wireshark’s engine on the adapter that reaches the internet. Everything stays on this computer.'
+  },
+  overview: {
+    title: 'What’s happening now',
+    signal: (q: string, pct: number) => `Wi-Fi signal is ${q.toLowerCase()} (${pct}%).`,
+    speed: (down: string, up: string) => `Right now ${down} is coming in and ${up} going out.`,
+    topApp: (name: string, amount: string, place: string | null) => `${name} used the most data: ${amount}${place ? `, mostly with ${place}` : ''}.`,
+    noCapture: 'To see how much each app uses, install Wireshark — the Apps page shows how.',
+    talking: (apps: number, orgs: string) => `${apps === 1 ? '1 app is' : `${apps} apps are`} talking to the internet${orgs ? `, mostly with ${orgs}` : ''}.`,
+    devices: (n: number) => (n === 1 ? '1 device is visible on your local network.' : `${n} devices are visible on your local network.`),
+    exposed: (n: number) => (n === 1 ? '1 program waits for connections from other devices on the network.' : `${n} programs wait for connections from other devices on the network.`),
+    traffic: 'Internet traffic',
+    topApps: 'Busiest apps',
+    topPlaces: 'Companies talked to most',
+    more: 'See all',
+    nothing: 'No data yet.'
+  },
+  apps: {
+    title: 'Apps',
+    lead: (since: string) => `How much each app received and sent since ${since}.`,
+    top: (name: string, amount: string) => `Most: ${name} — ${amount}.`,
+    starting: 'Starting to watch traffic…',
+    waiting: 'Watching. Apps show up as soon as they send or receive something.',
+    total: 'Total',
+    unknown: 'Not identified',
+    unknownNote: 'Short connections that ended before Netplain could see their program, and system traffic such as ICMP.',
+    place: 'Where',
+    company: 'Company',
+    missingTitle: 'See the traffic of each app',
+    missingBody: 'Netplain uses the engine of Wireshark to see each packet. Wireshark is free and open source; install it once and nothing else changes.',
+    missingWin: 'Keep “Npcap” ticked in the installer.',
+    missingMac: 'Also install “ChmodBPF” from the installer window.',
+    missingLinux: 'Install the “tshark” package from your software centre.',
+    install: 'Get Wireshark',
+    check: 'I installed it, check again',
+    deniedTitle: 'The system did not allow watching traffic',
+    deniedWin: 'Npcap was installed for administrators only. Reinstall Npcap without “Restrict Npcap driver’s access to Administrators only”.',
+    deniedMac: 'Run “Install ChmodBPF” from the Wireshark installer, then try again.',
+    deniedLinux: 'Allow your user to watch traffic. You will be asked for your password; then log out and back in.',
+    allow: 'Allow',
+    allowed: 'Allowed. Log out and back in, then press “Try again”.',
+    retry: 'Try again',
+    offTitle: 'Traffic watching is off',
+    offBody: 'Turn it on to see how much each app sends and receives.',
+    turnOn: 'Turn on',
+    error: 'Watching traffic stopped unexpectedly. Retrying…'
   },
   connections: {
     title: 'Connections',
@@ -201,6 +248,8 @@ const en = {
     E_NOT_PRIVATE: 'Only private local networks (home or office) are scanned.',
     E_BAD_ARGS: 'The request was not valid.',
     E_GEO_DOWNLOAD: 'The location database could not be downloaded. Check the internet connection and try again.',
+    E_ALLOW_CAPTURE: 'Permission was not changed (the password prompt was closed, or there is no “wireshark” group).',
+    E_UNSUPPORTED: 'Not available on this system.',
     unknown: (m: string) => `Something went wrong: ${m}`
   }
 }
@@ -209,7 +258,7 @@ export type Dict = typeof en
 
 const uz: Dict = {
   lang: 'O‘zbekcha',
-  nav: { network: 'Tarmoq', connections: 'Ulanishlar', devices: 'Qurilmalar', settings: 'Sozlamalar' },
+  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', devices: 'Qurilmalar', settings: 'Sozlamalar' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobil', loopback: 'Loopback', other: 'Boshqa' },
   what: {
     wifi: 'Simsiz adapter: kompyuterni Wi-Fi tarmoqlariga ulaydi.',
@@ -323,7 +372,54 @@ const uz: Dict = {
     geoDownload: 'Yuklab olish (≈9 MB)',
     geoUpdate: 'Yangilash',
     geoBusy: 'Yuklanmoqda…',
-    geoCredit: 'IP joylashuvi: DB-IP (CC BY 4.0)'
+    geoCredit: 'IP joylashuvi: DB-IP (CC BY 4.0)',
+    capture: 'Ilovalar trafigini kuzatish',
+    captureWhy: 'Internetga chiqadigan adapterda Wireshark dvigateli ishlatiladi. Hamma narsa shu kompyuterda qoladi.'
+  },
+  overview: {
+    title: 'Hozir nima bo‘layapti',
+    signal: (q, pct) => `Wi-Fi signali ${q.toLowerCase()} (${pct}%).`,
+    speed: (down, up) => `Hozir ${down} yuklab olinmoqda va ${up} yuborilmoqda.`,
+    topApp: (name, amount, place) => `Eng ko‘p ma’lumotni ${name} ishlatdi: ${amount}${place ? `, asosan ${place} bilan` : ''}.`,
+    noCapture: 'Har bir ilova qancha ishlatayotganini ko‘rish uchun Wireshark’ni o‘rnating — “Ilovalar” sahifasida yo‘l-yo‘riq bor.',
+    talking: (apps, orgs) => `${apps} ta ilova internet bilan gaplashmoqda${orgs ? `; ko‘pchiligi ${orgs} bilan` : ''}.`,
+    devices: (n) => `Lokal tarmoqda ${n} ta qurilma ko‘rinmoqda.`,
+    exposed: (n) => `${n} ta dastur tarmoqdagi boshqa qurilmalardan ulanish kutmoqda.`,
+    traffic: 'Internet trafigi',
+    topApps: 'Eng faol ilovalar',
+    topPlaces: 'Eng ko‘p ulanilgan kompaniyalar',
+    more: 'Hammasi',
+    nothing: 'Hali ma’lumot yo‘q.'
+  },
+  apps: {
+    title: 'Ilovalar',
+    lead: (since) => `${since} dan beri har bir ilova qancha ma’lumot olgani va yuborgani.`,
+    top: (name, amount) => `Eng ko‘p: ${name} — ${amount}.`,
+    starting: 'Trafik kuzatuvi ishga tushmoqda…',
+    waiting: 'Kuzatilmoqda. Ilovalar biror narsa yuborishi yoki olishi bilan shu yerda paydo bo‘ladi.',
+    total: 'Jami',
+    unknown: 'Aniqlanmagan',
+    unknownNote: 'Netplain dasturini ko‘rib ulgurmagan qisqa ulanishlar va ICMP kabi tizim trafigi.',
+    place: 'Qayerga',
+    company: 'Kompaniya',
+    missingTitle: 'Har bir ilova trafigini ko‘rish',
+    missingBody: 'Netplain har bir paketni ko‘rish uchun Wireshark dvigatelidan foydalanadi. Wireshark bepul va ochiq kodli; uni bir marta o‘rnatsangiz bo‘ldi, boshqa hech narsa o‘zgarmaydi.',
+    missingWin: 'O‘rnatishda “Npcap” belgilangan holda qolsin.',
+    missingMac: 'O‘rnatish oynasidagi “ChmodBPF”ni ham o‘rnating.',
+    missingLinux: 'Dasturlar markazidan “tshark” paketini o‘rnating.',
+    install: 'Wireshark’ni olish',
+    check: 'O‘rnatdim, tekshirish',
+    deniedTitle: 'Tizim trafikni kuzatishga ruxsat bermadi',
+    deniedWin: 'Npcap faqat administratorlar uchun o‘rnatilgan. Npcap’ni “Restrict Npcap driver’s access to Administrators only” belgisisiz qayta o‘rnating.',
+    deniedMac: 'Wireshark o‘rnatuvchisidagi “Install ChmodBPF”ni ishga tushirib, qayta urinib ko‘ring.',
+    deniedLinux: 'Foydalanuvchingizga ruxsat bering. Parol so‘raladi, keyin tizimdan chiqib qayta kiring.',
+    allow: 'Ruxsat berish',
+    allowed: 'Ruxsat berildi. Tizimdan chiqib qayta kiring, keyin “Qayta urinish”ni bosing.',
+    retry: 'Qayta urinish',
+    offTitle: 'Trafik kuzatuvi o‘chiq',
+    offBody: 'Har bir ilova qancha yuborib, qancha olayotganini ko‘rish uchun yoqing.',
+    turnOn: 'Yoqish',
+    error: 'Trafik kuzatuvi kutilmaganda to‘xtadi. Qayta urinilmoqda…'
   },
   connections: {
     title: 'Ulanishlar',
@@ -406,6 +502,8 @@ const uz: Dict = {
     E_NOT_PRIVATE: 'Faqat xususiy lokal tarmoqlar (uy yoki ofis) skanerlanadi.',
     E_BAD_ARGS: 'So‘rov noto‘g‘ri.',
     E_GEO_DOWNLOAD: 'Joylashuv bazasini yuklab bo‘lmadi. Internet ulanishini tekshirib, qayta urinib ko‘ring.',
+    E_ALLOW_CAPTURE: 'Ruxsat o‘zgarmadi (parol oynasi yopildi yoki “wireshark” guruhi yo‘q).',
+    E_UNSUPPORTED: 'Bu tizimda mavjud emas.',
     unknown: (m) => `Nimadir xato ketdi: ${m}`
   }
 }

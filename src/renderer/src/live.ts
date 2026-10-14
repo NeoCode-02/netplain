@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { Snapshot } from '../../shared/types'
+import type { Snapshot, Traffic } from '../../shared/types'
 
 /** Throughput at one moment, in bits per second. */
 export interface Point {
@@ -31,9 +31,10 @@ interface State {
   snap: Snapshot | null
   hist: Map<string, Point[]>
   problem: string | null
+  traffic: Traffic | null
 }
 
-let state: State = { snap: null, hist: new Map(), problem: null }
+let state: State = { snap: null, hist: new Map(), problem: null, traffic: null }
 const subs = new Set<() => void>()
 let started = false
 
@@ -52,7 +53,9 @@ function start() {
   started = true
   window.netplain.onSnapshot(push)
   window.netplain.onProblem((problem) => set({ problem }))
+  window.netplain.onTraffic((traffic) => set({ traffic }))
   void window.netplain.snapshot().then((s) => s && !state.snap && push(s))
+  void window.netplain.traffic().then((traffic) => traffic && !state.traffic && set({ traffic }))
 }
 
 export function useLive(): State {

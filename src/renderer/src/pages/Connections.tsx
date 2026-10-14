@@ -3,24 +3,9 @@ import type { Conn, Connections as Data } from '../../../shared/types'
 import { company, countryName, listJoin, service } from '../explain'
 import { useGeo } from '../geo'
 import { errText, getLang, useT, type Dict } from '../i18n'
-import { Icon } from '../ui'
+import { AppIcon, Icon } from '../ui'
 
 type Filter = 'internet' | 'local' | 'all'
-
-const icons = new Map<string, Promise<string | null>>()
-function AppIcon({ path }: { path: string | null }) {
-  const [src, setSrc] = useState<string | null>(null)
-  useEffect(() => {
-    if (!path) return
-    if (!icons.has(path)) icons.set(path, window.netplain.appIcon(path).catch(() => null))
-    let live = true
-    void icons.get(path)!.then((s) => live && setSrc(s))
-    return () => {
-      live = false
-    }
-  }, [path])
-  return <span className="app-icon">{src ? <img src={src} alt="" /> : <Icon name="box" size={16} />}</span>
-}
 
 /** Grouping key: the same in every language. */
 const label = (c: Conn) => c.title ?? c.app

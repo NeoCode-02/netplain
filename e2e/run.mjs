@@ -105,6 +105,13 @@ try {
       await shot(`settings-${theme.toLowerCase()}`)
     })
 
+    await step(`overview (${theme.toLowerCase()})`, async () => {
+      await until('Overview', clickText, 'Overview')
+      await until('the story', () => document.querySelectorAll('.story li').length >= 2)
+      await new Promise((r) => setTimeout(r, 3000))
+      await shot(`overview-${theme.toLowerCase()}`)
+    })
+
     await step(`network page (${theme.toLowerCase()})`, async () => {
       await until('Network', clickText, 'Network')
       // Either the internet adapter's card or the offline sentence, once data arrived.
@@ -134,9 +141,33 @@ try {
     })
   }
 
+  await step('apps page', async () => {
+    await until('Apps', clickText, 'Apps')
+    // With Wireshark installed the list fills; without it the page explains how to get it.
+    await until('traffic or the Wireshark hint', () => document.querySelector('.ad-row') !== null || document.body.innerText.includes('Get Wireshark'))
+    await shot('apps')
+  })
+
+  // Opt-in, because it downloads 5 MB from Cloudflare's speed test: E2E_TRAFFIC=1 npm run e2e
+  if (process.env.E2E_TRAFFIC)
+    await step('traffic is counted per app', async () => {
+      const curl = spawn('curl', ['-s', '-o', process.platform === 'win32' ? 'NUL' : '/dev/null', 'https://speed.cloudflare.com/__down?bytes=5000000'])
+      await new Promise((r) => curl.on('exit', r))
+      const mb = await until('curl in the list', () => {
+        const row = [...document.querySelectorAll('.ad-row')].find((r) => /curl/i.test(r.querySelector('h3')?.textContent ?? ''))
+        const text = row?.querySelector('.app-bytes span')?.textContent ?? ''
+        const m = /([\d.]+)\s*MB/.exec(text)
+        return m && Number(m[1]) >= 4.5 ? Number(m[1]) : false
+      })
+      process.stdout.write(`(curl: ${mb} MB received) `)
+      if (mb > 5.6) throw new Error(`curl counted ${mb} MB for a 5 MB download`)
+      await shot('apps-traffic')
+    })
+
   // Opt-in, because it downloads ~9 MB from db-ip.com: E2E_GEO=1 npm run e2e
   if (process.env.E2E_GEO)
     await step('location database', async () => {
+      await until('Connections', clickText, 'Connections')
       await until('download button', clickText, 'Download (≈9 MB)')
       await until('companies on connections', () => document.querySelector('.geo-banner') === null && document.querySelector('.orgs .tag') !== null)
       await shot('connections-geo')

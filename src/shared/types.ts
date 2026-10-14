@@ -57,6 +57,8 @@ export interface Neighbor {
 
 export interface Settings {
   theme: 'system' | 'light' | 'dark'
+  /** Watch traffic with Wireshark's engine when it is installed. */
+  capture: boolean
 }
 
 /** One open TCP/UDP socket as the OS lists it. */
@@ -108,4 +110,63 @@ export interface GeoInfo {
   ready: boolean
   /** When DB-IP built the database (ms). */
   built: number | null
+}
+
+/** One captured packet, as tshark dissected it. */
+export interface Packet {
+  n: number
+  /** ms since epoch */
+  t: number
+  len: number
+  src: string
+  dst: string
+  sport: number | null
+  dport: number | null
+  transport: 'tcp' | 'udp' | 'other'
+  /** Wireshark's protocol column: "TLSv1.3", "DNS", "QUIC"… */
+  proto: string
+  info: string
+  dnsQuery: string | null
+  /** Addresses in a DNS answer. */
+  dnsAnswers: string[]
+  /** Server name from a TLS/QUIC hello. */
+  sni: string | null
+  /** HTTP Host header. */
+  host: string | null
+}
+
+/** 'missing' = Wireshark is not installed; 'denied' = the OS refused to capture. */
+export type CaptureState = 'missing' | 'off' | 'starting' | 'on' | 'denied' | 'error'
+
+export interface Place {
+  /** Domain when known, else the IP. */
+  name: string
+  ip: string
+  rx: number
+  tx: number
+  org: string | null
+  country: string | null
+}
+
+export interface AppTraffic {
+  key: string
+  app: string
+  title: string | null
+  path: string | null
+  rx: number
+  tx: number
+  /** Bits per second over the last refresh. */
+  rxRate: number
+  txRate: number
+  places: Place[]
+}
+
+export interface Traffic {
+  state: CaptureState
+  /** Adapter being watched. */
+  adapterId: string | null
+  since: number | null
+  apps: AppTraffic[]
+  rx: number
+  tx: number
 }

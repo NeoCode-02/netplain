@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { AdapterKind } from '../../shared/types'
 
 const PATHS = {
@@ -21,7 +21,9 @@ const PATHS = {
   up: 'M12 19V5M5 12l7-7 7 7',
   dot: 'M12 12h.01',
   link: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7',
-  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM20 20l-4-4'
+  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM20 20l-4-4',
+  chart: 'M5 20v-8M11 20V5M17 20v-5M3 20h18',
+  grid: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z'
 } as const
 export type IconName = keyof typeof PATHS
 
@@ -66,4 +68,20 @@ export function Empty({ icon, title, body, children }: { icon: IconName; title: 
       {children}
     </div>
   )
+}
+
+const icons = new Map<string, Promise<string | null>>()
+/** A running program's own icon (asked from the OS once per path), or a neutral box. */
+export function AppIcon({ path }: { path: string | null }) {
+  const [src, setSrc] = useState<string | null>(null)
+  useEffect(() => {
+    if (!path) return
+    if (!icons.has(path)) icons.set(path, window.netplain.appIcon(path).catch(() => null))
+    let live = true
+    void icons.get(path)!.then((s) => live && setSrc(s))
+    return () => {
+      live = false
+    }
+  }, [path])
+  return <span className="app-icon">{src ? <img src={src} alt="" /> : <Icon name="box" size={16} />}</span>
 }

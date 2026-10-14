@@ -1,7 +1,7 @@
-import type { Connections, GeoInfo, Neighbor, Settings, Snapshot } from './types'
+import type { Connections, GeoInfo, Neighbor, Settings, Snapshot, Traffic } from './types'
 
 /** Main → renderer pushes. */
-export const CHANNELS = { snapshot: 'np:snapshot', problem: 'np:problem' } as const
+export const CHANNELS = { snapshot: 'np:snapshot', problem: 'np:problem', traffic: 'np:traffic' } as const
 
 /**
  * Everything the UI can ask the main process for. Each method is one IPC handler of the same name
@@ -26,4 +26,10 @@ export interface Api {
   geoInfo(): GeoInfo
   /** Downloads DB-IP Lite (~9 MB from db-ip.com) into the app's data folder. Throws E_GEO_DOWNLOAD. */
   geoUpdate(): Promise<GeoInfo>
+  /** Per-app traffic since the capture started (also pushed every second). */
+  traffic(): Traffic | null
+  /** Looks for Wireshark again and restarts the capture (after installing it or fixing permissions). */
+  retryCapture(): void
+  /** Linux: asks for the admin password to let this user capture. Throws E_ALLOW_CAPTURE / E_UNSUPPORTED. */
+  allowCapture(): Promise<void>
 }

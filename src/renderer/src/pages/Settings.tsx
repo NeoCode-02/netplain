@@ -21,6 +21,11 @@ export default function Settings() {
     setPrefs(next)
     void window.netplain.saveSettings(next)
   }
+  const capture = (on: boolean) => {
+    const next = { ...prefs!, capture: on }
+    setPrefs(next)
+    void window.netplain.saveSettings(next)
+  }
 
   return (
     <div className="page">
@@ -47,6 +52,20 @@ export default function Settings() {
               </button>
             ))}
           </div>
+        </div>
+        <div className="stack tight">
+          <div className="setting">
+            <span>{s.capture}</span>
+            <button
+              className={`switch ${prefs?.capture ? 'on' : ''}`}
+              role="switch"
+              aria-checked={!!prefs?.capture}
+              aria-label={s.capture}
+              disabled={!prefs}
+              onClick={() => capture(!prefs?.capture)}
+            />
+          </div>
+          <p className="small muted">{s.captureWhy}</p>
         </div>
       </div>
       <section className="section">

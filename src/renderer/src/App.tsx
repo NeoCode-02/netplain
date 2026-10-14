@@ -1,15 +1,19 @@
 import { useState } from 'react'
 import { errText, useT } from './i18n'
 import { useLive } from './live'
+import Apps from './pages/Apps'
 import Connections from './pages/Connections'
 import Devices from './pages/Devices'
 import Network from './pages/Network'
+import Overview from './pages/Overview'
 import Settings from './pages/Settings'
 import { Icon, Mark, type IconName } from './ui'
 
-type Page = 'network' | 'connections' | 'devices' | 'settings'
+export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'devices' | 'settings'
 const NAV: [Page, IconName][] = [
+  ['overview', 'chart'],
   ['network', 'globe'],
+  ['apps', 'grid'],
   ['connections', 'link'],
   ['devices', 'devices']
 ]
@@ -17,7 +21,7 @@ const NAV: [Page, IconName][] = [
 export default function App() {
   const t = useT()
   const { problem } = useLive()
-  const [page, setPage] = useState<Page>('network')
+  const [page, setPage] = useState<Page>('overview')
 
   const item = (p: Page, icon: IconName) => (
     <button key={p} className={`rail-item ${page === p ? 'on' : ''}`} aria-current={page === p ? 'page' : undefined} onClick={() => setPage(p)}>
@@ -45,7 +49,9 @@ export default function App() {
           </div>
         )}
         <div className="content">
+          {page === 'overview' && <Overview go={setPage} />}
           {page === 'network' && <Network />}
+          {page === 'apps' && <Apps />}
           {page === 'connections' && <Connections />}
           {page === 'devices' && <Devices />}
           {page === 'settings' && <Settings />}

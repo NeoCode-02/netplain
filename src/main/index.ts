@@ -9,6 +9,7 @@ import { join } from './connections'
 import { cached } from './exec'
 import { createGeo } from './geodb'
 import { internetIp, realDevices, sweep } from './net'
+import { allowCaptureLinux, createTrafficWatch } from './traffic'
 import { vendorTable } from './tshark'
 
 // Separate data folder for tests / portable use.
@@ -18,18 +19,21 @@ const primary = app.requestSingleInstanceLock()
 if (!primary) app.quit()
 
 const THEMES: readonly Settings['theme'][] = ['system', 'light', 'dark']
-const isSettings = (v: unknown): v is Settings =>
-  typeof v === 'object' && v !== null && Object.getPrototypeOf(v) === Object.prototype && THEMES.includes((v as Settings).theme)
+const DEFAULTS: Settings = { theme: 'system', capture: true }
+const plain = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && Object.getPrototypeOf(v) === Object.prototype
+const isSettings = (v: unknown): v is Settings => plain(v) && THEMES.includes(v.theme as Settings['theme']) && typeof v.capture === 'boolean'
 
 const settingsFile = path.join(app.getPath('userData'), 'settings.json')
 function loadSettings(): Settings {
   try {
     const s: unknown = JSON.parse(fs.readFileSync(settingsFile, 'utf8'))
-    if (isSettings(s)) return { theme: s.theme }
+    // Files from older versions lack newer keys; each valid key is kept, the rest default.
+    if (plain(s))
+      return { theme: THEMES.includes(s.theme as Settings['theme']) ? (s.theme as Settings['theme']) : DEFAULTS.theme, capture: typeof s.capture === 'boolean' ? s.capture : DEFAULTS.capture }
   } catch {
     // first run or unreadable: defaults
   }
-  return { theme: 'system' }
+  return { ...DEFAULTS }
 }
 
 let settings = loadSettings()
@@ -49,6 +53,23 @@ function report(code: string | null) {
   send(CHANNELS.problem, code)
 }
 
+const geo = createGeo(path.join(app.getPath('userData'), 'geo'))
+const icons = new Map<string, string | null>()
+/** Program files seen running this session: the only paths the UI may ask an icon for. */
+const knownPaths = new Set<string>()
+const freshProcesses = async () => {
+  const list = await collector.processes()
+  for (const p of list) if (p.path) knownPaths.add(p.path)
+  return list
+}
+// The process list costs ~0.4 s on Windows (PowerShell start), the DNS cache ~1 s.
+const processes = cached(5000, freshProcesses, [])
+const dnsNames = cached(30_000, async () => new Map(await collector.dnsCache()), new Map<string, string>())
+
+const traffic = primary
+  ? createTrafficWatch({ collector, processes, freshProcesses, hosts: dnsNames, geo: geo.lookup, publish: (t) => send(CHANNELS.traffic, t) }, settings.capture)
+  : null
+
 const stopWatch = primary
   ? collector.watch(
       async (adapters) => {
@@ -57,6 +78,7 @@ const stopWatch = primary
         latest = { at: Date.now(), adapters: adapters.filter((a) => a.kind !== 'loopback'), defaultId: internet?.id ?? null }
         report(null)
         send(CHANNELS.snapshot, latest)
+        traffic?.follow(latest)
       },
       (e) => {
         console.error(e)
@@ -69,13 +91,6 @@ async function devices() {
   const [list, vendors] = await Promise.all([collector.neighbors(), vendorTable()])
   return realDevices(list).map((n) => ({ ...n, vendor: vendors.get(n.mac.slice(0, 8)) ?? null }))
 }
-
-const geo = createGeo(path.join(app.getPath('userData'), 'geo'))
-// The process list costs ~0.4 s on Windows (PowerShell start), the DNS cache ~1 s.
-const processes = cached(5000, () => collector.processes(), [])
-const dnsNames = cached(30_000, async () => new Map(await collector.dnsCache()), new Map<string, string>())
-const icons = new Map<string, string | null>()
-let knownPaths = new Set<string>()
 
 const overlay = () => ({ color: '#00000000', symbolColor: nativeTheme.shouldUseDarkColors ? '#a1a4ab' : '#3f4148', height: 48 })
 const rendererFile = pathToFileURL(path.join(__dirname, '../renderer/index.html')).href
@@ -113,10 +128,12 @@ const handlers: Api = {
   appInfo: () => ({ version: app.getVersion(), platform: process.platform }),
   getSettings: () => settings,
   saveSettings: (s) => {
-    settings = { theme: s.theme }
+    const captureChanged = s.capture !== settings.capture
+    settings = { theme: s.theme, capture: s.capture }
     nativeTheme.themeSource = settings.theme
     fs.mkdirSync(path.dirname(settingsFile), { recursive: true })
     fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2))
+    if (captureChanged) traffic?.setEnabled(settings.capture, latest)
   },
   snapshot: () => latest,
   neighbors: devices,
@@ -129,7 +146,6 @@ const handlers: Api = {
   openUrl: (url) => void shell.openExternal(url),
   connections: async () => {
     const [sockets, procs, hosts] = await Promise.all([collector.sockets(), processes(), dnsNames()])
-    knownPaths = new Set(procs.flatMap((p) => (p.path ? [p.path] : [])))
     return join(sockets, procs, hosts, geo.lookup)
   },
   appIcon: async (file) => {
@@ -144,7 +160,10 @@ const handlers: Api = {
     return icons.get(file) ?? null
   },
   geoInfo: () => geo.info(),
-  geoUpdate: () => geo.update()
+  geoUpdate: () => geo.update(),
+  traffic: () => traffic?.view() ?? null,
+  retryCapture: () => traffic?.setEnabled(settings.capture, latest),
+  allowCapture: () => allowCaptureLinux()
 }
 
 const none = (a: unknown[]) => a.length === 0
@@ -166,7 +185,10 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   connections: none,
   appIcon: (a) => typeof a[0] === 'string' && knownPaths.has(a[0]),
   geoInfo: none,
-  geoUpdate: none
+  geoUpdate: none,
+  traffic: none,
+  retryCapture: none,
+  allowCapture: none
 }
 
 /** Only our own window's page may call the main process. */
@@ -200,5 +222,8 @@ app.on('second-instance', () => {
 })
 
 if (primary) void app.whenReady().then(createWindow)
-app.on('before-quit', () => stopWatch())
+app.on('before-quit', () => {
+  stopWatch()
+  traffic?.stop()
+})
 app.on('window-all-closed', () => app.quit())
