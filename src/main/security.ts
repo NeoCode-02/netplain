@@ -78,7 +78,7 @@ interface Raw {
 }
 
 /** `Get-AuthenticodeSignature` for many files at once; catalog-signed Windows files count as signed. */
-const signScript = (paths: string[]) =>
+export const signScript = (paths: string[]) =>
   [
     "$ErrorActionPreference = 'SilentlyContinue'",
     '$r = @{}',
@@ -87,10 +87,13 @@ const signScript = (paths: string[]) =>
     '[Console]::Out.WriteLine(($r | ConvertTo-Json -Compress -Depth 3))'
   ].join('\n')
 
-export const toSigner = (v: { status?: string; publisher?: string | null } | undefined): Signer => ({
-  status: v?.status === 'Valid' ? 'valid' : v?.status === 'NotSigned' ? 'unsigned' : 'invalid',
-  publisher: v?.publisher || null
-})
+const STATUS: Record<string, Signer['status']> = { Valid: 'valid', NotSigned: 'unsigned', NotSupportedFileFormat: 'unsigned', HashMismatch: 'invalid', NotTrusted: 'invalid' }
+
+/** null when Windows could not tell (UnknownError, no answer). */
+export const toSigner = (v: { status?: string; publisher?: string | null } | undefined): Signer | null => {
+  const status = STATUS[v?.status ?? '']
+  return status ? { status, publisher: v?.publisher || null } : null
+}
 
 interface Deps {
   /** Programs talking to the internet right now. */
@@ -125,7 +128,9 @@ export function createSecurity(deps: Deps) {
       // PowerShell hashtables ignore case, so "System32" and "system32" came back as one key.
       const r = new Map(Object.entries(json).map(([k, v]) => [k.toLowerCase(), v]))
       for (const [p, mtime] of batch) {
+        // Unknown (no answer, PowerShell timed out) is not a bad signature; asked again next time.
         const s = toSigner(r.get(p.toLowerCase()))
+        if (!s) continue
         signed.set(p, { mtime, s })
         out.set(p, s)
       }

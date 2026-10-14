@@ -23,9 +23,11 @@ describe('exeOf', () => {
   })
   it('reads signature states', () => {
     expect(toSigner({ status: 'Valid', publisher: 'Google LLC' })).toEqual({ status: 'valid', publisher: 'Google LLC' })
-    expect(toSigner({ status: 'NotSigned' }).status).toBe('unsigned')
-    expect(toSigner({ status: 'HashMismatch' }).status).toBe('invalid')
-    expect(toSigner(undefined).status).toBe('invalid')
+    expect(toSigner({ status: 'NotSigned' })?.status).toBe('unsigned')
+    expect(toSigner({ status: 'HashMismatch' })?.status).toBe('invalid')
+    // Windows could not tell (no answer, catalog service unavailable): unknown, not a bad signature.
+    expect(toSigner(undefined)).toBeNull()
+    expect(toSigner({ status: 'UnknownError' })).toBeNull()
   })
 })
 
