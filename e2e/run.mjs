@@ -227,6 +227,17 @@ try {
     }
   })
 
+  await step('security status', async () => {
+    await until('Security', clickText, 'Security')
+    // Windows reads its settings (~10 s the first time); elsewhere the page says it is Windows-only.
+    const end = Date.now() + 90_000
+    while (!(await inPage(() => document.querySelector('.verdict') !== null || document.body.innerText.includes('works on Windows')))) {
+      if (Date.now() > end) throw new Error('Timed out waiting for: the security verdict')
+      await new Promise((r) => setTimeout(r, 500))
+    }
+    await shot('security')
+  })
+
   await step('tools page', async () => {
     await until('Tools', clickText, 'Tools')
     await until('Check', clickText, 'Check')

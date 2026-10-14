@@ -291,3 +291,87 @@ export interface DiagnoseStep {
   state: StepState
   detail: string
 }
+
+/** Authenticode signature of a program file. */
+export interface Signer {
+  status: 'valid' | 'unsigned' | 'invalid'
+  publisher: string | null
+}
+
+export interface SecUser {
+  name: string
+  enabled: boolean
+  /** ISO time of the last sign-in, if Windows recorded one. */
+  last: string | null
+  sid: string
+  admin: boolean
+  /** The account running Netplain. */
+  me: boolean
+}
+
+export interface SecService {
+  name: string
+  display: string
+  desc: string
+  state: string
+  start: string
+  account: string
+  path: string
+  exe: string | null
+  signer: Signer | null
+}
+
+export interface SecStartup {
+  /** Stable id for actions: kind|hive|key|name (or the task path). */
+  id: string
+  kind: 'run' | 'folder' | 'task'
+  hive: string
+  name: string
+  command: string
+  enabled: boolean
+  exe: string | null
+  signer: Signer | null
+}
+
+export interface SecThreat {
+  id: string
+  name: string
+  severity: number
+  active: boolean
+  resources: string[]
+  /** Latest detection of this threat. */
+  at: string | null
+  status: number | null
+}
+
+export type FindingLevel = 'ok' | 'info' | 'warn' | 'bad'
+export type SecurityTab = 'status' | 'antivirus' | 'users' | 'services' | 'startup'
+
+/** One check of the "was I hacked?" list; its text lives in the renderer's dictionary under `key`. */
+export interface Finding {
+  key: string
+  level: FindingLevel
+  params: Record<string, string | number>
+  /** Action the app can take for it. */
+  fix?: 'firewallOn' | 'openDefender'
+  /** Tab that shows the details. */
+  tab?: SecurityTab
+}
+
+export interface Security {
+  at: number
+  defender: { av: boolean; rt: boolean; sigAge: number; quickAge: number; fullAge: number; tamper: boolean } | null
+  threats: SecThreat[]
+  users: SecUser[]
+  services: SecService[]
+  startup: SecStartup[]
+  firewall: { name: string; on: boolean }[]
+  uac: { lua: number; consent: number }
+  rdpDenied: number
+  sac: number | null
+  proxy: { on: number; server: string; pac: string }
+  hosts: string[]
+  /** Date of the newest installed Windows update (yyyy-mm-dd). */
+  updated: string | null
+  findings: Finding[]
+}

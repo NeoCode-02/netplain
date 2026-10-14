@@ -15,7 +15,8 @@ import { vendorTable } from './tshark'
 import { isSettings, loadSettings, saveSettings } from './settings'
 import { createUsage } from './usage'
 import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './tools'
-import { flushDns, renewIp, restartAdapter } from './admin'
+import { elevate, flushDns, renewIp, restartAdapter } from './admin'
+import { createSecurity } from './security'
 
 // Separate data folder for tests / portable use.
 if (process.env.NETPLAIN_DATA) app.setPath('userData', process.env.NETPLAIN_DATA)
@@ -88,10 +89,21 @@ async function currentConnections() {
   return join(sockets, procs, hosts, geo.lookup)
 }
 
+const security =
+  process.platform === 'win32'
+    ? createSecurity({
+        online: async () => (await currentConnections()).conns.filter((c) => c.scope === 'internet').map((c) => ({ app: c.title ?? c.app, path: c.path })),
+        dns: () => latest?.adapters.find((a) => a.id === latest?.defaultId)?.dns ?? [],
+        geo: geo.lookup
+      })
+    : null
+
 if (primary) {
   setInterval(() => usage.save(), 60_000)
   // Signals are checked in the background, whichever page is open.
   setInterval(() => currentConnections().then((c) => alerts.connections(c, settings.alerts), console.error), Number(process.env.NETPLAIN_CHECK_MS) || 15_000)
+  // The first security reading takes ~10 s (file signatures); have it ready before the page is opened.
+  setTimeout(() => security?.get().catch(console.error), 15_000)
 }
 
 const stopWatch = primary
@@ -213,7 +225,15 @@ const handlers: Api = {
   diagnose: () => diagnose(latest),
   flushDns: () => flushDns(),
   renewIp: (id) => renewIp(adapter(id)),
-  restartAdapter: (id) => restartAdapter(adapter(id))
+  restartAdapter: (id) => restartAdapter(adapter(id)),
+  security: (fresh) => {
+    if (!security) throw new Error('E_UNSUPPORTED')
+    return security.get(fresh)
+  },
+  fixFinding: async (fix) => {
+    if (fix === 'openDefender') return void shell.openExternal('windowsdefender:')
+    await elevate('netsh advfirewall set allprofiles state on')
+  }
 }
 
 function adapter(id: string) {
@@ -266,7 +286,9 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   diagnose: none,
   flushDns: none,
   renewIp: (a) => typeof a[0] === 'string' && a[0].length <= 200,
-  restartAdapter: (a) => typeof a[0] === 'string' && a[0].length <= 200
+  restartAdapter: (a) => typeof a[0] === 'string' && a[0].length <= 200,
+  security: (a) => a[0] === undefined || typeof a[0] === 'boolean',
+  fixFinding: (a) => a[0] === 'firewallOn' || a[0] === 'openDefender'
 }
 
 /** Only our own window's page may call the main process. */

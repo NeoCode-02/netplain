@@ -3,6 +3,7 @@ import type {
   BlocklistInfo,
   Connections,
   DiagnoseStep,
+  Finding,
   GeoInfo,
   Hop,
   LookupResult,
@@ -12,6 +13,7 @@ import type {
   PingResult,
   PortState,
   PublicIp,
+  Security,
   Settings,
   Snapshot,
   Traffic,
@@ -85,4 +87,8 @@ export interface Api {
   flushDns(): Promise<void>
   renewIp(adapterId: string): Promise<void>
   restartAdapter(adapterId: string): Promise<void>
+  /** Windows security picture (cached a minute unless `fresh`). Throws E_UNSUPPORTED elsewhere. */
+  security(fresh?: boolean): Promise<Security>
+  /** Runs the fix a finding offers (firewall on asks for admin rights). */
+  fixFinding(fix: NonNullable<Finding['fix']>): Promise<void>
 }

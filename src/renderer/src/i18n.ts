@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 
 const en = {
   lang: 'English',
-  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', tools: 'Tools', settings: 'Settings' },
+  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', security: 'Security', tools: 'Tools', settings: 'Settings' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobile', loopback: 'Loopback', other: 'Other' },
   /** What each kind of adapter is, for someone who has never opened ipconfig. */
   what: {
@@ -120,6 +120,48 @@ const en = {
     geoCredit: 'IP geolocation by DB-IP (CC BY 4.0)',
     capture: 'Watch traffic per app',
     captureWhy: 'Uses Wireshark’s engine on the adapter that reaches the internet. Everything stays on this computer.'
+  },
+  security: {
+    title: 'Security',
+    lead: 'The signs people look for when they ask “was my computer hacked?” — in one place, explained.',
+    windowsOnly: 'The security section works on Windows for now.',
+    tabs: { status: 'Status', antivirus: 'Antivirus', users: 'Users', services: 'Services', startup: 'Startup' },
+    reading: 'Reading Windows security settings… the first time takes about ten seconds.',
+    recheck: 'Check again',
+    checkedAt: (time: string) => `Checked at ${time}.`,
+    verdictBad: (n: number) => (n === 1 ? '1 problem needs attention' : `${n} problems need attention`),
+    verdictWarn: (n: number) => (n === 1 ? 'No serious signs · 1 thing to check' : `No serious signs · ${n} things to check`),
+    verdictOk: 'No warning signs found',
+    honest: 'These checks catch the common signs of trouble, but no list can prove a computer is clean. For a deep check, run a full scan in the Antivirus tab.',
+    open: 'Details',
+    fix: { firewallOn: 'Turn the firewall on', openDefender: 'Open Windows Security' },
+    fixed: 'Done. Checking again…',
+    findings: {
+      defenderOff: ['Antivirus is off', () => 'Microsoft Defender is not protecting this computer. If you use another antivirus, make sure it is on; otherwise turn Defender on.'],
+      realtimeOff: ['Real-time protection is off', () => 'Files are not checked when they are opened. Turn real-time protection on in Windows Security.'],
+      signaturesOld: ['Antivirus definitions are old', (p) => `They were updated ${p.days} days ago, so new threats may go unnoticed. Update them in Windows Security.`],
+      threatsActive: ['Threats found', (p) => `${p.n} active: ${p.names}. Open the Antivirus tab and remove them.`],
+      defenderOk: ['Antivirus is on', () => 'Microsoft Defender protects in real time and its definitions are fresh.'],
+      scanOld: ['No recent scan', (p) => `The last quick scan was ${p.days} days ago. Run one in the Antivirus tab.`],
+      firewallOff: ['Firewall is off', (p) => `Off for: ${p.profiles}. Programs on the network can reach this computer freely.`],
+      firewallOk: ['Firewall is on', () => 'Windows Firewall guards every kind of network.'],
+      uacOff: ['User Account Control is off', () => 'Programs get administrator rights without asking. Turn UAC back on.'],
+      uacSilent: ['UAC never asks', () => 'Administrator rights are given without a prompt. Set User Account Control to notify you.'],
+      uacOk: ['User Account Control is on', () => 'Windows asks before a program gets administrator rights.'],
+      rdpOn: ['Remote Desktop is on', () => 'Others can try to sign in to this computer over the network. Fine if you use it; otherwise turn it off.'],
+      sacOn: ['Smart App Control is on', () => 'Windows blocks unknown and unsigned programs before they run.'],
+      builtinAdmin: ['The built-in Administrator is on', (p) => `“${p.name}” is the first account attackers try passwords on. Turn it off unless you need it.`],
+      otherAdmins: ['Other administrators', (p) => `${p.names} also have full control of this computer. Make sure you know them.`],
+      startupSuspicious: ['Unsigned programs start from personal folders', (p) => `${p.names}. Malware likes to hide there. If you don’t know them, turn them off in the Startup tab.`],
+      startupUnsigned: ['Unsigned programs start with Windows', (p) => `${p.names}. Unsigned does not mean harmful, but check you know them.`],
+      servicesUnsigned: ['Unsigned services', (p) => `${p.names}. Some honest programs (PostgreSQL, for example) are unsigned; check you installed these.`],
+      netUnsigned: ['Unsigned programs use the internet', (p) => `${p.names}. Check you know them.`],
+      hostsRedirect: ['The hosts file redirects websites', (p) => `${p.lines}. Malware uses this to send you to fake sites. Remove lines you did not add.`],
+      proxyOn: ['A proxy is set', (p) => `Web traffic goes through ${p.server}. If you did not set it, a program might have.`],
+      dnsProvider: ['DNS server', (p) => `Names are looked up at ${p.servers} (${p.org}). Usually your provider’s; if you don’t recognise it, check the router.`],
+      updatesOld: ['Windows updates are old', (p) => `The last update was installed ${p.days} days ago. Run Windows Update.`],
+      updatesOk: ['Windows is up to date', (p) => `The last update was installed on ${p.date}.`]
+    } as Record<string, [string, (p: Record<string, string | number>) => string]>
   },
   tools: {
     title: 'Tools',
@@ -419,7 +461,7 @@ export type Dict = typeof en
 
 const uz: Dict = {
   lang: 'O‘zbekcha',
-  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', tools: 'Asboblar', settings: 'Sozlamalar' },
+  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', security: 'Xavfsizlik', tools: 'Asboblar', settings: 'Sozlamalar' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobil', loopback: 'Loopback', other: 'Boshqa' },
   what: {
     wifi: 'Simsiz adapter: kompyuterni Wi-Fi tarmoqlariga ulaydi.',
@@ -536,6 +578,48 @@ const uz: Dict = {
     geoCredit: 'IP joylashuvi: DB-IP (CC BY 4.0)',
     capture: 'Ilovalar trafigini kuzatish',
     captureWhy: 'Internetga chiqadigan adapterda Wireshark dvigateli ishlatiladi. Hamma narsa shu kompyuterda qoladi.'
+  },
+  security: {
+    title: 'Xavfsizlik',
+    lead: '“Kompyuterim buzilganmi?” deb so‘raganda qaraladigan belgilar — bir joyda, tushuntirilgan holda.',
+    windowsOnly: 'Xavfsizlik bo‘limi hozircha Windows’da ishlaydi.',
+    tabs: { status: 'Holat', antivirus: 'Antivirus', users: 'Foydalanuvchilar', services: 'Xizmatlar', startup: 'Avtoyuklanish' },
+    reading: 'Windows xavfsizlik sozlamalari o‘qilmoqda… birinchi marta taxminan o‘n soniya oladi.',
+    recheck: 'Qayta tekshirish',
+    checkedAt: (time) => `${time} da tekshirildi.`,
+    verdictBad: (n) => `${n} ta muammo e’tibor talab qiladi`,
+    verdictWarn: (n) => `Jiddiy belgi yo‘q · ${n} ta narsani tekshirib ko‘ring`,
+    verdictOk: 'Xavotirli belgi topilmadi',
+    honest: 'Bu tekshiruvlar keng tarqalgan belgilarni ushlaydi, lekin hech bir ro‘yxat kompyuter toza ekanini isbotlay olmaydi. Chuqur tekshirish uchun Antivirus tab’ida to‘liq skan qiling.',
+    open: 'Batafsil',
+    fix: { firewallOn: 'Firewall’ni yoqish', openDefender: 'Windows Security’ni ochish' },
+    fixed: 'Bajarildi. Qayta tekshirilmoqda…',
+    findings: {
+      defenderOff: ['Antivirus o‘chiq', () => 'Microsoft Defender bu kompyuterni himoya qilmayapti. Boshqa antivirus ishlatsangiz, u yoqilganini tekshiring; aks holda Defender’ni yoqing.'],
+      realtimeOff: ['Real vaqt himoyasi o‘chiq', () => 'Fayllar ochilganda tekshirilmayapti. Windows Security’da real vaqt himoyasini yoqing.'],
+      signaturesOld: ['Antivirus bazasi eski', (p) => `U ${p.days} kun oldin yangilangan, yangi tahdidlar sezilmay qolishi mumkin. Windows Security’da yangilang.`],
+      threatsActive: ['Tahdid topildi', (p) => `${p.n} ta faol: ${p.names}. Antivirus tab’ini ochib, ularni o‘chiring.`],
+      defenderOk: ['Antivirus yoqilgan', () => 'Microsoft Defender real vaqtda himoya qilmoqda va bazasi yangi.'],
+      scanOld: ['Yaqinda skan qilinmagan', (p) => `Oxirgi tez skan ${p.days} kun oldin bo‘lgan. Antivirus tab’ida skan qiling.`],
+      firewallOff: ['Firewall o‘chiq', (p) => `O‘chiq profillar: ${p.profiles}. Tarmoqdagi dasturlar bu kompyuterga bemalol yetib keladi.`],
+      firewallOk: ['Firewall yoqilgan', () => 'Windows Firewall har turdagi tarmoqda himoya qilmoqda.'],
+      uacOff: ['Foydalanuvchi hisobi nazorati (UAC) o‘chiq', () => 'Dasturlar so‘ramasdan administrator huquqini oladi. UAC’ni qayta yoqing.'],
+      uacSilent: ['UAC hech qachon so‘ramaydi', () => 'Administrator huquqi so‘rovsiz beriladi. UAC’ni sizga xabar beradigan qilib qo‘ying.'],
+      uacOk: ['Foydalanuvchi hisobi nazorati yoqilgan', () => 'Dastur administrator huquqini olishidan oldin Windows so‘raydi.'],
+      rdpOn: ['Masofaviy ish stoli yoqilgan', () => 'Boshqalar tarmoq orqali bu kompyuterga kirishga urinishi mumkin. Ishlatsangiz normal; aks holda o‘chiring.'],
+      sacOn: ['Smart App Control yoqilgan', () => 'Windows noma’lum va imzosiz dasturlarni ishga tushishidan oldin to‘sadi.'],
+      builtinAdmin: ['O‘rnatilgan Administrator yoqilgan', (p) => `“${p.name}” — hujumchilar parol tanlab ko‘radigan birinchi akkaunt. Kerak bo‘lmasa o‘chiring.`],
+      otherAdmins: ['Boshqa administratorlar', (p) => `${p.names} ham bu kompyuterni to‘liq boshqara oladi. Ularni tanishingizga ishonch hosil qiling.`],
+      startupSuspicious: ['Shaxsiy papkalardan imzosiz dasturlar ishga tushadi', (p) => `${p.names}. Zararli dasturlar u yerda yashirinishni yaxshi ko‘radi. Tanimasangiz, Avtoyuklanish tab’ida o‘chiring.`],
+      startupUnsigned: ['Windows bilan imzosiz dasturlar ishga tushadi', (p) => `${p.names}. Imzosiz degani zararli degani emas, lekin ularni tanishingizni tekshiring.`],
+      servicesUnsigned: ['Imzosiz xizmatlar', (p) => `${p.names}. Ba’zi halol dasturlar (masalan PostgreSQL) imzosiz; ularni o‘zingiz o‘rnatganingizni tekshiring.`],
+      netUnsigned: ['Imzosiz dasturlar internetdan foydalanmoqda', (p) => `${p.names}. Ularni tanishingizni tekshiring.`],
+      hostsRedirect: ['hosts fayli saytlarni boshqa joyga yo‘naltiradi', (p) => `${p.lines}. Zararli dasturlar shu yo‘l bilan soxta saytlarga olib boradi. O‘zingiz qo‘shmagan qatorlarni o‘chiring.`],
+      proxyOn: ['Proxy o‘rnatilgan', (p) => `Veb trafik ${p.server} orqali o‘tadi. Buni o‘zingiz qilmagan bo‘lsangiz, biror dastur qilgan bo‘lishi mumkin.`],
+      dnsProvider: ['DNS server', (p) => `Nomlar ${p.servers} (${p.org}) da qidiriladi. Odatda bu provayderniki; tanimasangiz, routerni tekshiring.`],
+      updatesOld: ['Windows yangilanishlari eski', (p) => `Oxirgi yangilanish ${p.days} kun oldin o‘rnatilgan. Windows Update’ni ishga tushiring.`],
+      updatesOk: ['Windows yangilangan', (p) => `Oxirgi yangilanish ${p.date} da o‘rnatilgan.`]
+    }
   },
   tools: {
     title: 'Asboblar',

@@ -211,3 +211,20 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .hops li:first-child { border-top: 0; }
 .hop-n { color: var(--text-3); text-align: right; }
 .hops .num { text-align: right; }
+
+/* security */
+.verdict { display: flex; gap: 16px; align-items: flex-start; }
+.verdict h3 { font-size: 17px; }
+.verdict p { margin-top: 4px; max-width: 80ch; }
+.verdict-mark { width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; display: grid; place-items: center; }
+.verdict.ok .verdict-mark { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.verdict.warn .verdict-mark { color: #b45309; background: rgb(245 158 11 / 14%); }
+.verdict.bad .verdict-mark { color: var(--danger); background: var(--danger-soft); }
+.finding { align-items: flex-start; gap: 14px; }
+.finding .small { margin-top: 2px; max-width: 86ch; }
+.finding-actions { flex-shrink: 0; }
+.ad-icon.level-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.ad-icon.level-warn { color: #b45309; background: rgb(245 158 11 / 14%); }
+.ad-icon.level-bad { color: var(--danger); background: var(--danger-soft); }
+.section-tabs { margin-bottom: 18px; }
+@media (prefers-color-scheme: dark) { .verdict.warn .verdict-mark, .ad-icon.level-warn { color: #fbbf24; } }
