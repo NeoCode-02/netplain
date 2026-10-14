@@ -19,7 +19,12 @@ const names: Record<keyof Api, true> = {
   geoUpdate: true,
   traffic: true,
   retryCapture: true,
-  allowCapture: true
+  allowCapture: true,
+  packets: true,
+  packetDetail: true,
+  packetFilter: true,
+  savePackets: true,
+  openInWireshark: true
 }
 
 const api = Object.fromEntries(Object.keys(names).map((n) => [n, (...a: unknown[]) => ipcRenderer.invoke(n, ...a)])) as Async<Api>

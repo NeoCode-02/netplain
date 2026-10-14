@@ -6,15 +6,17 @@ import Connections from './pages/Connections'
 import Devices from './pages/Devices'
 import Network from './pages/Network'
 import Overview from './pages/Overview'
+import Packets from './pages/Packets'
 import Settings from './pages/Settings'
 import { Icon, Mark, type IconName } from './ui'
 
-export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'devices' | 'settings'
+export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'packets' | 'devices' | 'settings'
 const NAV: [Page, IconName][] = [
   ['overview', 'chart'],
   ['network', 'globe'],
   ['apps', 'grid'],
   ['connections', 'link'],
+  ['packets', 'list'],
   ['devices', 'devices']
 ]
 
@@ -48,11 +50,12 @@ export default function App() {
             {errText(t, problem)}
           </div>
         )}
-        <div className="content">
+        <div className={`content ${page === 'packets' ? 'fixed' : ''}`}>
           {page === 'overview' && <Overview go={setPage} />}
           {page === 'network' && <Network />}
           {page === 'apps' && <Apps />}
           {page === 'connections' && <Connections />}
+          {page === 'packets' && <Packets />}
           {page === 'devices' && <Devices />}
           {page === 'settings' && <Settings />}
         </div>

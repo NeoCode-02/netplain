@@ -1,4 +1,4 @@
-import type { Adapter, Neighbor } from '../../shared/types'
+import type { Adapter, Neighbor, PacketRow } from '../../shared/types'
 import type { Dict } from './i18n'
 import { addr } from './format'
 
@@ -148,4 +148,47 @@ export function listJoin(items: string[], lang: string): string {
   } catch {
     return items.join(', ')
   }
+}
+
+/** One sentence about what a packet does, from what tshark and the flow table know. */
+export function describePacket(p: PacketRow, t: Dict): string {
+  const s = t.packets.say
+  const where = p.peer ?? (p.dir === 'in' ? p.src : p.dst)
+  if (p.dnsQuery) return p.dnsAnswers.length ? s.dnsAnswer(p.dnsQuery, p.dnsAnswers[0]) : s.dnsQuery(p.dnsQuery)
+  if (p.sni && /hello/i.test(p.info)) return s.hello(p.sni)
+  if (/^HTTP/.test(p.proto)) return s.http(p.info)
+  if (p.proto === 'ARP') return s.arp(p.info)
+  if (/^(MDNS|SSDP|LLMNR|NBNS|BROWSER|WSD|DHCP|IGMP)/i.test(p.proto)) return s.nearby
+  if (/^ICMP/.test(p.proto)) return s.ping(p.info)
+  if (p.transport === 'tcp' && /\[SYN\]/.test(p.info)) return s.open(where)
+  if (p.transport === 'tcp' && /\[(FIN|RST)/.test(p.info)) return s.close
+  if (/^(TLS|SSL|QUIC)/.test(p.proto) || p.sport === 443 || p.dport === 443) return p.dir === 'in' ? s.encryptedIn(where) : s.encryptedOut(where)
+  return p.info
+}
+
+const LAYERS: [string, RegExp][] = [
+  ['nearby', /^(Multicast Domain Name System|Simple Service Discovery|Link-local Multicast Name Resolution|NetBIOS)/],
+  ['frame', /^Frame \d/],
+  ['eth', /^Ethernet/],
+  ['ip', /^Internet Protocol Version/],
+  ['tcp', /^Transmission Control Protocol/],
+  ['udp', /^User Datagram Protocol/],
+  ['tls', /^(Transport Layer Security|TLS)/],
+  ['quic', /^QUIC/],
+  ['dns', /^Domain Name System/],
+  ['http', /^Hypertext Transfer Protocol/],
+  ['arp', /^Address Resolution Protocol/],
+  ['icmp', /^Internet Control Message Protocol/]
+]
+
+/** Plain-language note for a top-level line of Wireshark's details, if we have one. */
+export const layerKey = (text: string) => LAYERS.find(([, re]) => re.test(text))?.[0] ?? null
+
+/** Quick filters that need no Wireshark syntax. */
+export const PRESETS = {
+  all: () => true,
+  sites: (p: PacketRow) => !!(p.sni || p.host),
+  dns: (p: PacketRow) => !!p.dnsQuery,
+  plain: (p: PacketRow) => [service(p.transport, p.dport), service(p.transport, p.sport)].some((s) => s !== null && PLAIN.has(s)),
+  local: (p: PacketRow) => p.dir === null || /^(ARP|MDNS|SSDP|LLMNR|NBNS|BROWSER|WSD|DHCP|IGMP)/i.test(p.proto)
 }

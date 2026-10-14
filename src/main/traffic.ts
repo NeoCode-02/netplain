@@ -1,6 +1,9 @@
+import { execFile, spawn } from 'node:child_process'
+import fs from 'node:fs'
 import os from 'node:os'
-import type { CaptureState, Packet, Proc, Snapshot, Traffic } from '../shared/types'
-import { createCapture } from './capture'
+import path from 'node:path'
+import type { CaptureState, Packet, PacketBatch, PacketDetail, Proc, Snapshot, Traffic } from '../shared/types'
+import { createCapture, filterError, parseDetail } from './capture'
 import type { Collector } from './collectors/common'
 import { run } from './exec'
 import { createTraffic, summarize, type Prev } from './flows'
@@ -15,7 +18,13 @@ interface Deps {
   hosts: () => Promise<Map<string, string>>
   geo: (ip: string) => { country: string | null; org: string | null }
   publish: (t: Traffic) => void
+  /** Folder for capture files; emptied when the app starts. */
+  dir: string
 }
+
+/** Packets kept for the packet list; the file keeps all of them. */
+const KEEP = 5000
+const BATCH = 2000
 
 /** Watches the adapter the internet goes through with tshark and turns packets into per-app traffic. */
 export function createTrafficWatch(deps: Deps, enabled: boolean) {
@@ -28,6 +37,8 @@ export function createTrafficWatch(deps: Deps, enabled: boolean) {
   let prevAt = 0
   let busy = false
   let view: Traffic = { state, adapterId, since: null, apps: [], rx: 0, tx: 0 }
+  let rows: Packet[] = []
+  let session = 0
 
   const publish = () => {
     view = { ...view, state, adapterId }
@@ -53,6 +64,8 @@ export function createTrafficWatch(deps: Deps, enabled: boolean) {
   }
   let soon: NodeJS.Timeout | undefined
   const onPacket = (p: Packet) => {
+    rows.push(p)
+    if (rows.length > KEEP + 1000) rows = rows.slice(-KEEP)
     if (traffic.add(p) && !soon)
       soon = setTimeout(() => {
         soon = undefined
@@ -60,10 +73,20 @@ export function createTrafficWatch(deps: Deps, enabled: boolean) {
       }, 150)
   }
 
+  let tshark: string | null = null
   let capture: ReturnType<typeof createCapture> | null = null
   const find = () => {
-    const tshark = findTshark()
-    capture = tshark ? createCapture(tshark, { packet: onPacket, state: setState }) : null
+    tshark = findTshark()
+    capture = tshark
+      ? createCapture(tshark, deps.dir, {
+          packet: onPacket,
+          state: setState,
+          session: () => {
+            session++
+            rows = []
+          }
+        })
+      : null
     if (!capture) state = 'missing'
   }
   find()
@@ -108,9 +131,74 @@ export function createTrafficWatch(deps: Deps, enabled: boolean) {
     }
   }
 
+  /** Reads the current capture file with tshark; resolves even on a non-zero exit (the file is still growing). */
+  function read(args: string[]): Promise<{ out: string; err: string }> {
+    const file = capture?.file()
+    if (!tshark || !file) return Promise.reject(new Error('E_NO_CAPTURE'))
+    return new Promise((resolve) =>
+      execFile(tshark!, ['-r', file, '-n', ...args], { windowsHide: true, maxBuffer: 64 * 1024 * 1024, timeout: 60_000 }, (_e, out, err) => resolve({ out, err }))
+    )
+  }
+
+  const appName = (pid: number | null) => {
+    const p = pid !== null ? known.get(pid) : undefined
+    return p ? (p.title ?? p.name) : null
+  }
+
   return {
     follow,
     view: () => view,
+
+    /** Packets after frame `after` of `wanted` session (all kept ones when the session changed), newest last. */
+    packets(wanted: number, after: number): PacketBatch {
+      const from = wanted === session ? after : 0
+      const fresh = rows.filter((p) => p.n > from).slice(-BATCH)
+      return {
+        session,
+        rows: fresh.map((p) => {
+          const w = traffic.who(p)
+          return { ...p, dir: w.dir, app: appName(w.pid), peer: w.peer }
+        })
+      }
+    },
+
+    /** Wireshark's full breakdown of one packet of the current session. */
+    async detail(n: number): Promise<PacketDetail> {
+      const { out } = await read(['-Y', `frame.number==${n}`, '-V', '-x'])
+      return parseDetail(out)
+    },
+
+    /** Frame numbers matching a Wireshark display filter. Throws E_FILTER|<tshark's message>. */
+    async filter(expr: string): Promise<number[]> {
+      const { out, err } = await read(['-Y', expr, '-T', 'fields', '-e', 'frame.number'])
+      if (!out.trim() && filterError(err)) throw new Error(`E_FILTER|${err.replace(/^tshark:\s*/, '').trim().slice(0, 300)}`)
+      return out.split(/\r?\n/).filter(Boolean).map(Number)
+    },
+
+    /** A copy of the capture so far, safe to save or hand to Wireshark while capturing goes on. */
+    snapshotFile(): string {
+      const file = capture?.file()
+      if (!file || !fs.existsSync(file)) throw new Error('E_NO_CAPTURE')
+      const copy = path.join(deps.dir, `export-${Date.now()}.pcapng`)
+      fs.copyFileSync(file, copy)
+      return copy
+    },
+
+    /** Opens a capture file in Wireshark, installed next to tshark. */
+    openInWireshark(file: string) {
+      if (!tshark) throw new Error('E_NO_CAPTURE')
+      const dir = path.dirname(tshark)
+      const [cmd, args] =
+        process.platform === 'win32'
+          ? [path.join(dir, 'Wireshark.exe'), [file]]
+          : process.platform === 'darwin'
+            ? ['open', ['-a', 'Wireshark', file]]
+            : [fs.existsSync(path.join(dir, 'wireshark')) ? path.join(dir, 'wireshark') : 'wireshark', [file]]
+      const p = spawn(cmd as string, args as string[], { detached: true, stdio: 'ignore' })
+      p.on('error', () => {})
+      p.unref()
+    },
+
     /** On also looks again for Wireshark (it may have been installed meanwhile) and retries a refused capture. */
     setEnabled(on: boolean, snap: Snapshot | null) {
       enabled = on
@@ -120,6 +208,7 @@ export function createTrafficWatch(deps: Deps, enabled: boolean) {
       setState(capture ? 'off' : 'missing')
       if (on && snap) follow(snap)
     },
+
     stop() {
       clearInterval(timer)
       capture?.stop()

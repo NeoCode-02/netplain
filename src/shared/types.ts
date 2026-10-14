@@ -170,3 +170,31 @@ export interface Traffic {
   rx: number
   tx: number
 }
+
+/** A packet with what Netplain knows about it. */
+export interface PacketRow extends Packet {
+  /** Seen from this computer; null for traffic between other devices (broadcasts). */
+  dir: 'in' | 'out' | null
+  /** Program that owns the flow, when known. */
+  app: string | null
+  /** Domain of the other end, when known. */
+  peer: string | null
+}
+
+/** Packets after a given frame; `session` changes whenever a new capture file starts (numbers restart). */
+export interface PacketBatch {
+  session: number
+  rows: PacketRow[]
+}
+
+/** One line of Wireshark's packet details and the lines under it. */
+export interface DetailNode {
+  text: string
+  children: DetailNode[]
+}
+
+export interface PacketDetail {
+  tree: DetailNode[]
+  /** Hex and ASCII dump of the bytes. */
+  hex: string
+}

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { Adapter, Snapshot } from '../../shared/types'
-import { addressKind, authKey, bandKey, quality, randomMac, summary, what } from './explain'
+import type { Adapter, PacketRow, Snapshot } from '../../shared/types'
+import { addressKind, authKey, bandKey, describePacket, layerKey, PRESETS, quality, randomMac, summary, what } from './explain'
 import { bits, bytes } from './format'
-import { LANGS } from './i18n'
+import { errText, LANGS } from './i18n'
 import { advance, KEEP } from './live'
 import { niceMax } from './RateChart'
 
@@ -60,5 +60,30 @@ describe('explain', () => {
     expect(summary(LANGS.en, [wifi], 'w')).toContain('“Home”')
     expect(summary(LANGS.uz, [wifi], 'w')).toContain('“Home” Wi-Fi')
     expect(summary(LANGS.en, [wifi], null)).toBe(LANGS.en.network.offline)
+  })
+})
+
+describe('packets', () => {
+  const row = (p: Partial<PacketRow>): PacketRow => ({ n: 1, t: 0, len: 100, src: '192.168.0.2', dst: '104.20.23.154', sport: 50000, dport: 443, transport: 'tcp', proto: 'TCP', info: '', dnsQuery: null, dnsAnswers: [], sni: null, host: null, dir: 'out', app: null, peer: null, ...p })
+  const en = LANGS.en
+  it('says what a packet does', () => {
+    expect(describePacket(row({ dnsQuery: 'example.com', transport: 'udp', proto: 'DNS' }), en)).toBe('Asked for the address of example.com')
+    expect(describePacket(row({ dnsQuery: 'example.com', dnsAnswers: ['104.20.23.154'], proto: 'DNS', dir: 'in' }), en)).toBe('Answer: example.com → 104.20.23.154')
+    expect(describePacket(row({ proto: 'TLSv1.3', info: 'Client Hello (SNI=example.com)', sni: 'example.com' }), en)).toBe('Started a secure connection to example.com')
+    expect(describePacket(row({ info: '50000 → 443 [SYN] Seq=0', peer: 'example.com' }), en)).toBe('Opening a connection to example.com')
+    expect(describePacket(row({ proto: 'TLSv1.3', info: 'Application Data', dir: 'in', src: '104.20.23.154' }), en)).toBe('Encrypted data from 104.20.23.154')
+    expect(describePacket(row({ proto: 'HTTP', info: 'GET / HTTP/1.1', dport: 80 }), en)).toBe('Unencrypted web request: GET / HTTP/1.1')
+    expect(describePacket(row({ proto: 'SSDP', transport: 'udp', dir: null }), en)).toBe(en.packets.say.nearby)
+  })
+  it('filters without Wireshark syntax and names layers', () => {
+    expect(PRESETS.plain(row({ dport: 80 }))).toBe(true)
+    expect(PRESETS.plain(row({}))).toBe(false)
+    expect(PRESETS.sites(row({ sni: 'a.com' }))).toBe(true)
+    expect(PRESETS.local(row({ proto: 'ARP', transport: 'other' }))).toBe(true)
+    expect(['Frame 8: Packet', 'Internet Protocol Version 6, Src: ::1', 'Multicast Domain Name System (query)', 'Domain Name System (response)', 'Something else'].map(layerKey)).toEqual(['frame', 'ip', 'nearby', 'dns', null])
+  })
+  it('passes error details through', () => {
+    expect(errText(en, new Error("Error invoking remote method 'packetFilter': Error: E_FILTER|Unexpected end of filter expression."))).toBe('Wireshark did not understand the filter: Unexpected end of filter expression.')
+    expect(errText(en, new Error('E_OFFLINE'))).toBe(en.errors.E_OFFLINE)
   })
 })

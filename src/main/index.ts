@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, shell, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell, type IpcMainInvokeEvent } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -66,8 +66,15 @@ const freshProcesses = async () => {
 const processes = cached(5000, freshProcesses, [])
 const dnsNames = cached(30_000, async () => new Map(await collector.dnsCache()), new Map<string, string>())
 
+// Capture files live only while the app runs; anything left by a crash goes now.
+const captureDir = path.join(app.getPath('userData'), 'capture')
+if (primary) fs.rmSync(captureDir, { recursive: true, force: true })
+
 const traffic = primary
-  ? createTrafficWatch({ collector, processes, freshProcesses, hosts: dnsNames, geo: geo.lookup, publish: (t) => send(CHANNELS.traffic, t) }, settings.capture)
+  ? createTrafficWatch(
+      { collector, processes, freshProcesses, hosts: dnsNames, geo: geo.lookup, publish: (t) => send(CHANNELS.traffic, t), dir: captureDir },
+      settings.capture
+    )
   : null
 
 const stopWatch = primary
@@ -163,10 +170,23 @@ const handlers: Api = {
   geoUpdate: () => geo.update(),
   traffic: () => traffic?.view() ?? null,
   retryCapture: () => traffic?.setEnabled(settings.capture, latest),
-  allowCapture: () => allowCaptureLinux()
+  allowCapture: () => allowCaptureLinux(),
+  packets: (session, after) => traffic?.packets(session, after) ?? { session: 0, rows: [] },
+  packetDetail: (n) => traffic!.detail(n),
+  packetFilter: (expr) => traffic!.filter(expr),
+  savePackets: async () => {
+    const copy = traffic!.snapshotFile()
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
+    const r = await dialog.showSaveDialog(win!, { defaultPath: `netplain-${stamp}.pcapng`, filters: [{ name: 'pcapng', extensions: ['pcapng'] }] })
+    if (r.canceled || !r.filePath) return false
+    fs.copyFileSync(copy, r.filePath)
+    return true
+  },
+  openInWireshark: () => traffic!.openInWireshark(traffic!.snapshotFile())
 }
 
 const none = (a: unknown[]) => a.length === 0
+const int = (v: unknown) => Number.isSafeInteger(v) && (v as number) >= 0
 const httpsUrl = (v: unknown) => {
   try {
     return typeof v === 'string' && v.length < 2048 && new URL(v).protocol === 'https:'
@@ -188,7 +208,12 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   geoUpdate: none,
   traffic: none,
   retryCapture: none,
-  allowCapture: none
+  allowCapture: none,
+  packets: (a) => int(a[0]) && int(a[1]),
+  packetDetail: (a) => int(a[0]) && (a[0] as number) > 0,
+  packetFilter: (a) => typeof a[0] === 'string' && a[0].trim().length > 0 && a[0].length <= 2000,
+  savePackets: none,
+  openInWireshark: none
 }
 
 /** Only our own window's page may call the main process. */

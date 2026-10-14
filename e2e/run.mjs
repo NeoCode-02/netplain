@@ -148,6 +148,37 @@ try {
     await shot('apps')
   })
 
+  await step('packets page', async () => {
+    await until('Packets', clickText, 'Packets')
+    const watching = await until('packets or the Wireshark hint', () => (document.querySelector('.pk-body .pk-row') ? 'yes' : document.body.innerText.includes('Get Wireshark') ? 'no' : false))
+    if (watching === 'yes') {
+      await inPage(() => document.querySelector('.pk-body .pk-row').click())
+      await until('packet details', () => document.querySelectorAll('.pk-layer').length >= 2)
+      const setFilter = (v) => {
+        const el = document.querySelector('.pk-filter input')
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v)
+        el.dispatchEvent(new Event('input', { bubbles: true }))
+        document.querySelector('.pk-filter button[type=submit]').click()
+        return true
+      }
+      await inPage(setFilter, 'tcp.port ==')
+      await until('the filter error', hasText, 'Wireshark did not understand the filter')
+      await inPage(setFilter, 'ip')
+      await until('filter matches', hasText, 'packets match the filter')
+      // Opt-in, because it opens a Wireshark window (closed again right away): E2E_WIRESHARK=1 (Windows)
+      if (process.env.E2E_WIRESHARK) {
+        await until('Open in Wireshark', clickText, 'Open in Wireshark')
+        const { execSync } = await import('node:child_process')
+        const running = () => execSync('tasklist /fi "imagename eq Wireshark.exe" /nh').toString().includes('Wireshark.exe')
+        const end = Date.now() + 20_000
+        while (!running() && Date.now() < end) await new Promise((r) => setTimeout(r, 500))
+        if (!running()) throw new Error('Wireshark did not open')
+        execSync('taskkill /im Wireshark.exe /f')
+      }
+    }
+    await shot('packets')
+  })
+
   // Opt-in, because it downloads 5 MB from Cloudflare's speed test: E2E_TRAFFIC=1 npm run e2e
   if (process.env.E2E_TRAFFIC)
     await step('traffic is counted per app', async () => {

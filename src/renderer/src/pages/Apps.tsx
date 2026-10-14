@@ -66,7 +66,7 @@ function AppRow({ a, max, t }: { a: AppTraffic; max: number; t: Dict }) {
 }
 
 /** What to show instead of the list while traffic can't be watched. */
-function Blocked({ tr, t }: { tr: Traffic; t: Dict }) {
+export function Blocked({ tr, t }: { tr: Traffic; t: Dict }) {
   const a = t.apps
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)

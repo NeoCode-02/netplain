@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 
 const en = {
   lang: 'English',
-  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', devices: 'Devices', settings: 'Settings' },
+  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', settings: 'Settings' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobile', loopback: 'Loopback', other: 'Other' },
   /** What each kind of adapter is, for someone who has never opened ipconfig. */
   what: {
@@ -120,6 +120,59 @@ const en = {
     geoCredit: 'IP geolocation by DB-IP (CC BY 4.0)',
     capture: 'Watch traffic per app',
     captureWhy: 'Uses Wireshark’s engine on the adapter that reaches the internet. Everything stays on this computer.'
+  },
+  packets: {
+    title: 'Packets',
+    lead: 'Every packet on the internet adapter, newest at the bottom. Click one to see what is inside.',
+    presets: { all: 'All', sites: 'Sites', dns: 'Name lookups', plain: 'Unencrypted', local: 'Local network' },
+    anyApp: 'All apps',
+    filter: 'Wireshark filter, e.g. tcp.port == 443',
+    apply: 'Apply',
+    clear: 'Clear',
+    pause: 'Pause',
+    resume: 'Resume',
+    save: 'Save (.pcapng)',
+    saved: 'Saved',
+    open: 'Open in Wireshark',
+    time: 'Time',
+    app: 'App',
+    where: 'From / to',
+    proto: 'Protocol',
+    size: 'Size',
+    what: 'What happened',
+    matches: (n: number) => `${n} packets match the filter.`,
+    kept: 'The list keeps the last 5,000 packets; Save keeps them all.',
+    detail: (n: number) => `Packet #${n}`,
+    bytes: 'Bytes',
+    close: 'Close',
+    empty: 'No packets yet.',
+    layers: {
+      frame: 'The whole packet as it passed the network card.',
+      eth: 'Local network addresses (MAC): which device on this network sent it to which.',
+      ip: 'Internet addresses: where it comes from and where it goes.',
+      tcp: 'TCP: a reliable connection; the ports say which program it is for.',
+      udp: 'UDP: quick messages without a connection.',
+      tls: 'TLS: the encrypted part. Its content cannot be read.',
+      quic: 'QUIC: encrypted web traffic over UDP.',
+      dns: 'DNS: asking for the address behind a name.',
+      http: 'HTTP: an unencrypted web request — anyone on the way can read it.',
+      arp: 'ARP: asking which device on this network owns an address.',
+      icmp: 'ICMP: network control messages, such as ping.',
+      nearby: 'Devices nearby looking for each other or announcing themselves.'
+    } as Record<string, string>,
+    say: {
+      dnsQuery: (name: string) => `Asked for the address of ${name}`,
+      dnsAnswer: (name: string, ip: string) => `Answer: ${name} → ${ip}`,
+      hello: (name: string) => `Started a secure connection to ${name}`,
+      open: (where: string) => `Opening a connection to ${where}`,
+      close: 'Closing the connection',
+      encryptedIn: (where: string) => `Encrypted data from ${where}`,
+      encryptedOut: (where: string) => `Encrypted data to ${where}`,
+      http: (info: string) => `Unencrypted web request: ${info}`,
+      arp: (info: string) => `Finding a device on the local network (${info})`,
+      nearby: 'Devices nearby looking for each other',
+      ping: (info: string) => `Network check (ICMP): ${info}`
+    }
   },
   overview: {
     title: 'What’s happening now',
@@ -250,6 +303,8 @@ const en = {
     E_GEO_DOWNLOAD: 'The location database could not be downloaded. Check the internet connection and try again.',
     E_ALLOW_CAPTURE: 'Permission was not changed (the password prompt was closed, or there is no “wireshark” group).',
     E_UNSUPPORTED: 'Not available on this system.',
+    E_NO_CAPTURE: 'Traffic is not being watched right now.',
+    E_FILTER: (m: string) => `Wireshark did not understand the filter: ${m}`,
     unknown: (m: string) => `Something went wrong: ${m}`
   }
 }
@@ -258,7 +313,7 @@ export type Dict = typeof en
 
 const uz: Dict = {
   lang: 'O‘zbekcha',
-  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', devices: 'Qurilmalar', settings: 'Sozlamalar' },
+  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', settings: 'Sozlamalar' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobil', loopback: 'Loopback', other: 'Boshqa' },
   what: {
     wifi: 'Simsiz adapter: kompyuterni Wi-Fi tarmoqlariga ulaydi.',
@@ -375,6 +430,59 @@ const uz: Dict = {
     geoCredit: 'IP joylashuvi: DB-IP (CC BY 4.0)',
     capture: 'Ilovalar trafigini kuzatish',
     captureWhy: 'Internetga chiqadigan adapterda Wireshark dvigateli ishlatiladi. Hamma narsa shu kompyuterda qoladi.'
+  },
+  packets: {
+    title: 'Paketlar',
+    lead: 'Internet adapteridagi har bir paket, eng yangisi pastda. Ichida nima borligini ko‘rish uchun birortasini bosing.',
+    presets: { all: 'Hammasi', sites: 'Saytlar', dns: 'Nom so‘rovlari', plain: 'Shifrlanmagan', local: 'Lokal tarmoq' },
+    anyApp: 'Barcha ilovalar',
+    filter: 'Wireshark filtri, masalan: tcp.port == 443',
+    apply: 'Qo‘llash',
+    clear: 'Tozalash',
+    pause: 'To‘xtatish',
+    resume: 'Davom ettirish',
+    save: 'Saqlash (.pcapng)',
+    saved: 'Saqlandi',
+    open: 'Wireshark’da ochish',
+    time: 'Vaqt',
+    app: 'Ilova',
+    where: 'Qayerdan / qayerga',
+    proto: 'Protokol',
+    size: 'Hajm',
+    what: 'Nima bo‘ldi',
+    matches: (n) => `Filtrga ${n} ta paket mos keldi.`,
+    kept: 'Ro‘yxatda oxirgi 5 000 ta paket turadi; “Saqlash” hammasini saqlaydi.',
+    detail: (n) => `Paket #${n}`,
+    bytes: 'Baytlar',
+    close: 'Yopish',
+    empty: 'Hali paket yo‘q.',
+    layers: {
+      frame: 'Tarmoq kartasidan o‘tgan butun paket.',
+      eth: 'Lokal tarmoq manzillari (MAC): shu tarmoqdagi qaysi qurilmadan qaysi qurilmaga.',
+      ip: 'Internet manzillari: qayerdan kelib, qayerga ketyapti.',
+      tcp: 'TCP: ishonchli ulanish; portlar qaysi dastur uchunligini bildiradi.',
+      udp: 'UDP: ulanishsiz tezkor xabarlar.',
+      tls: 'TLS: shifrlangan qism. Ichidagini o‘qib bo‘lmaydi.',
+      quic: 'QUIC: UDP orqali shifrlangan veb trafik.',
+      dns: 'DNS: nom bo‘yicha manzil so‘rash.',
+      http: 'HTTP: shifrlanmagan veb so‘rov — yo‘ldagi har kim o‘qiy oladi.',
+      arp: 'ARP: shu tarmoqdagi manzil qaysi qurilmaniki ekanini so‘rash.',
+      icmp: 'ICMP: ping kabi tarmoq boshqaruv xabarlari.',
+      nearby: 'Yaqindagi qurilmalar bir-birini qidirmoqda yoki o‘zini e’lon qilmoqda.'
+    },
+    say: {
+      dnsQuery: (name) => `${name} manzili so‘raldi`,
+      dnsAnswer: (name, ip) => `Javob: ${name} → ${ip}`,
+      hello: (name) => `${name} bilan xavfsiz ulanish boshlandi`,
+      open: (where) => `${where} bilan ulanish ochilmoqda`,
+      close: 'Ulanish yopilmoqda',
+      encryptedIn: (where) => `${where} dan shifrlangan ma’lumot`,
+      encryptedOut: (where) => `${where} ga shifrlangan ma’lumot`,
+      http: (info) => `Shifrlanmagan veb so‘rov: ${info}`,
+      arp: (info) => `Lokal tarmoqda qurilma qidirilmoqda (${info})`,
+      nearby: 'Yaqindagi qurilmalar bir-birini qidirmoqda',
+      ping: (info) => `Tarmoq tekshiruvi (ICMP): ${info}`
+    }
   },
   overview: {
     title: 'Hozir nima bo‘layapti',
@@ -504,6 +612,8 @@ const uz: Dict = {
     E_GEO_DOWNLOAD: 'Joylashuv bazasini yuklab bo‘lmadi. Internet ulanishini tekshirib, qayta urinib ko‘ring.',
     E_ALLOW_CAPTURE: 'Ruxsat o‘zgarmadi (parol oynasi yopildi yoki “wireshark” guruhi yo‘q).',
     E_UNSUPPORTED: 'Bu tizimda mavjud emas.',
+    E_NO_CAPTURE: 'Hozir trafik kuzatilmayapti.',
+    E_FILTER: (m) => `Wireshark filtrni tushunmadi: ${m}`,
     unknown: (m) => `Nimadir xato ketdi: ${m}`
   }
 }
@@ -551,10 +661,12 @@ export function useT(): Dict {
   return LANGS[lang]
 }
 
-/** An IPC error ("Error invoking remote method 'scan': Error: E_OFFLINE") in the reader's language. */
+/** An IPC error ("Error invoking remote method 'scan': Error: E_OFFLINE", or "E_FILTER|detail") in the reader's language. */
 export function errText(t: Dict, e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e)
-  const code = /\bE_[A-Z_]+/.exec(msg)?.[0] as keyof Dict['errors'] | undefined
+  const m = /\b(E_[A-Z_]+)(?:\|(.*))?/.exec(msg)
+  const code = m?.[1] as keyof Dict['errors'] | undefined
   const known = code && code !== 'unknown' ? t.errors[code] : undefined
+  if (typeof known === 'function') return known(m?.[2] ?? '')
   return typeof known === 'string' ? known : t.errors.unknown(msg.replace(/^Error invoking remote method '\w+': (Error: )?/, ''))
 }

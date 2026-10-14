@@ -118,6 +118,15 @@ export function createTraffic() {
 
     totals: () => ({ rx, tx, since }),
 
+    /** Direction, owner and the other end's name for one packet, as far as known now. */
+    who(p: Packet): { dir: 'in' | 'out' | null; pid: number | null; peer: string | null } {
+      const out = local.has(p.src)
+      if (!out && !local.has(p.dst)) return { dir: null, pid: null, peer: null }
+      const remoteIp = out ? p.dst : p.src
+      const f = flows.get(`${p.transport}|${(out ? p.sport : p.dport) ?? 0}|${remoteIp}|${(out ? p.dport : p.sport) ?? 0}`)
+      return { dir: out ? 'out' : 'in', pid: f?.pid ?? null, peer: f?.name ?? names.get(remoteIp) ?? null }
+    },
+
     reset() {
       flows.clear()
       retired.clear()

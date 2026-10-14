@@ -1,4 +1,4 @@
-import type { Connections, GeoInfo, Neighbor, Settings, Snapshot, Traffic } from './types'
+import type { Connections, GeoInfo, Neighbor, PacketBatch, PacketDetail, Settings, Snapshot, Traffic } from './types'
 
 /** Main → renderer pushes. */
 export const CHANNELS = { snapshot: 'np:snapshot', problem: 'np:problem', traffic: 'np:traffic' } as const
@@ -32,4 +32,14 @@ export interface Api {
   retryCapture(): void
   /** Linux: asks for the admin password to let this user capture. Throws E_ALLOW_CAPTURE / E_UNSUPPORTED. */
   allowCapture(): Promise<void>
+  /** Captured packets after frame `after` of capture session `session` (pass 0, 0 at first). */
+  packets(session: number, after: number): PacketBatch
+  /** Wireshark's full breakdown of one packet. Throws E_NO_CAPTURE. */
+  packetDetail(n: number): Promise<PacketDetail>
+  /** Frames matching a Wireshark display filter. Throws E_FILTER|message / E_NO_CAPTURE. */
+  packetFilter(expr: string): Promise<number[]>
+  /** Asks where to save the capture so far (.pcapng); false when cancelled. */
+  savePackets(): Promise<boolean>
+  /** Opens the capture so far in Wireshark. */
+  openInWireshark(): void
 }

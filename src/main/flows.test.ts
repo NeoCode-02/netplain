@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Packet } from '../shared/types'
-import { classify, FIELDS, parseLine } from './capture'
+import { classify, FIELDS, filterError, parseDetail, parseLine } from './capture'
 import { createTraffic, summarize, UNKNOWN } from './flows'
 
 const line = (v: Partial<Record<(typeof FIELDS)[number], string>>) => FIELDS.map((f) => v[f] ?? '').join('\t')
@@ -71,5 +71,34 @@ describe('traffic', () => {
     tr.reset()
     expect(tr.perPid().size).toBe(0)
     expect(tr.totals()).toEqual({ rx: 0, tx: 0, since: null })
+  })
+})
+
+describe('packet details', () => {
+  it('turns tshark -V -x output into a tree and a hex dump', () => {
+    const text = [
+      'Frame 8: Packet, 512 bytes on wire (4096 bits), 512 bytes captured (4096 bits)',
+      '    Encapsulation type: Ethernet (1)',
+      '    [Protocols in frame: eth:ethertype:ip:tcp:tls]',
+      'Internet Protocol Version 4, Src: 192.168.0.2, Dst: 104.20.23.154',
+      '    0100 .... = Version: 4',
+      '    010. .... = Flags: 0x2, Don\'t fragment',
+      '        .1.. .... = Don\'t fragment: Set',
+      '    Time to Live: 128',
+      '',
+      '0000  a4 2b b0 11 22 33 3c 91 80 44 55 66 08 00 45 00   .+.."3<..DUf..E.',
+      '0010  01 f2 bd e4 40 00 80 06 00 00 c0 a8 00 02 68 14   ....@.........h.'
+    ].join('\r\n')
+    const d = parseDetail(text)
+    expect(d.tree.map((n) => n.text)).toEqual(['Frame 8: Packet, 512 bytes on wire (4096 bits), 512 bytes captured (4096 bits)', 'Internet Protocol Version 4, Src: 192.168.0.2, Dst: 104.20.23.154'])
+    expect(d.tree[1].children.map((n) => n.text)).toEqual(['0100 .... = Version: 4', "010. .... = Flags: 0x2, Don't fragment", 'Time to Live: 128'])
+    expect(d.tree[1].children[1].children[0].text).toBe(".1.. .... = Don't fragment: Set")
+    expect(d.hex.split('\n')).toHaveLength(2)
+    expect(parseDetail('').tree).toEqual([])
+  })
+  it('tells filter mistakes from a growing file', () => {
+    expect(filterError('tshark: Unexpected end of filter expression.')).toBe(true)
+    expect(filterError('tshark: "foo" is neither a field nor a protocol name.')).toBe(true)
+    expect(filterError('tshark: The file "x.pcapng" appears to have been cut short in the middle of a packet.')).toBe(false)
   })
 })
