@@ -15,7 +15,7 @@ import { vendorTable } from './tshark'
 import { isSettings, loadSettings, saveSettings } from './settings'
 import { createUsage } from './usage'
 import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './tools'
-import { elevate, flushDns, renewIp, restartAdapter, safeUser, userCommand, userGuard } from './admin'
+import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, userCommand, userGuard } from './admin'
 import { createSecurity } from './security'
 import { createScanner } from './defender'
 
@@ -237,6 +237,11 @@ const handlers: Api = {
   startScan: (kind, admin) => scanner.start(kind, admin),
   updateDefinitions: () => scanner.updateDefinitions(),
   removeThreats: () => scanner.removeThreats(),
+  setService: async (name, action) => {
+    if (!(await security!.get()).services.some((x) => x.name === name)) throw new Error('E_BAD_ARGS')
+    await elevate(serviceCommand(name, action))
+    await security!.get(true)
+  },
   setUser: async (name, action) => {
     const sec = await security!.get()
     const refused = userGuard(sec.users, name, action)
@@ -307,6 +312,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   startScan: (a) => (a[0] === 'quick' || a[0] === 'full') && typeof a[1] === 'boolean',
   updateDefinitions: none,
   removeThreats: none,
+  setService: (a) => typeof a[0] === 'string' && safeService(a[0]) && ['start', 'stop', 'auto', 'manual', 'disabled'].includes(a[1] as string),
   setUser: (a) => typeof a[0] === 'string' && safeUser(a[0]) && (a[1] === 'disable' || a[1] === 'enable' || a[1] === 'unadmin')
 }
 

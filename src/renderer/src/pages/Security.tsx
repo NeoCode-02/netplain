@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { Finding, ScanKind, ScanState, Security as Data, SecurityTab } from '../../../shared/types'
+import type { Finding, ScanKind, ScanState, SecService, Security as Data, SecurityTab } from '../../../shared/types'
 import { behavioural, threatParts } from '../explain'
 import { errText, getLang, useT, type Dict } from '../i18n'
 import { Empty, Icon, type IconName } from '../ui'
@@ -7,7 +7,7 @@ import { Empty, Icon, type IconName } from '../ui'
 const WINDOWS = /Windows/.test(navigator.userAgent)
 const MARK: Record<Finding['level'], IconName> = { bad: 'alert', warn: 'alert', info: 'dot', ok: 'shield' }
 /** Tabs that exist so far; the rest arrive with their own commits. */
-const TABS: SecurityTab[] = ['status', 'antivirus', 'users']
+const TABS: SecurityTab[] = ['status', 'antivirus', 'users', 'services']
 
 function Status({ sec, t, onTab, onFixed }: { sec: Data; t: Dict; onTab(tab: SecurityTab): void; onFixed(): void }) {
   const s = t.security
@@ -234,6 +234,108 @@ function Antivirus({ sec, t, onChanged }: { sec: Data; t: Dict; onChanged(): voi
   )
 }
 
+type SvcAction = 'start' | 'stop' | 'auto' | 'manual' | 'disabled'
+const MODE: Record<string, SvcAction> = { Auto: 'auto', Manual: 'manual', Disabled: 'disabled' }
+const microsoft = (s: SecService) => s.signer?.status === 'valid' && /microsoft/i.test(s.signer.publisher ?? '')
+
+function Services({ sec, t, onChanged }: { sec: Data; t: Dict; onChanged(): void }) {
+  const v = t.security.services
+  const [filter, setFilter] = useState<'third' | 'running' | 'all'>('third')
+  const [query, setQuery] = useState('')
+  const [busy, setBusy] = useState<string | null>(null)
+  const [confirm, setConfirm] = useState<string | null>(null)
+  const [err, setErr] = useState<unknown>(null)
+  const act = async (name: string, action: SvcAction) => {
+    setBusy(name)
+    setErr(null)
+    setConfirm(null)
+    try {
+      await window.netplain.setService(name, action)
+      onChanged()
+    } catch (e) {
+      setErr(e)
+    } finally {
+      setBusy(null)
+    }
+  }
+  const q = query.trim().toLowerCase()
+  const list = sec.services
+    .filter((s) => (filter === 'third' ? !microsoft(s) : filter === 'running' ? s.state === 'Running' : true))
+    .filter((s) => !q || [s.name, s.display, s.desc, s.signer?.publisher].some((x) => x?.toLowerCase().includes(q)))
+    .sort((a, b) => Number(b.state === 'Running') - Number(a.state === 'Running') || a.display.localeCompare(b.display))
+  return (
+    <>
+      <p className="muted section-lead">{v.lead}</p>
+      <div className="toolbar">
+        <label className="search">
+          <Icon name="search" />
+          <input className="input" type="search" placeholder={v.search} aria-label={v.search} value={query} onChange={(e) => setQuery(e.target.value)} />
+        </label>
+        <div className="seg" role="group">
+          {(['third', 'running', 'all'] as const).map((f) => (
+            <button key={f} className={filter === f ? 'on' : ''} aria-pressed={filter === f} onClick={() => setFilter(f)}>
+              {v.filters[f]}
+            </button>
+          ))}
+        </div>
+        <span className="small faint">{v.count(list.length)}</span>
+      </div>
+      {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      <div className="list">
+        {list.map((s) => (
+          <div className="list-row finding svc-row" key={s.name}>
+            <span className={`ad-icon ${s.state === 'Running' ? 'internet' : ''}`}>
+              <Icon name="box" size={16} />
+            </span>
+            <div className="app-main">
+              <div className="row">
+                <span className="alert-title ellipsis">{s.display || s.name}</span>
+                <span className={`tag ${s.state === 'Running' ? 'ok' : ''}`}>{s.state === 'Running' ? v.running : s.state === 'Stopped' ? v.stopped : v.changing}</span>
+              </div>
+              {s.desc && <p className="small muted clamp">{s.desc}</p>}
+              <p className="small faint">
+                {[v.modes[s.start] ?? s.start, s.signer ? (s.signer.status === 'valid' ? v.signed(s.signer.publisher ?? '?') : v.unsigned) : null, s.name].filter(Boolean).join(' · ')}
+              </p>
+              {confirm === s.name && (
+                <div className="note warn row">
+                  <span className="spacer">{v.confirm}</span>
+                  <button className="btn sm danger" onClick={() => void act(s.name, 'disabled')}>
+                    {v.confirmDo}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="row finding-actions">
+              <select
+                className="select sm"
+                aria-label={v.mode}
+                value={MODE[s.start] ?? ''}
+                disabled={busy !== null || !MODE[s.start]}
+                onChange={(e) => {
+                  const next = e.target.value as SvcAction
+                  if (next === 'disabled' && microsoft(s)) setConfirm(s.name)
+                  else void act(s.name, next)
+                }}
+              >
+                {!MODE[s.start] && <option value="">{v.modes[s.start] ?? s.start}</option>}
+                {(['auto', 'manual', 'disabled'] as const).map((m) => (
+                  <option key={m} value={m}>
+                    {v.options[m]}
+                  </option>
+                ))}
+              </select>
+              <button className="btn sm" disabled={busy !== null || s.start === 'Disabled'} onClick={() => void act(s.name, s.state === 'Running' ? 'stop' : 'start')}>
+                {busy === s.name && <Icon name="refresh" className="spin" />}
+                {s.state === 'Running' ? v.stop : v.start}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
 function Users({ sec, t, onChanged }: { sec: Data; t: Dict; onChanged(): void }) {
   const u = t.security.users
   const lang = getLang()
@@ -358,6 +460,7 @@ export default function Security() {
       {sec && tab === 'status' && <Status sec={sec} t={t} onTab={setTab} onFixed={() => load(true)} />}
       {sec && tab === 'antivirus' && <Antivirus sec={sec} t={t} onChanged={() => load(true)} />}
       {sec && tab === 'users' && <Users sec={sec} t={t} onChanged={() => load(true)} />}
+      {sec && tab === 'services' && <Services sec={sec} t={t} onChanged={() => load(true)} />}
     </div>
   )
 }

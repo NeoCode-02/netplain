@@ -243,6 +243,9 @@ try {
       await until('Users tab', clickText, 'Users')
       await until('the accounts', () => [...document.querySelectorAll('.tag')].some((t) => t.textContent === 'You'))
       await shot('security-users')
+      await until('Services tab', clickText, 'Services')
+      await until('the services', () => document.querySelectorAll('.svc-row').length > 0)
+      await shot('security-services')
     }
   })
 

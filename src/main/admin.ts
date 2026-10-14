@@ -83,3 +83,14 @@ export function userGuard(users: SecUser[], name: string, action: UserAction): s
   if ((action === 'unadmin' || action === 'disable') && u.admin && u.enabled && admins.length <= 1) return 'E_LAST_ADMIN'
   return null
 }
+
+export type ServiceAction = 'start' | 'stop' | 'auto' | 'manual' | 'disabled'
+
+/** Service names: letters, digits and a few marks; no quotes or shell operators. */
+export const safeService = (name: string) => /^[\w .@$#()-]{1,256}$/.test(name)
+
+export function serviceCommand(name: string, action: ServiceAction): string {
+  if (!safeService(name)) throw new Error('E_BAD_ARGS')
+  if (action === 'start' || action === 'stop') return `sc.exe ${action} "${name}"`
+  return `sc.exe config "${name}" start= ${action === 'manual' ? 'demand' : action}`
+}

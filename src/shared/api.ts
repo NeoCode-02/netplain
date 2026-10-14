@@ -99,6 +99,8 @@ export interface Api {
   updateDefinitions(): Promise<void>
   /** Has Defender clean every active threat (UAC). */
   removeThreats(): Promise<void>
+  /** Starts/stops a service or sets how it starts (UAC). */
+  setService(name: string, action: 'start' | 'stop' | 'auto' | 'manual' | 'disabled'): Promise<void>
   /** Turns an account off/on or takes its admin rights (UAC). Throws E_SELF / E_LAST_ADMIN to prevent a lock-out. */
   setUser(name: string, action: 'disable' | 'enable' | 'unadmin'): Promise<void>
 }

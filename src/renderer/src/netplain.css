@@ -239,3 +239,5 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .threat-res { margin-top: 4px; overflow-wrap: anywhere; }
 .section-lead { margin: -4px 0 14px; max-width: 80ch; }
 .muted-row { opacity: 0.72; }
+.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.svc-row .select.sm { max-width: 170px; }

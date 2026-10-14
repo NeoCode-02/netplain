@@ -1,6 +1,6 @@
 import net from 'node:net'
 import { describe, expect, it } from 'vitest'
-import { safeName, uacScript, userCommand, userGuard } from './admin'
+import { safeName, serviceCommand, uacScript, userCommand, userGuard } from './admin'
 import { checkPort, isHost, lookup, parsePing, parseTestConnection, parseTrace, ping } from './tools'
 
 describe('parsers', () => {
@@ -98,5 +98,15 @@ describe('user changes', () => {
     expect(userCommand('bob', 'unadmin')).toBe("powershell -NoProfile -NonInteractive -Command Remove-LocalGroupMember -SID S-1-5-32-544 -Member 'bob'")
     expect(() => userCommand('a"&calc', 'disable')).toThrow('E_BAD_ARGS')
     expect(() => userCommand("o'brien", 'unadmin')).toThrow('E_BAD_ARGS')
+  })
+})
+
+describe('service changes', () => {
+  it('builds sc.exe lines and refuses odd names', () => {
+    expect(serviceCommand('wuauserv', 'stop')).toBe('sc.exe stop "wuauserv"')
+    expect(serviceCommand('MatrikonOPC Server for Simulation and Testing', 'start')).toBe('sc.exe start "MatrikonOPC Server for Simulation and Testing"')
+    expect(serviceCommand('pgbouncer', 'manual')).toBe('sc.exe config "pgbouncer" start= demand')
+    expect(serviceCommand('DiagTrack', 'disabled')).toBe('sc.exe config "DiagTrack" start= disabled')
+    expect(() => serviceCommand('x" & del', 'stop')).toThrow('E_BAD_ARGS')
   })
 })
