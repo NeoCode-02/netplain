@@ -65,3 +65,13 @@ describe('live', () => {
     }
   }, 30_000)
 })
+
+describe('defender commands', () => {
+  it('builds MpCmdRun arguments and a UAC line that keeps the quoted path', async () => {
+    const { MPCMD, scanArgs } = await import('./defender')
+    expect(scanArgs('quick')).toEqual(['-Scan', '-ScanType', '1'])
+    expect(scanArgs('full')).toEqual(['-Scan', '-ScanType', '2'])
+    expect(MPCMD).toMatch(/Windows Defender[\\/]MpCmdRun\.exe$/)
+    expect(uacScript(`"${MPCMD}" -Scan -ScanType 1`)).toContain(`-ArgumentList '/c "${MPCMD}" -Scan -ScanType 1'`)
+  })
+})

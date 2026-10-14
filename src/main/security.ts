@@ -61,7 +61,7 @@ export function powershell(script: string, timeout = 60_000): Promise<string> {
 interface Raw {
   defender: Security['defender'] & { mode?: string }
   threats: (Omit<SecThreat, 'at' | 'status'> & { resources: string[] | string })[] | null
-  detections: { id: string; at: string; status: number }[] | null
+  detections: { id: string; at: string; status: number; resources: string[] | string | null }[] | null
   me: string
   users: { name: string; enabled: boolean; last: string | null; sid: string }[] | null
   admins: { sid: string }[] | null
@@ -136,8 +136,8 @@ export function createSecurity(deps: Deps) {
   async function build(): Promise<Security> {
     const raw = JSON.parse(await powershell(SCRIPT)) as Raw
     const admins = new Set(list(raw.admins).map((a) => a.sid))
-    const latest = new Map<string, { at: string; status: number }>()
-    for (const d of list(raw.detections)) if (!latest.has(d.id) || d.at > latest.get(d.id)!.at) latest.set(d.id, { at: d.at, status: d.status })
+    const latest = new Map<string, { at: string; status: number; resources: string[] }>()
+    for (const d of list(raw.detections)) if (!latest.has(d.id) || d.at > latest.get(d.id)!.at) latest.set(d.id, { at: d.at, status: d.status, resources: list(d.resources).filter(Boolean) })
     const services = list(raw.services).map((x) => ({ ...x, exe: exeOf(x.path), signer: null as Signer | null }))
     const startup: SecStartup[] = [
       ...list(raw.startup).map((x) => ({
@@ -161,7 +161,12 @@ export function createSecurity(deps: Deps) {
     const sec: Omit<Security, 'findings'> = {
       at: Date.now(),
       defender: raw.defender ? { av: raw.defender.av, rt: raw.defender.rt, sigAge: raw.defender.sigAge, quickAge: raw.defender.quickAge, fullAge: raw.defender.fullAge, tamper: raw.defender.tamper } : null,
-      threats: list(raw.threats).map((x) => ({ ...x, resources: list(x.resources).filter(Boolean), at: latest.get(x.id)?.at ?? null, status: latest.get(x.id)?.status ?? null })),
+      threats: list(raw.threats).map((x) => {
+        const d = latest.get(x.id)
+        const own = list(x.resources).filter(Boolean)
+        // The threat record may lack the file or command; its latest detection has it.
+        return { ...x, resources: own.length ? own : (d?.resources ?? []), at: d?.at ?? null, status: d?.status ?? null }
+      }),
       users: list(raw.users).map((u) => ({ name: u.name, enabled: u.enabled, last: u.last, sid: u.sid, admin: admins.has(u.sid), me: u.sid === raw.me })),
       services,
       startup,

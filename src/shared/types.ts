@@ -375,3 +375,12 @@ export interface Security {
   updated: string | null
   findings: Finding[]
 }
+
+export type ScanKind = 'quick' | 'full'
+
+export interface ScanState {
+  running: ScanKind | null
+  started: number | null
+  /** The last finished scan: MpCmdRun's exit code (0 = nothing found, 2 = threats found). */
+  last: { kind: ScanKind; at: number; code: number } | null
+}

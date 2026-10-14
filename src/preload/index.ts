@@ -42,7 +42,11 @@ const names: Record<keyof Api, true> = {
   renewIp: true,
   restartAdapter: true,
   security: true,
-  fixFinding: true
+  fixFinding: true,
+  scanState: true,
+  startScan: true,
+  updateDefinitions: true,
+  removeThreats: true
 }
 
 const api = Object.fromEntries(Object.keys(names).map((n) => [n, (...a: unknown[]) => ipcRenderer.invoke(n, ...a)])) as Async<Api>

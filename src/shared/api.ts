@@ -13,6 +13,8 @@ import type {
   PingResult,
   PortState,
   PublicIp,
+  ScanKind,
+  ScanState,
   Security,
   Settings,
   Snapshot,
@@ -91,4 +93,10 @@ export interface Api {
   security(fresh?: boolean): Promise<Security>
   /** Runs the fix a finding offers (firewall on asks for admin rights). */
   fixFinding(fix: NonNullable<Finding['fix']>): Promise<void>
+  scanState(): ScanState
+  /** Starts a Defender scan in the background; `admin` runs it through UAC. */
+  startScan(kind: ScanKind, admin: boolean): void
+  updateDefinitions(): Promise<void>
+  /** Has Defender clean every active threat (UAC). */
+  removeThreats(): Promise<void>
 }

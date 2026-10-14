@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Adapter, PacketRow, Snapshot } from '../../shared/types'
-import { addressKind, authKey, bandKey, describePacket, layerKey, PRESETS, quality, randomMac, summary, what } from './explain'
+import { addressKind, authKey, bandKey, behavioural, describePacket, layerKey, PRESETS, quality, randomMac, summary, threatParts, what } from './explain'
 import { bits, bytes } from './format'
 import { errText, LANGS } from './i18n'
 import { advance, KEEP } from './live'
@@ -85,5 +85,14 @@ describe('packets', () => {
   it('passes error details through', () => {
     expect(errText(en, new Error("Error invoking remote method 'packetFilter': Error: E_FILTER|Unexpected end of filter expression."))).toBe('Wireshark did not understand the filter: Unexpected end of filter expression.')
     expect(errText(en, new Error('E_OFFLINE'))).toBe(en.errors.E_OFFLINE)
+  })
+})
+
+describe('threat names', () => {
+  it('splits Microsoft threat names and spots behaviour detections', () => {
+    expect(threatParts('Trojan:Win32/SuspExec.SE')).toEqual({ category: 'Trojan', platform: 'Win32', family: 'SuspExec' })
+    expect(threatParts('PUADlManager:Win32/OfferCore!ml')).toEqual({ category: 'PUADlManager', platform: 'Win32', family: 'OfferCore' })
+    expect(threatParts('weird')).toBeNull()
+    expect(['Trojan:Win32/SuspExec.SE', 'Behavior:Win32/Foo.A', 'Trojan:Win32/Wacatac.B!ml', 'Virus:DOS/EICAR_Test_File'].map(behavioural)).toEqual([true, true, true, false])
   })
 })

@@ -192,3 +192,12 @@ export const PRESETS = {
   plain: (p: PacketRow) => [service(p.transport, p.dport), service(p.transport, p.sport)].some((s) => s !== null && PLAIN.has(s)),
   local: (p: PacketRow) => p.dir === null || /^(ARP|MDNS|SSDP|LLMNR|NBNS|BROWSER|WSD|DHCP|IGMP)/i.test(p.proto)
 }
+
+/** "Trojan:Win32/SuspExec.SE" → its category, platform and family, as Microsoft names threats. */
+export function threatParts(name: string): { category: string; platform: string; family: string } | null {
+  const m = /^([A-Za-z]+):([A-Za-z0-9]+)\/([^.!]+)/.exec(name)
+  return m ? { category: m[1], platform: m[2], family: m[3] } : null
+}
+
+/** Caught by behaviour (what it did) rather than by a known file. */
+export const behavioural = (name: string) => /Behavior:|Susp|!ml|!MTB/i.test(name)

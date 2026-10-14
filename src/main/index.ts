@@ -17,6 +17,7 @@ import { createUsage } from './usage'
 import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './tools'
 import { elevate, flushDns, renewIp, restartAdapter } from './admin'
 import { createSecurity } from './security'
+import { createScanner } from './defender'
 
 // Separate data folder for tests / portable use.
 if (process.env.NETPLAIN_DATA) app.setPath('userData', process.env.NETPLAIN_DATA)
@@ -97,6 +98,8 @@ const security =
         geo: geo.lookup
       })
     : null
+// After a scan the threat list and the last-scan dates change.
+const scanner = createScanner(() => void security?.get(true).catch(console.error))
 
 if (primary) {
   setInterval(() => usage.save(), 60_000)
@@ -230,6 +233,10 @@ const handlers: Api = {
     if (!security) throw new Error('E_UNSUPPORTED')
     return security.get(fresh)
   },
+  scanState: () => scanner.state(),
+  startScan: (kind, admin) => scanner.start(kind, admin),
+  updateDefinitions: () => scanner.updateDefinitions(),
+  removeThreats: () => scanner.removeThreats(),
   fixFinding: async (fix) => {
     if (fix === 'openDefender') return void shell.openExternal('windowsdefender:')
     await elevate('netsh advfirewall set allprofiles state on')
@@ -288,7 +295,11 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   renewIp: (a) => typeof a[0] === 'string' && a[0].length <= 200,
   restartAdapter: (a) => typeof a[0] === 'string' && a[0].length <= 200,
   security: (a) => a[0] === undefined || typeof a[0] === 'boolean',
-  fixFinding: (a) => a[0] === 'firewallOn' || a[0] === 'openDefender'
+  fixFinding: (a) => a[0] === 'firewallOn' || a[0] === 'openDefender',
+  scanState: none,
+  startScan: (a) => (a[0] === 'quick' || a[0] === 'full') && typeof a[1] === 'boolean',
+  updateDefinitions: none,
+  removeThreats: none
 }
 
 /** Only our own window's page may call the main process. */

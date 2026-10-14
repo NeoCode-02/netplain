@@ -236,6 +236,11 @@ try {
       await new Promise((r) => setTimeout(r, 500))
     }
     await shot('security')
+    if (await inPage(() => document.querySelector('.verdict') !== null)) {
+      await until('Antivirus tab', clickText, 'Antivirus')
+      await until('defender cards', () => document.querySelectorAll('.kpi').length === 4)
+      await shot('security-antivirus')
+    }
   })
 
   await step('tools page', async () => {
