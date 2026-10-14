@@ -1,17 +1,46 @@
 # Netplain
 
-See what your computer does on the network, in plain language — without `ipconfig`, `netstat` or Wireshark filters.
+See what your computer does on the network, in plain language — without `ipconfig`, `netstat` or Wireshark filters. English and Uzbek.
 
-> Status: early development. Working now: **Overview** (what is happening, in sentences), **Network** (every adapter explained, Wi-Fi details, live traffic), **Apps** (data used by each app and where it went — needs Wireshark), **Packets** (every packet in plain words, Wireshark filters, full details, save as .pcapng or open in Wireshark), **Connections** (which app talks to which company and country, open ports) and **Devices** (who is on your local network). Also **History** (data per hour and day, per app and adapter, kept 90 days) and **Alerts** (new app online, new open port, unencrypted traffic, known-bad addresses with your own list or FireHOL level 1). **Tools** replace the terminal: "is the internet not working?" check (adapter → address → router → DNS → internet), ping, traceroute, DNS lookup, port check, public IP, and fixes (clear DNS cache, renew IP, restart adapter — the system asks for admin rights with its own window). **Security** (Windows): a "was I hacked?" check — antivirus, firewall, UAC, admins, unsigned startup programs and services, unsigned programs online, hosts redirects, proxy, DNS, updates — each explained, honest that no list proves a computer clean — plus Antivirus (Microsoft Defender: status, quick/full scan, threat history in plain words), Users (turn accounts off, remove admin rights, with lock-out protection), Services and Startup (Task Manager’s reversible switch). Changes ask for admin rights through Windows’s own prompt.
+![Overview: what is happening now, in sentences, with live traffic](docs/overview-dark.png)
 
-- **Plain language** in English and Uzbek: what a VirtualBox or WSL adapter is, whether your Wi-Fi security is fine, what a private address means.
-- **Everything in one place**: adapters, Wi-Fi signal and band, IP / router / DNS, devices on your network and who made them.
-- **Local only**: everything is read on your computer. Netplain goes online only when you press a button that says so (e.g. downloading the free location database).
+## What it shows
 
-## Requirements
+- **Overview** — what is happening now, in sentences: which network, how good the signal is, which app uses the most data.
+- **Network** — every adapter explained (what a VirtualBox or WSL adapter is), Wi-Fi signal, band and security, IP / router / DNS, live traffic.
+- **Apps** — data received and sent by each app, and the sites it talked to. Needs Wireshark.
+- **Connections** — which app talks to which company and country; programs waiting for connections (open ports).
+- **Packets** — every packet in plain words, Wireshark display filters, full details, save as `.pcapng` or open in Wireshark.
+- **Devices** — who is on your local network and who made each device.
+- **History** — data per hour and day, per app and adapter, kept 90 days.
+- **Alerts** — a new app went online, a new port opened to the network, unencrypted traffic, a known-bad address (your own list or FireHOL level 1).
+- **Tools** — the terminal as buttons: "is the internet not working?" (adapter → address → router → DNS → internet), ping, traceroute, DNS lookup, port check, public IP; fixes: clear DNS cache, renew IP, restart adapter.
+- **Security** (Windows) — a "was I hacked?" check (antivirus, firewall, UAC, admins, unsigned startup programs and services, unsigned programs online, hosts redirects, proxy, DNS, updates), honest that no list proves a computer clean; Microsoft Defender scans and threat history; turn accounts, services and startup programs off and on. Changes ask for admin rights through the system's own prompt.
 
-- Windows 10/11, macOS or Linux.
-- Optional: [Wireshark](https://www.wireshark.org/) — Netplain uses its engine (`tshark`) to name device makers now, and for per-app traffic and packets later. Without it, the Network page and the device list still work.
+| Apps | Connections |
+| --- | --- |
+| ![Data per app](docs/apps-traffic.png) | ![Connections by company and country](docs/connections-geo.png) |
+| **Packets** | **Security** |
+| ![Packets in plain words](docs/packets.png) | ![Was I hacked? check](docs/security.png) |
+
+## Install
+
+Download the installer for your system from [Releases](https://github.com/NeoCode-02/netplain/releases).
+
+The builds are not code-signed yet, so the system warns the first time:
+
+- **Windows** — SmartScreen: *More info → Run anyway*. With Smart App Control on, Windows may refuse unsigned apps altogether.
+- **macOS** — right-click the app → *Open*; if it says the app is damaged: `xattr -cr /Applications/Netplain.app`.
+- **Linux** — `chmod +x Netplain-*.AppImage`, then run it.
+
+Optional: [Wireshark](https://www.wireshark.org/) — Netplain uses its engine (`tshark`) for per-app traffic, packets and device makers. Without it, everything else works.
+
+## Privacy
+
+Everything is read on your computer; there is no telemetry. Netplain goes online only:
+
+- when you press a button that says so — the location database ([DB-IP Lite](https://db-ip.com), ~9 MB), FireHOL level 1 from GitHub, your public IP from api.ipify.org;
+- once at start, to ask the GitHub API whether a new version is out (off in Settings).
 
 ## Development
 
@@ -20,9 +49,9 @@ npm install
 npm run dev
 ```
 
-Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run e2e` (drives the built app on your real network and saves screenshots to `e2e/shots/`).
+Checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npm run e2e` (drives the built app on your real network and saves screenshots to `e2e/shots/`; `E2E_DOCS=1` makes the README screenshots with this machine's names and hardware addresses replaced).
 
-How data is read, per OS: Windows — .NET `NetworkInterface`, `netsh wlan`, `arp -a` (no admin rights); macOS — `ifconfig`, `netstat -ibn`, `networksetup`, `scutil`, `system_profiler`, `arp -an`; Linux — `/sys/class/net`, `/proc/net/*`, optional `nmcli`.
+How data is read, per OS: Windows — .NET `NetworkInterface`, `netsh wlan`, `arp -a`, PowerShell (no admin rights); macOS — `ifconfig`, `netstat -ibn`, `networksetup`, `scutil`, `system_profiler`, `arp -an`, `lsof`; Linux — `/sys/class/net`, `/proc/net/*`, optional `nmcli`.
 
 ## License
 

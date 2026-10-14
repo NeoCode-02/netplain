@@ -67,7 +67,32 @@ async function until(what, fn, ...a) {
   }
 }
 
+// E2E_DOCS=1: screenshots for the README, with this machine's names and hardware addresses replaced.
+const docs = process.env.E2E_DOCS ? [[`\\Users\\${os.userInfo().username}\\`, '\\Users\\you\\'], [os.hostname(), 'MY-PC']] : null
+const scrub = async (pairs) => {
+  const snap = await window.netplain.snapshot()
+  for (const a of snap?.adapters ?? []) if (a.wifi?.ssid) pairs.push([a.wifi.ssid, 'Home Wi-Fi'])
+  const fake = (window.__macs ??= new Map())
+  // Twice: the second pass also hides the MACs inside the packet hex dump, learnt in the first.
+  for (let pass = 0; pass < 2; pass++) {
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    for (let n; (n = walk.nextNode()); ) {
+      let v = n.nodeValue
+      for (const [a, b] of pairs) v = v.split(a).join(b)
+      v = v.replace(/\b([0-9a-f]{2}[:-]){5}[0-9a-f]{2}\b/gi, (m) => {
+        if (m.startsWith('02:00:5e:00:00:')) return m
+        if (!fake.has(m.toLowerCase())) fake.set(m.toLowerCase(), `02:00:5e:00:00:${String(fake.size + 1).padStart(2, '0')}`)
+        return fake.get(m.toLowerCase())
+      }).replace(/\{[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}\}/gi, '{…}')
+      for (const [real, f] of fake) v = v.split(real.replace(/[:-]/g, ' ')).join(f.replace(/:/g, ' '))
+      if (v !== n.nodeValue) n.nodeValue = v
+    }
+  }
+  return true
+}
+
 async function shot(name) {
+  if (docs) await inPage(scrub, docs)
   const r = await cdp('Page.captureScreenshot', { format: 'png' })
   fs.writeFileSync(path.join(shots, `${name}.png`), Buffer.from(r.result.data, 'base64'))
 }
@@ -183,6 +208,7 @@ try {
   // Opt-in, because it downloads 5 MB from Cloudflare's speed test: E2E_TRAFFIC=1 npm run e2e
   if (process.env.E2E_TRAFFIC)
     await step('traffic is counted per app', async () => {
+      await until('Apps', clickText, 'Apps')
       const curl = spawn('curl', ['-s', '-o', process.platform === 'win32' ? 'NUL' : '/dev/null', 'https://speed.cloudflare.com/__down?bytes=5000000'])
       await new Promise((r) => curl.on('exit', r))
       const mb = await until('curl in the list', () => {
@@ -306,4 +332,10 @@ try {
   fs.rmSync(data, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
 }
 if (failed) process.exit(1)
+if (docs) {
+  const dir = path.join(root, 'docs')
+  fs.mkdirSync(dir, { recursive: true })
+  for (const n of ['overview-dark', 'apps-traffic', 'connections-geo', 'packets', 'security'])
+    if (fs.existsSync(path.join(shots, `${n}.png`))) fs.copyFileSync(path.join(shots, `${n}.png`), path.join(dir, `${n}.png`))
+}
 console.log(`e2e passed; screenshots in ${path.relative(root, shots)}`)
