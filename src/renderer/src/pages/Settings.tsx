@@ -21,8 +21,8 @@ export default function Settings() {
     setPrefs(next)
     void window.netplain.saveSettings(next)
   }
-  const capture = (on: boolean) => {
-    const next = { ...prefs!, capture: on }
+  const set = (patch: Partial<Prefs>) => {
+    const next = { ...prefs!, ...patch }
     setPrefs(next)
     void window.netplain.saveSettings(next)
   }
@@ -62,7 +62,7 @@ export default function Settings() {
               aria-checked={!!prefs?.capture}
               aria-label={s.capture}
               disabled={!prefs}
-              onClick={() => capture(!prefs?.capture)}
+              onClick={() => set({ capture: !prefs?.capture })}
             />
           </div>
           <p className="small muted">{s.captureWhy}</p>
@@ -90,6 +90,17 @@ export default function Settings() {
         </div>
         <div className="panel panel-pad stack tight">
           <strong>{s.version(version)}</strong>
+          <div className="setting">
+            <span>{s.updates}</span>
+            <button
+              className={`switch ${prefs?.updates ? 'on' : ''}`}
+              role="switch"
+              aria-checked={!!prefs?.updates}
+              aria-label={s.updates}
+              disabled={!prefs}
+              onClick={() => set({ updates: !prefs?.updates })}
+            />
+          </div>
           <p className="muted">{s.privacy}</p>
         </div>
       </section>

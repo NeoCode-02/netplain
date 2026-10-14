@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { CHANNELS, type Api } from '../shared/api'
-import type { Snapshot } from '../shared/types'
+import type { Release, Snapshot } from '../shared/types'
 import { createAlerts } from './alerts'
 import { collector } from './collectors'
 import { join } from './connections'
@@ -18,6 +18,7 @@ import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './to
 import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
 import { createSecurity } from './security'
 import { createScanner } from './defender'
+import { checkRelease } from './update'
 
 // Separate data folder for tests / portable use.
 if (process.env.NETPLAIN_DATA) app.setPath('userData', process.env.NETPLAIN_DATA)
@@ -33,6 +34,7 @@ const dataDir = path.join(app.getPath('userData'), 'data')
 let win: BrowserWindow | null = null
 let latest: Snapshot | null = null
 let problem: string | null = null
+let release: Promise<Release | null> | undefined
 
 const send = (channel: string, ...args: unknown[]) => {
   if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
@@ -166,10 +168,11 @@ nativeTheme.on('updated', () => {
 
 const handlers: Api = {
   appInfo: () => ({ version: app.getVersion(), platform: process.platform }),
+  update: () => (settings.updates ? (release ??= checkRelease(app.getVersion()).catch(() => null)) : Promise.resolve(null)),
   getSettings: () => settings,
   saveSettings: (s) => {
     const before = settings
-    settings = { theme: s.theme, capture: s.capture, alerts: { ...s.alerts }, blocklist: s.blocklist }
+    settings = { theme: s.theme, capture: s.capture, alerts: { ...s.alerts }, blocklist: s.blocklist, updates: s.updates }
     nativeTheme.themeSource = settings.theme
     saveSettings(settingsFile, settings)
     if (settings.capture !== before.capture) traffic?.setEnabled(settings.capture, latest)
@@ -281,6 +284,7 @@ const httpsUrl = (v: unknown) => {
 }
 const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   appInfo: none,
+  update: none,
   getSettings: none,
   saveSettings: (a) => isSettings(a[0]),
   snapshot: none,

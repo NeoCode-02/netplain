@@ -102,6 +102,11 @@ const en = {
     ip: 'IP address',
     mac: 'MAC address'
   },
+  update: {
+    text: (v: string) => `Netplain ${v} is out.`,
+    get: 'Download',
+    later: 'Later'
+  },
   settings: {
     title: 'Settings',
     theme: 'Theme',
@@ -109,7 +114,8 @@ const en = {
     language: 'Language',
     about: 'About',
     version: (v: string) => `Netplain ${v}`,
-    privacy: 'Everything here is read on this computer. Netplain only goes online when you press a button that says so.',
+    privacy: 'Everything here is read on this computer. Netplain goes online only when you press a button that says so, and once at start to ask GitHub whether a new version is out.',
+    updates: 'Check for new versions',
     geo: 'Location database',
     geoWhy: 'Shows which country and company an internet address belongs to. Downloaded once from db-ip.com (free, about 9 MB); after that every lookup stays on this computer.',
     geoReady: (date: string) => `DB-IP Lite, built ${date}`,
@@ -664,6 +670,11 @@ const uz: Dict = {
     ip: 'IP manzil',
     mac: 'MAC manzil'
   },
+  update: {
+    text: (v) => `Netplain ${v} chiqdi.`,
+    get: 'Yuklab olish',
+    later: 'Keyinroq'
+  },
   settings: {
     title: 'Sozlamalar',
     theme: 'Mavzu',
@@ -671,7 +682,8 @@ const uz: Dict = {
     language: 'Til',
     about: 'Dastur haqida',
     version: (v) => `Netplain ${v}`,
-    privacy: 'Bu yerdagi hamma narsa shu kompyuterning o‘zida o‘qiladi. Netplain internetga faqat siz shuni aytadigan tugmani bosganingizda chiqadi.',
+    privacy: 'Bu yerdagi hamma narsa shu kompyuterning o‘zida o‘qiladi. Netplain internetga faqat siz shuni aytadigan tugmani bosganingizda chiqadi, yana ishga tushganda bir marta GitHub’dan yangi versiya bor-yo‘qligini so‘raydi.',
+    updates: 'Yangi versiyalarni tekshirish',
     geo: 'Joylashuv bazasi',
     geoWhy: 'Internet manzili qaysi davlat va kompaniyaga tegishli ekanini ko‘rsatadi. db-ip.com dan bir marta yuklanadi (bepul, taxminan 9 MB); keyin har bir tekshiruv shu kompyuterda qoladi.',
     geoReady: (date) => `DB-IP Lite, ${date} holatiga`,

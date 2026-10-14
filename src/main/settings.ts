@@ -4,7 +4,7 @@ import type { AlertKind, Settings } from '../shared/types'
 
 const THEMES: readonly Settings['theme'][] = ['system', 'light', 'dark']
 const KINDS: readonly AlertKind[] = ['newApp', 'exposed', 'plain', 'blocklist']
-const defaults = (): Settings => ({ theme: 'system', capture: true, alerts: { newApp: true, exposed: true, plain: true, blocklist: true }, blocklist: '' })
+const defaults = (): Settings => ({ theme: 'system', capture: true, alerts: { newApp: true, exposed: true, plain: true, blocklist: true }, blocklist: '', updates: true })
 
 const obj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && Object.getPrototypeOf(v) === Object.prototype
 
@@ -17,7 +17,8 @@ export function isSettings(v: unknown): v is Settings {
     obj(v.alerts) &&
     KINDS.every((k) => typeof (v.alerts as Record<string, unknown>)[k] === 'boolean') &&
     typeof v.blocklist === 'string' &&
-    v.blocklist.length <= 200_000
+    v.blocklist.length <= 200_000 &&
+    typeof v.updates === 'boolean'
   )
 }
 
@@ -36,7 +37,8 @@ export function loadSettings(file: string): Settings {
     theme: THEMES.includes(s.theme as Settings['theme']) ? (s.theme as Settings['theme']) : d.theme,
     capture: typeof s.capture === 'boolean' ? s.capture : d.capture,
     alerts: Object.fromEntries(KINDS.map((k) => [k, typeof alerts[k] === 'boolean' ? alerts[k] : d.alerts[k]])) as Settings['alerts'],
-    blocklist: typeof s.blocklist === 'string' && s.blocklist.length <= 200_000 ? s.blocklist : d.blocklist
+    blocklist: typeof s.blocklist === 'string' && s.blocklist.length <= 200_000 ? s.blocklist : d.blocklist,
+    updates: typeof s.updates === 'boolean' ? s.updates : d.updates
   }
 }
 

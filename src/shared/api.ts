@@ -13,6 +13,7 @@ import type {
   PingResult,
   PortState,
   PublicIp,
+  Release,
   ScanKind,
   ScanState,
   Security,
@@ -32,6 +33,8 @@ export const CHANNELS = { snapshot: 'np:snapshot', problem: 'np:problem', traffi
  */
 export interface Api {
   appInfo(): { version: string; platform: string }
+  /** A newer release on GitHub (asked once per run); null when up to date, offline or turned off. */
+  update(): Promise<Release | null>
   getSettings(): Settings
   saveSettings(s: Settings): void
   /** The latest adapter snapshot, or null before the first one arrives. */

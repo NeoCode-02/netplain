@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { Release } from '../../shared/types'
 import { errText, useT } from './i18n'
 import { useLive } from './live'
 import Alerts from './pages/Alerts'
@@ -33,6 +34,8 @@ export default function App() {
   const { problem, alerts } = useLive()
   const unread = alerts.filter((a) => !a.read).length
   const [page, setPage] = useState<Page>('overview')
+  const [release, setRelease] = useState<Release | null>(null)
+  useEffect(() => void window.netplain.update().then(setRelease), [])
 
   const item = (p: Page, icon: IconName) => (
     <button key={p} className={`rail-item ${page === p ? 'on' : ''}`} aria-current={page === p ? 'page' : undefined} onClick={() => setPage(p)}>
@@ -58,6 +61,18 @@ export default function App() {
           <div className="banner" role="status">
             <Icon name="alert" />
             {errText(t, problem)}
+          </div>
+        )}
+        {release && (
+          <div className="banner info" role="status">
+            <Icon name="down" />
+            <span className="grow">{t.update.text(release.version)}</span>
+            <button className="btn sm" onClick={() => window.netplain.openUrl(release.url)}>
+              {t.update.get}
+            </button>
+            <button className="btn sm quiet" onClick={() => setRelease(null)}>
+              {t.update.later}
+            </button>
           </div>
         )}
         <div className={`content ${page === 'packets' ? 'fixed' : ''}`}>

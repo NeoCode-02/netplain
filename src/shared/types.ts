@@ -63,6 +63,14 @@ export interface Settings {
   alerts: Record<AlertKind, boolean>
   /** IPs and CIDR ranges the user never wants to see, one per line. */
   blocklist: string
+  /** Ask GitHub once per start whether a newer version is out. */
+  updates: boolean
+}
+
+/** A newer Netplain on GitHub. */
+export interface Release {
+  version: string
+  url: string
 }
 
 /** One open TCP/UDP socket as the OS lists it. */

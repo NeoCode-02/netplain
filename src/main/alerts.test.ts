@@ -68,7 +68,7 @@ describe('settings', () => {
     const file = path.join(tmp(), 'settings.json')
     fs.writeFileSync(file, JSON.stringify({ theme: 'dark', alerts: { plain: false } }))
     const s = loadSettings(file)
-    expect(s).toEqual({ theme: 'dark', capture: true, alerts: { newApp: true, exposed: true, plain: false, blocklist: true }, blocklist: '' })
+    expect(s).toEqual({ theme: 'dark', capture: true, alerts: { newApp: true, exposed: true, plain: false, blocklist: true }, blocklist: '', updates: true })
     expect(isSettings(s)).toBe(true)
     expect(isSettings({ ...s, alerts: { ...s.alerts, plain: 'no' } })).toBe(false)
     expect(isSettings({ ...s, blocklist: 'x'.repeat(200_001) })).toBe(false)
