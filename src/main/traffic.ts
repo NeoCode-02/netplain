@@ -20,6 +20,8 @@ interface Deps {
   publish: (t: Traffic) => void
   /** Folder for capture files; emptied when the app starts. */
   dir: string
+  /** A program sent something unencrypted (HTTP request, FTP or Telnet connection). */
+  plaintext: (app: string, target: string) => void
 }
 
 /** Packets kept for the packet list; the file keeps all of them. */
@@ -39,6 +41,8 @@ export function createTrafficWatch(deps: Deps, enabled: boolean) {
   let view: Traffic = { state, adapterId, since: null, apps: [], rx: 0, tx: 0 }
   let rows: Packet[] = []
   let session = 0
+  /** Unencrypted requests, handled on the next tick when their program is known. */
+  const plain: Packet[] = []
 
   const publish = () => {
     view = { ...view, state, adapterId }
@@ -66,6 +70,7 @@ export function createTrafficWatch(deps: Deps, enabled: boolean) {
   const onPacket = (p: Packet) => {
     rows.push(p)
     if (rows.length > KEEP + 1000) rows = rows.slice(-KEEP)
+    if ((p.host || (p.transport === 'tcp' && (p.dport === 21 || p.dport === 23) && /\[SYN\]/.test(p.info))) && plain.length < 100) plain.push(p)
     if (traffic.add(p) && !soon)
       soon = setTimeout(() => {
         soon = undefined
@@ -98,6 +103,10 @@ export function createTrafficWatch(deps: Deps, enabled: boolean) {
       for (const p of await deps.processes()) known.set(p.pid, p)
       traffic.learn(await deps.hosts())
       await resolveNow()
+      for (const p of plain.splice(0)) {
+        const w = traffic.who(p)
+        if (w.dir === 'out') deps.plaintext(appName(w.pid) ?? '?', p.host ? `http://${p.host}` : `${p.dport === 21 ? 'ftp' : 'telnet'}://${w.peer ?? p.dst}`)
+      }
       const now = Date.now()
       traffic.prune(now)
       const { apps, next } = summarize(traffic.perPid(), known, deps.geo, prev, prevAt ? (now - prevAt) / 1000 : 0)

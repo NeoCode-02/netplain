@@ -15,7 +15,7 @@ const data = fs.mkdtempSync(path.join(os.tmpdir(), 'netplain-e2e-'))
 const require_ = (await import('node:module')).createRequire(import.meta.url)
 const electron = require_('electron')
 const args = [root, '--remote-debugging-port=0', ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [])]
-const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data }, stdio: ['ignore', 'pipe', 'pipe'] })
+const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000' }, stdio: ['ignore', 'pipe', 'pipe'] })
 let appLog = ''
 app.stdout.on('data', (d) => (appLog += d))
 const devtools = await new Promise((resolve, reject) => {
@@ -73,7 +73,8 @@ async function shot(name) {
 }
 
 const clickText = (text) => {
-  const el = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === text)
+  // Navigation items also carry a badge, so their label is matched on its own.
+  const el = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === text || b.querySelector('.label')?.textContent.trim() === text)
   if (!el || el.disabled) return false
   el.click()
   return true
@@ -203,6 +204,28 @@ try {
       await until('companies on connections', () => document.querySelector('.geo-banner') === null && document.querySelector('.orgs .tag') !== null)
       await shot('connections-geo')
     })
+
+  await step('history page', async () => {
+    await until('History', clickText, 'History')
+    await until('history data', () => document.querySelector('.rate-plot, .list-empty') !== null)
+    await shot('history')
+  })
+
+  await step('an open port raises an alert', async () => {
+    // After the first check has recorded the baseline, a new port open to the network is news.
+    const deadline = Date.now() + 20_000
+    while (!fs.existsSync(path.join(data, 'data', 'seen.json')) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 300))
+    const net = await import('node:net')
+    const server = net.createServer()
+    await new Promise((r) => server.listen(0, '0.0.0.0', r))
+    try {
+      await until('Alerts', clickText, 'Alerts')
+      await until('the alert', () => /opened port \d+ to the network/.test(document.body.innerText) && document.querySelector('.rail .badge') !== null)
+      await shot('alerts')
+    } finally {
+      server.close()
+    }
+  })
 
   await step('Uzbek', async () => {
     await until('Settings', clickText, 'Settings')

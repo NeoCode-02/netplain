@@ -1,7 +1,7 @@
-import type { Connections, GeoInfo, Neighbor, PacketBatch, PacketDetail, Settings, Snapshot, Traffic } from './types'
+import type { Alert, BlocklistInfo, Connections, GeoInfo, Neighbor, PacketBatch, PacketDetail, Settings, Snapshot, Traffic, Usage, UsageRange } from './types'
 
 /** Main → renderer pushes. */
-export const CHANNELS = { snapshot: 'np:snapshot', problem: 'np:problem', traffic: 'np:traffic' } as const
+export const CHANNELS = { snapshot: 'np:snapshot', problem: 'np:problem', traffic: 'np:traffic', alert: 'np:alert' } as const
 
 /**
  * Everything the UI can ask the main process for. Each method is one IPC handler of the same name
@@ -42,4 +42,13 @@ export interface Api {
   savePackets(): Promise<boolean>
   /** Opens the capture so far in Wireshark. */
   openInWireshark(): void
+  /** Data used per hour (today) or per day (last 7 / 30 days). */
+  usage(range: UsageRange): Usage
+  alerts(): Alert[]
+  markAlertsRead(): void
+  clearAlerts(): void
+  blocklistInfo(): BlocklistInfo
+  /** Downloads FireHOL level 1 from GitHub. Throws E_BLOCKLIST_DOWNLOAD. */
+  updateFirehol(): Promise<BlocklistInfo>
+  removeFirehol(): BlocklistInfo
 }

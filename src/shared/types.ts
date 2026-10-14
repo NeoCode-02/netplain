@@ -59,6 +59,10 @@ export interface Settings {
   theme: 'system' | 'light' | 'dark'
   /** Watch traffic with Wireshark's engine when it is installed. */
   capture: boolean
+  /** Which signals raise an alert. */
+  alerts: Record<AlertKind, boolean>
+  /** IPs and CIDR ranges the user never wants to see, one per line. */
+  blocklist: string
 }
 
 /** One open TCP/UDP socket as the OS lists it. */
@@ -197,4 +201,52 @@ export interface PacketDetail {
   tree: DetailNode[]
   /** Hex and ASCII dump of the bytes. */
   hex: string
+}
+
+export type UsageRange = 'day' | 'week' | 'month'
+
+export interface UsagePoint {
+  /** Start of the hour (day range) or day (week/month), ms. */
+  at: number
+  rx: number
+  tx: number
+}
+
+export interface UsageRow {
+  key: string
+  name: string
+  path: string | null
+  rx: number
+  tx: number
+}
+
+export interface Usage {
+  range: UsageRange
+  /** Internet adapters only (Wi-Fi, Ethernet, mobile), so local virtual traffic is not counted. */
+  points: UsagePoint[]
+  apps: UsageRow[]
+  adapters: UsageRow[]
+  rx: number
+  tx: number
+}
+
+export type AlertKind = 'newApp' | 'exposed' | 'plain' | 'blocklist'
+
+export interface Alert {
+  id: string
+  at: number
+  kind: AlertKind
+  /** Program it is about. */
+  app: string
+  /** Host, IP or port, depending on the kind. */
+  detail: string
+  read: boolean
+}
+
+export interface BlocklistInfo {
+  /** Ranges typed by the user. */
+  own: number
+  /** Ranges from FireHOL level 1, or null when not downloaded. */
+  firehol: number | null
+  fireholAt: number | null
 }

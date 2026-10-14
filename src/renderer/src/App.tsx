@@ -1,34 +1,40 @@
 import { useState } from 'react'
 import { errText, useT } from './i18n'
 import { useLive } from './live'
+import Alerts from './pages/Alerts'
 import Apps from './pages/Apps'
 import Connections from './pages/Connections'
 import Devices from './pages/Devices'
+import History from './pages/History'
 import Network from './pages/Network'
 import Overview from './pages/Overview'
 import Packets from './pages/Packets'
 import Settings from './pages/Settings'
 import { Icon, Mark, type IconName } from './ui'
 
-export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'packets' | 'devices' | 'settings'
+export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'packets' | 'devices' | 'history' | 'alerts' | 'settings'
 const NAV: [Page, IconName][] = [
   ['overview', 'chart'],
   ['network', 'globe'],
   ['apps', 'grid'],
   ['connections', 'link'],
   ['packets', 'list'],
-  ['devices', 'devices']
+  ['devices', 'devices'],
+  ['history', 'clock'],
+  ['alerts', 'bell']
 ]
 
 export default function App() {
   const t = useT()
-  const { problem } = useLive()
+  const { problem, alerts } = useLive()
+  const unread = alerts.filter((a) => !a.read).length
   const [page, setPage] = useState<Page>('overview')
 
   const item = (p: Page, icon: IconName) => (
     <button key={p} className={`rail-item ${page === p ? 'on' : ''}`} aria-current={page === p ? 'page' : undefined} onClick={() => setPage(p)}>
       <Icon name={icon} />
       <span className="label">{t.nav[p]}</span>
+      {p === 'alerts' && unread > 0 && <span className="badge">{unread}</span>}
     </button>
   )
 
@@ -57,6 +63,8 @@ export default function App() {
           {page === 'connections' && <Connections />}
           {page === 'packets' && <Packets />}
           {page === 'devices' && <Devices />}
+          {page === 'history' && <History />}
+          {page === 'alerts' && <Alerts />}
           {page === 'settings' && <Settings />}
         </div>
       </main>

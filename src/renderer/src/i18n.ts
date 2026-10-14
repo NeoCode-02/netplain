@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 
 const en = {
   lang: 'English',
-  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', settings: 'Settings' },
+  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', settings: 'Settings' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobile', loopback: 'Loopback', other: 'Other' },
   /** What each kind of adapter is, for someone who has never opened ipconfig. */
   what: {
@@ -120,6 +120,54 @@ const en = {
     geoCredit: 'IP geolocation by DB-IP (CC BY 4.0)',
     capture: 'Watch traffic per app',
     captureWhy: 'Uses Wireshark’s engine on the adapter that reaches the internet. Everything stays on this computer.'
+  },
+  history: {
+    title: 'History',
+    lead: 'How much data this computer used. The record stays on this computer for 90 days.',
+    ranges: { day: 'Today', week: '7 days', month: '30 days' },
+    total: 'Total',
+    chart: 'Through the internet (Wi-Fi, Ethernet, mobile)',
+    chartLabel: (down: string, up: string) => `In the chosen period: ${down} downloaded, ${up} uploaded.`,
+    apps: 'Apps',
+    adapters: 'Adapters',
+    noApps: 'History per app is recorded while traffic watching (Wireshark) is on.',
+    empty: 'No data for this period yet.'
+  },
+  alerts: {
+    title: 'Alerts',
+    lead: 'Security signs Netplain keeps an eye on. Each one says what it means and what to do.',
+    none: 'No alerts so far. All quiet.',
+    markRead: 'Mark all as read',
+    clear: 'Clear',
+    rules: 'Which alerts',
+    kinds: {
+      newApp: ['New app online', 'When a program connects to the internet for the first time.'],
+      exposed: ['New port open to the network', 'When a program starts waiting for connections from other devices.'],
+      plain: ['Unencrypted traffic', 'When a program sends readable data (HTTP, FTP, Telnet).'],
+      blocklist: ['Dangerous address', 'When something talks to an address on a list of attackers and malware servers.']
+    } as Record<string, [string, string]>,
+    say: {
+      newApp: (app: string, d: string) => [`${app} went online for the first time`, `It connected to ${d}. If you don’t know this program, check where it came from.`],
+      exposed: (app: string, d: string) => [
+        `${app} opened port ${d} to the network`,
+        'Other devices on your network can now try to connect to it. Fine for programs you use for sharing or development; otherwise close it.'
+      ],
+      plain: (app: string, d: string) => [`${app} sent unencrypted data`, `To ${d}. Anyone on the same network or along the way could read or change it. Don’t enter passwords there.`],
+      blocklist: (app: string, d: string) => [`${app} talked to a dangerous address`, `${d} is on a list of attackers and malware servers. Scan the computer with Microsoft Defender and check this program.`]
+    } as Record<string, (app: string, detail: string) => [string, string]>,
+    unknownApp: 'Unknown program',
+    blocklist: 'Blocklist',
+    blocklistWhy: 'Connections to these addresses raise an alert. One IP or range per line (e.g. 203.0.113.0/24).',
+    own: (n: number) => `Your list: ${n}`,
+    save: 'Save',
+    saved: 'Saved',
+    firehol: 'FireHOL level 1',
+    fireholWhy: 'A public list of known attackers and malware servers. Downloaded from GitHub (~100 KB); checks then run on this computer.',
+    fireholOn: (n: number, date: string) => `${n} ranges, as of ${date}`,
+    fireholOff: 'Not downloaded',
+    download: 'Download',
+    update: 'Update',
+    remove: 'Remove'
   },
   packets: {
     title: 'Packets',
@@ -304,6 +352,7 @@ const en = {
     E_ALLOW_CAPTURE: 'Permission was not changed (the password prompt was closed, or there is no “wireshark” group).',
     E_UNSUPPORTED: 'Not available on this system.',
     E_NO_CAPTURE: 'Traffic is not being watched right now.',
+    E_BLOCKLIST_DOWNLOAD: 'The list could not be downloaded. Check the internet connection and try again.',
     E_FILTER: (m: string) => `Wireshark did not understand the filter: ${m}`,
     unknown: (m: string) => `Something went wrong: ${m}`
   }
@@ -313,7 +362,7 @@ export type Dict = typeof en
 
 const uz: Dict = {
   lang: 'O‘zbekcha',
-  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', settings: 'Sozlamalar' },
+  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', settings: 'Sozlamalar' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobil', loopback: 'Loopback', other: 'Boshqa' },
   what: {
     wifi: 'Simsiz adapter: kompyuterni Wi-Fi tarmoqlariga ulaydi.',
@@ -430,6 +479,51 @@ const uz: Dict = {
     geoCredit: 'IP joylashuvi: DB-IP (CC BY 4.0)',
     capture: 'Ilovalar trafigini kuzatish',
     captureWhy: 'Internetga chiqadigan adapterda Wireshark dvigateli ishlatiladi. Hamma narsa shu kompyuterda qoladi.'
+  },
+  history: {
+    title: 'Tarix',
+    lead: 'Kompyuteringiz qancha ma’lumot ishlatgani. Hisob shu kompyuterda saqlanadi, 90 kun turadi.',
+    ranges: { day: 'Bugun', week: '7 kun', month: '30 kun' },
+    total: 'Jami',
+    chart: 'Internet orqali (Wi-Fi, Ethernet, mobil)',
+    chartLabel: (down, up) => `Tanlangan davrda yuklab olindi ${down}, yuborildi ${up}.`,
+    apps: 'Ilovalar',
+    adapters: 'Adapterlar',
+    noApps: 'Ilovalar bo‘yicha tarix trafik kuzatuvi (Wireshark) yoqilganda yoziladi.',
+    empty: 'Bu davr uchun hali ma’lumot yo‘q.'
+  },
+  alerts: {
+    title: 'Signallar',
+    lead: 'Netplain kuzatib boradigan xavfsizlik belgilari. Har biri nimani anglatishi va nima qilish kerakligi yozilgan.',
+    none: 'Hozircha signal yo‘q. Hammasi tinch.',
+    markRead: 'Hammasini o‘qildi deb belgilash',
+    clear: 'Tozalash',
+    rules: 'Qaysi signallar',
+    kinds: {
+      newApp: ['Yangi ilova internetga chiqdi', 'Ilova birinchi marta internetga ulanganda.'],
+      exposed: ['Tarmoqqa yangi port ochildi', 'Dastur boshqa qurilmalardan ulanishni kuta boshlaganda.'],
+      plain: ['Shifrlanmagan trafik', 'Dastur o‘qilishi mumkin bo‘lgan ma’lumot yuborganda (HTTP, FTP, Telnet).'],
+      blocklist: ['Xavfli manzil', 'Hujumchilar va zararli serverlar ro‘yxatidagi manzil bilan aloqa bo‘lganda.']
+    } as Record<string, [string, string]>,
+    say: {
+      newApp: (app, d) => [`${app} birinchi marta internetga chiqdi`, `U ${d} ga ulandi. Bu dasturni tanimasangiz, qayerdan kelganini tekshiring.`],
+      exposed: (app, d) => [`${app} tarmoqqa ${d}-portni ochdi`, 'Tarmog‘ingizdagi boshqa qurilmalar endi unga ulanishga urinishi mumkin. Ulashish yoki dasturlash uchun ishlatadigan dastur bo‘lsa, bu normal; aks holda uni yoping.'],
+      plain: (app, d) => [`${app} shifrlanmagan ma’lumot yubordi`, `Manzil: ${d}. Shu tarmoqdagi yoki yo‘ldagi har kim uni o‘qishi yoki o‘zgartirishi mumkin. U yerda parol kiritmang.`],
+      blocklist: (app, d) => [`${app} xavfli manzil bilan bog‘landi`, `${d} hujumchilar va zararli serverlar ro‘yxatida. Kompyuterni Microsoft Defender bilan tekshiring va bu dasturni ko‘rib chiqing.`]
+    } as Record<string, (app: string, detail: string) => [string, string]>,
+    unknownApp: 'Noma’lum dastur',
+    blocklist: 'Qora ro‘yxat',
+    blocklistWhy: 'Bu manzillarga ulanish signal beradi. Har qatorda bitta IP yoki diapazon (masalan 203.0.113.0/24).',
+    own: (n) => `Sizning ro‘yxatingiz: ${n} ta`,
+    save: 'Saqlash',
+    saved: 'Saqlandi',
+    firehol: 'FireHOL level 1',
+    fireholWhy: 'Ma’lum hujumchilar va zararli serverlarning ochiq ro‘yxati. GitHub’dan yuklanadi (~100 KB), keyin tekshiruv shu kompyuterda bo‘ladi.',
+    fireholOn: (n, date) => `${n} ta diapazon, ${date} holatiga`,
+    fireholOff: 'Yuklanmagan',
+    download: 'Yuklab olish',
+    update: 'Yangilash',
+    remove: 'O‘chirish'
   },
   packets: {
     title: 'Paketlar',
@@ -613,6 +707,7 @@ const uz: Dict = {
     E_ALLOW_CAPTURE: 'Ruxsat o‘zgarmadi (parol oynasi yopildi yoki “wireshark” guruhi yo‘q).',
     E_UNSUPPORTED: 'Bu tizimda mavjud emas.',
     E_NO_CAPTURE: 'Hozir trafik kuzatilmayapti.',
+    E_BLOCKLIST_DOWNLOAD: 'Ro‘yxatni yuklab bo‘lmadi. Internet ulanishini tekshirib, qayta urinib ko‘ring.',
     E_FILTER: (m) => `Wireshark filtrni tushunmadi: ${m}`,
     unknown: (m) => `Nimadir xato ketdi: ${m}`
   }

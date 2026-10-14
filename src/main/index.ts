@@ -3,7 +3,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { CHANNELS, type Api } from '../shared/api'
-import type { Settings, Snapshot } from '../shared/types'
+import type { Snapshot } from '../shared/types'
+import { createAlerts } from './alerts'
 import { collector } from './collectors'
 import { join } from './connections'
 import { cached } from './exec'
@@ -11,6 +12,8 @@ import { createGeo } from './geodb'
 import { internetIp, realDevices, sweep } from './net'
 import { allowCaptureLinux, createTrafficWatch } from './traffic'
 import { vendorTable } from './tshark'
+import { isSettings, loadSettings, saveSettings } from './settings'
+import { createUsage } from './usage'
 
 // Separate data folder for tests / portable use.
 if (process.env.NETPLAIN_DATA) app.setPath('userData', process.env.NETPLAIN_DATA)
@@ -18,26 +21,10 @@ if (process.env.NETPLAIN_DATA) app.setPath('userData', process.env.NETPLAIN_DATA
 const primary = app.requestSingleInstanceLock()
 if (!primary) app.quit()
 
-const THEMES: readonly Settings['theme'][] = ['system', 'light', 'dark']
-const DEFAULTS: Settings = { theme: 'system', capture: true }
-const plain = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && Object.getPrototypeOf(v) === Object.prototype
-const isSettings = (v: unknown): v is Settings => plain(v) && THEMES.includes(v.theme as Settings['theme']) && typeof v.capture === 'boolean'
-
 const settingsFile = path.join(app.getPath('userData'), 'settings.json')
-function loadSettings(): Settings {
-  try {
-    const s: unknown = JSON.parse(fs.readFileSync(settingsFile, 'utf8'))
-    // Files from older versions lack newer keys; each valid key is kept, the rest default.
-    if (plain(s))
-      return { theme: THEMES.includes(s.theme as Settings['theme']) ? (s.theme as Settings['theme']) : DEFAULTS.theme, capture: typeof s.capture === 'boolean' ? s.capture : DEFAULTS.capture }
-  } catch {
-    // first run or unreadable: defaults
-  }
-  return { ...DEFAULTS }
-}
-
-let settings = loadSettings()
+let settings = loadSettings(settingsFile)
 nativeTheme.themeSource = settings.theme
+const dataDir = path.join(app.getPath('userData'), 'data')
 
 let win: BrowserWindow | null = null
 let latest: Snapshot | null = null
@@ -70,12 +57,40 @@ const dnsNames = cached(30_000, async () => new Map(await collector.dnsCache()),
 const captureDir = path.join(app.getPath('userData'), 'capture')
 if (primary) fs.rmSync(captureDir, { recursive: true, force: true })
 
+const usage = createUsage(path.join(dataDir, 'usage'))
+if (primary) usage.prune()
+const alerts = createAlerts(dataDir, (a) => send(CHANNELS.alert, a))
+alerts.setOwnBlocklist(settings.blocklist)
+
 const traffic = primary
   ? createTrafficWatch(
-      { collector, processes, freshProcesses, hosts: dnsNames, geo: geo.lookup, publish: (t) => send(CHANNELS.traffic, t), dir: captureDir },
+      {
+        collector,
+        processes,
+        freshProcesses,
+        hosts: dnsNames,
+        geo: geo.lookup,
+        publish: (t) => {
+          send(CHANNELS.traffic, t)
+          usage.apps(t)
+        },
+        dir: captureDir,
+        plaintext: (app, target) => alerts.plaintext(settings.alerts, app, target)
+      },
       settings.capture
     )
   : null
+
+async function currentConnections() {
+  const [sockets, procs, hosts] = await Promise.all([collector.sockets(), processes(), dnsNames()])
+  return join(sockets, procs, hosts, geo.lookup)
+}
+
+if (primary) {
+  setInterval(() => usage.save(), 60_000)
+  // Signals are checked in the background, whichever page is open.
+  setInterval(() => currentConnections().then((c) => alerts.connections(c, settings.alerts), console.error), Number(process.env.NETPLAIN_CHECK_MS) || 15_000)
+}
 
 const stopWatch = primary
   ? collector.watch(
@@ -86,6 +101,7 @@ const stopWatch = primary
         report(null)
         send(CHANNELS.snapshot, latest)
         traffic?.follow(latest)
+        usage.adapters(latest)
       },
       (e) => {
         console.error(e)
@@ -135,12 +151,12 @@ const handlers: Api = {
   appInfo: () => ({ version: app.getVersion(), platform: process.platform }),
   getSettings: () => settings,
   saveSettings: (s) => {
-    const captureChanged = s.capture !== settings.capture
-    settings = { theme: s.theme, capture: s.capture }
+    const before = settings
+    settings = { theme: s.theme, capture: s.capture, alerts: { ...s.alerts }, blocklist: s.blocklist }
     nativeTheme.themeSource = settings.theme
-    fs.mkdirSync(path.dirname(settingsFile), { recursive: true })
-    fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2))
-    if (captureChanged) traffic?.setEnabled(settings.capture, latest)
+    saveSettings(settingsFile, settings)
+    if (settings.capture !== before.capture) traffic?.setEnabled(settings.capture, latest)
+    if (settings.blocklist !== before.blocklist) alerts.setOwnBlocklist(settings.blocklist)
   },
   snapshot: () => latest,
   neighbors: devices,
@@ -151,10 +167,7 @@ const handlers: Api = {
     return devices()
   },
   openUrl: (url) => void shell.openExternal(url),
-  connections: async () => {
-    const [sockets, procs, hosts] = await Promise.all([collector.sockets(), processes(), dnsNames()])
-    return join(sockets, procs, hosts, geo.lookup)
-  },
+  connections: currentConnections,
   appIcon: async (file) => {
     if (!icons.has(file))
       icons.set(
@@ -182,7 +195,14 @@ const handlers: Api = {
     fs.copyFileSync(copy, r.filePath)
     return true
   },
-  openInWireshark: () => traffic!.openInWireshark(traffic!.snapshotFile())
+  openInWireshark: () => traffic!.openInWireshark(traffic!.snapshotFile()),
+  usage: (range) => usage.query(range),
+  alerts: () => alerts.list(),
+  markAlertsRead: () => alerts.markRead(),
+  clearAlerts: () => alerts.clear(),
+  blocklistInfo: () => alerts.blocklistInfo(),
+  updateFirehol: () => alerts.updateFirehol(),
+  removeFirehol: () => alerts.removeFirehol()
 }
 
 const none = (a: unknown[]) => a.length === 0
@@ -213,7 +233,14 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   packetDetail: (a) => int(a[0]) && (a[0] as number) > 0,
   packetFilter: (a) => typeof a[0] === 'string' && a[0].trim().length > 0 && a[0].length <= 2000,
   savePackets: none,
-  openInWireshark: none
+  openInWireshark: none,
+  usage: (a) => a[0] === 'day' || a[0] === 'week' || a[0] === 'month',
+  alerts: none,
+  markAlertsRead: none,
+  clearAlerts: none,
+  blocklistInfo: none,
+  updateFirehol: none,
+  removeFirehol: none
 }
 
 /** Only our own window's page may call the main process. */
@@ -250,5 +277,6 @@ if (primary) void app.whenReady().then(createWindow)
 app.on('before-quit', () => {
   stopWatch()
   traffic?.stop()
+  usage.save()
 })
 app.on('window-all-closed', () => app.quit())

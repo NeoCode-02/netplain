@@ -170,3 +170,22 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .select.sm, .input.sm { height: 30px; font-size: 12.5px; }
 .select.sm { width: auto; max-width: 220px; padding: 0 8px; }
 .input.sm { padding: 0 9px; }
+
+/* history */
+.rate-plot .hit { fill: transparent; }
+.rate-plot .hit.on { fill: color-mix(in srgb, var(--text) 5%, transparent); }
+.rate-plot .bar.down { fill: var(--down); }
+.rate-plot .bar.up { fill: var(--up); }
+.usage-row { gap: 14px; }
+.usage-row .num { display: inline-flex; align-items: center; gap: 6px; min-width: 84px; justify-content: flex-end; }
+
+/* alerts */
+.badge { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 650; display: grid; place-items: center; }
+.alert-row { align-items: flex-start; gap: 14px; }
+.alert-row .small { margin-top: 2px; max-width: 80ch; }
+.alert-title { font-weight: 600; }
+.alert-row.unread { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.alert-row.unread .alert-title::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 8px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
+.ad-icon.alert-plain, .ad-icon.alert-exposed { color: #b45309; background: rgb(245 158 11 / 14%); }
+.ad-icon.alert-blocklist { color: var(--danger); background: var(--danger-soft); }
+.setting > div:first-child { min-width: 0; }

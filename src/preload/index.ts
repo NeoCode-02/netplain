@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { CHANNELS, type Api } from '../shared/api'
-import type { Snapshot, Traffic } from '../shared/types'
+import type { Alert, Snapshot, Traffic } from '../shared/types'
 
 type Async<T> = { [K in keyof T]: T[K] extends (...a: infer A) => infer R ? (...a: A) => Promise<Awaited<R>> : never }
 
@@ -24,7 +24,14 @@ const names: Record<keyof Api, true> = {
   packetDetail: true,
   packetFilter: true,
   savePackets: true,
-  openInWireshark: true
+  openInWireshark: true,
+  usage: true,
+  alerts: true,
+  markAlertsRead: true,
+  clearAlerts: true,
+  blocklistInfo: true,
+  updateFirehol: true,
+  removeFirehol: true
 }
 
 const api = Object.fromEntries(Object.keys(names).map((n) => [n, (...a: unknown[]) => ipcRenderer.invoke(n, ...a)])) as Async<Api>
@@ -42,7 +49,8 @@ const bridge = {
   onSnapshot: (cb: (s: Snapshot) => void) => listen(CHANNELS.snapshot, cb),
   /** An error code while data can't be read (null once it can again). */
   onProblem: (cb: (code: string | null) => void) => listen(CHANNELS.problem, cb),
-  onTraffic: (cb: (t: Traffic) => void) => listen(CHANNELS.traffic, cb)
+  onTraffic: (cb: (t: Traffic) => void) => listen(CHANNELS.traffic, cb),
+  onAlert: (cb: (a: Alert) => void) => listen(CHANNELS.alert, cb)
 }
 export type Bridge = typeof bridge
 

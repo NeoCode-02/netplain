@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
-import type { Snapshot, Traffic } from '../../shared/types'
+import type { Alert, Snapshot, Traffic } from '../../shared/types'
+import { getLang, LANGS } from './i18n'
 
 /** Throughput at one moment, in bits per second. */
 export interface Point {
@@ -32,9 +33,10 @@ interface State {
   hist: Map<string, Point[]>
   problem: string | null
   traffic: Traffic | null
+  alerts: Alert[]
 }
 
-let state: State = { snap: null, hist: new Map(), problem: null, traffic: null }
+let state: State = { snap: null, hist: new Map(), problem: null, traffic: null, alerts: [] }
 const subs = new Set<() => void>()
 let started = false
 
@@ -54,6 +56,13 @@ function start() {
   window.netplain.onSnapshot(push)
   window.netplain.onProblem((problem) => set({ problem }))
   window.netplain.onTraffic((traffic) => set({ traffic }))
+  window.netplain.onAlert((a) => {
+    set({ alerts: [a, ...state.alerts] })
+    // The OS notification, in the language the app is shown in.
+    const [title, body] = alertText(a)
+    new Notification(title, { body, silent: false })
+  })
+  void window.netplain.alerts().then((alerts) => set({ alerts }))
   void window.netplain.snapshot().then((s) => s && !state.snap && push(s))
   void window.netplain.traffic().then((traffic) => traffic && !state.traffic && set({ traffic }))
 }
@@ -67,4 +76,14 @@ export function useLive(): State {
     },
     () => state
   )
+}
+
+/** Title and explanation of an alert in the current language. */
+export function alertText(a: Alert): [string, string] {
+  const t = LANGS[getLang()]
+  return t.alerts.say[a.kind](a.app === '?' ? t.alerts.unknownApp : a.app, a.detail)
+}
+
+export function setAlerts(alerts: Alert[]) {
+  set({ alerts })
 }
