@@ -33,6 +33,12 @@ describe('parsers', () => {
       { n: 1, ip: '192.168.0.1', ms: 1.234 },
       { n: 2, ip: null, ms: null }
     ])
+    // tracepath (Ubuntu's default): MTU notes and repeated answers are skipped.
+    expect(parseTrace(' 1?: [LOCALHOST]                      pmtu 1500\n 1:  192.168.0.1                                           0.512ms\n 1:  192.168.0.1                                           0.498ms\n 2:  no reply\n 3:  1.1.1.1                                               9.120ms reached\n     Resume: pmtu 1500 hops 3 back 3\n')).toEqual([
+      { n: 1, ip: '192.168.0.1', ms: 0.512 },
+      { n: 2, ip: null, ms: null },
+      { n: 3, ip: '1.1.1.1', ms: 9.12 }
+    ])
   })
 })
 

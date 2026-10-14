@@ -299,7 +299,8 @@ try {
     await inPage(ask, 2, '127.0.0.1')
     await until('port result', () => /Open:|Closed:|No answer:/.test(document.body.innerText))
     await inPage(ask, 3, '127.0.0.1')
-    await until('route', () => document.querySelectorAll('.hops li').length >= 1)
+    // Some Linux systems have neither traceroute nor tracepath; the page then says what to install.
+    await until('route', () => document.querySelectorAll('.hops li').length >= 1 || document.body.innerText.includes('No route tool on this computer'))
     if (process.env.E2E_FIXES) {
       await until('Clear DNS cache', () => {
         const row = [...document.querySelectorAll('.list-row')].find((r) => r.textContent.includes('Clear DNS cache'))

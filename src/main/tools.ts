@@ -36,15 +36,18 @@ export function parsePing(text: string, count: number): Pick<PingResult, 'ip' | 
   return { ip, times: Array.from({ length: count }, (_, i) => seen.get(first + i) ?? null) }
 }
 
-/** `tracert -d` (Windows: times, then the address) or `traceroute -n` (address, then times) lines; "*" is a lost probe. */
+/**
+ * `tracert -d` (Windows: times, then the address), `traceroute -n` (address, then times) or `tracepath -n`
+ * ("1:  address  0.05ms"; "1?:" lines are path-MTU notes, a repeated hop number is an extra answer) lines.
+ */
 export function parseTrace(text: string): Omit<Hop, 'org' | 'country'>[] {
   const hops: Omit<Hop, 'org' | 'country'>[] = []
   for (const line of text.split(/\r?\n/)) {
-    const m = /^\s*(\d+)\s+(.*)$/.exec(line)
-    if (!m) continue
-    const ip = m[2].split(/\s+/).find((w) => net.isIP(w)) ?? null
+    const m = /^\s*(\d+)(\?)?:?\s+(.*)$/.exec(line)
+    if (!m || m[2] || hops.some((h) => h.n === Number(m[1]))) continue
+    const ip = m[3].split(/\s+/).find((w) => net.isIP(w)) ?? null
     // "<1 ms" counts as 1; "*" is a lost probe.
-    const times = [...m[2].matchAll(/(<?)([\d.]+)\s*(?:ms|мс)/gi)].map((t) => (t[1] ? 1 : Number(t[2])))
+    const times = [...m[3].matchAll(/(<?)([\d.]+)\s*(?:ms|мс)/gi)].map((t) => (t[1] ? 1 : Number(t[2])))
     hops.push({ n: Number(m[1]), ip, ms: times.length ? Math.min(...times) : null })
   }
   return hops
@@ -66,6 +69,7 @@ export async function trace(host: string, geo: Geo): Promise<Hop[]> {
     process.platform === 'win32'
       ? await out('tracert', ['-d', '-h', '15', '-w', '600', host], 90_000)
       : (await out('traceroute', ['-n', '-q', '1', '-w', '1', '-m', '15', host], 60_000)) || (await out('tracepath', ['-n', '-m', '15', host], 60_000))
+  if (!text.trim()) throw new Error('E_NO_TRACE')
   return parseTrace(text).map((h) => ({ ...h, ...(h.ip ? geo(h.ip) : { org: null, country: null }) }))
 }
 

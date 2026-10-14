@@ -562,6 +562,7 @@ const en = {
     E_ADMIN: 'The command did not succeed.',
     E_NOT_FOUND: 'No such name.',
     E_PUBLIC_IP: 'Could not get the public address. Check the internet connection.',
+    E_NO_TRACE: 'No route tool on this computer: install the “traceroute” package.',
     E_FILTER: (m: string) => `Wireshark did not understand the filter: ${m}`,
     unknown: (m: string) => `Something went wrong: ${m}`
   }
@@ -1126,6 +1127,7 @@ const uz: Dict = {
     E_ADMIN: 'Buyruq bajarilmadi.',
     E_NOT_FOUND: 'Bunday nom topilmadi.',
     E_PUBLIC_IP: 'Ommaviy manzilni olib bo‘lmadi. Internet ulanishini tekshiring.',
+    E_NO_TRACE: 'Bu kompyuterda marshrut asbobi yo‘q: “traceroute” paketini o‘rnating.',
     E_FILTER: (m) => `Wireshark filtrni tushunmadi: ${m}`,
     unknown: (m) => `Nimadir xato ketdi: ${m}`
   }
