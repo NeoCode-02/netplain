@@ -2,9 +2,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { adapterKind, normMac } from './kind'
-import { parseNmcli, parseProcArp, parseResolv, parseRoute, parseWireless } from './linux'
-import { parseAirport, parseArpMac, parseDefaultRoute, parseIfconfig, parseNetstat, parsePorts, parseScutil } from './mac'
-import { parseArp, parseSnapshot, parseWlan } from './win'
+import { parseNmcli, parseProcArp, parseProcNet, parseResolv, parseRoute, parseWireless } from './linux'
+import { parseAirport, parseArpMac, parseDefaultRoute, parseIfconfig, parseLsof, parseNetstat as parseMacNetstat, parsePorts, parsePs, parseScutil } from './mac'
+import { parseArp, parseNetstat, parseProcs, parseSnapshot, parseWlan } from './win'
 
 const fixture = (f: string) => fs.readFileSync(path.join(__dirname, 'fixtures', f), 'utf8')
 
@@ -103,8 +103,8 @@ describe('macos', () => {
       'en0        1500  <Link#14>   3c:91:80:44:55:66   500000     0  600000000   300000     0   40000000     0',
       'en0        1500  192.168.0     192.168.0.23        500000     -  590000000   300000     -   39000000     -'
     ].join('\n')
-    expect(parseNetstat(netstat).get('lo0')).toEqual({ rx: 2000000, tx: 2000001 })
-    expect(parseNetstat(netstat).get('en0')).toEqual({ rx: 600000000, tx: 40000000 })
+    expect(parseMacNetstat(netstat).get('lo0')).toEqual({ rx: 2000000, tx: 2000001 })
+    expect(parseMacNetstat(netstat).get('en0')).toEqual({ rx: 600000000, tx: 40000000 })
     expect(parsePorts('\nHardware Port: Wi-Fi\nDevice: en0\nEthernet Address: 3c:91:80:44:55:66\n\nHardware Port: USB 10/100/1000 LAN\nDevice: en7\n').get('en7')).toBe('USB 10/100/1000 LAN')
     expect(parseDefaultRoute('   route to: default\n    gateway: 192.168.0.1\n  interface: en0\n')).toEqual({ gateway: '192.168.0.1', iface: 'en0' })
     expect(parseScutil('DNS configuration\n\nresolver #1\n  nameserver[0] : 192.168.0.1\n  nameserver[1] : fe80::1%en0\n\nresolver #2\n  nameserver[0] : 10.0.0.1\n')).toEqual(['192.168.0.1', 'fe80::1'])
@@ -133,5 +133,61 @@ describe('macos', () => {
     })
     expect(parseAirport(json).get('en0')).toMatchObject({ ssid: '', signal: 90, channel: 36, band: '5 GHz', radio: '802.11ax', auth: 'WPA2 PERSONAL', rxMbps: 864 })
     expect(parseAirport('not json').size).toBe(0)
+  })
+})
+
+describe('sockets', () => {
+  it('reads netstat -ano, including translated states', () => {
+    const text = [
+      'Active Connections',
+      '',
+      '  Proto  Local Address          Foreign Address        State           PID',
+      '  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       2012',
+      '  TCP    192.168.0.102:52345    140.82.112.25:443      ESTABLISHED     5678',
+      '  TCP    192.168.0.102:52399    13.107.42.14:443       HERGESTELLT     5678',
+      '  TCP    [::1]:6432             [::]:0                 LISTENING       6020',
+      '  TCP    [fe80::12%3]:50000     [fe80::1%3]:443        TIME_WAIT       0',
+      '  UDP    0.0.0.0:5353           *:*                                    2345'
+    ].join('\r\n')
+    const s = parseNetstat(text)
+    expect(s).toHaveLength(6)
+    expect(s[0]).toEqual({ proto: 'tcp', localIp: '0.0.0.0', localPort: 135, remoteIp: null, remotePort: null, state: 'listen', pid: 2012 })
+    expect(s[1]).toMatchObject({ remoteIp: '140.82.112.25', remotePort: 443, state: 'established', pid: 5678 })
+    expect(s[2].state).toBe('established')
+    expect(s[3]).toMatchObject({ localIp: '::1', state: 'listen' })
+    expect(s[4]).toMatchObject({ localIp: 'fe80::12', remoteIp: 'fe80::1', state: 'time_wait', pid: 0 })
+    expect(s[5]).toMatchObject({ proto: 'udp', localPort: 5353, remoteIp: null, state: 'bound', pid: 2345 })
+  })
+
+  it('reads Windows processes', () => {
+    expect(parseProcs('4\tSystem\t\t\n5678\tchrome\tC:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\tGoogle Chrome\n')).toEqual([
+      { pid: 4, name: 'System', path: null, title: null },
+      { pid: 5678, name: 'chrome', path: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', title: 'Google Chrome' }
+    ])
+  })
+
+  it('reads lsof -F and ps on macOS', () => {
+    const lsof = ['p812', 'f23', 'PTCP', 'n192.168.0.23:52345->140.82.112.25:443', 'TST=ESTABLISHED', 'TQR=0', 'f24', 'PUDP', 'n*:5353', 'p90', 'f5', 'PTCP', 'n[::1]:631', 'TST=LISTEN', ''].join('\n')
+    expect(parseLsof(lsof)).toEqual([
+      { proto: 'tcp', localIp: '192.168.0.23', localPort: 52345, remoteIp: '140.82.112.25', remotePort: 443, state: 'established', pid: 812 },
+      { proto: 'udp', localIp: '0.0.0.0', localPort: 5353, remoteIp: null, remotePort: null, state: 'bound', pid: 812 },
+      { proto: 'tcp', localIp: '::1', localPort: 631, remoteIp: null, remotePort: null, state: 'listen', pid: 90 }
+    ])
+    const ps = parsePs('  812 /Applications/Google Chrome.app/Contents/MacOS/Google Chrome\n   90 cupsd\n')
+    expect(ps[0]).toEqual({ pid: 812, name: 'Google Chrome', path: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', title: 'Google Chrome' })
+    expect(ps[1]).toEqual({ pid: 90, name: 'cupsd', path: null, title: null })
+  })
+
+  it('reads /proc/net/tcp and tcp6', () => {
+    const head = '  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode\n'
+    const tcp = `${head}   0: 0100007F:0277 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 22188 1\n   1: 6600A8C0:CC39 1970528C:01BB 01 00000000:00000000 00:00000000 00000000  1000        0 33445 1\n`
+    expect(parseProcNet(tcp, 'tcp')).toEqual([
+      { proto: 'tcp', localIp: '127.0.0.1', localPort: 631, remoteIp: null, remotePort: null, state: 'listen', pid: null, inode: 22188 },
+      { proto: 'tcp', localIp: '192.168.0.102', localPort: 52281, remoteIp: '140.82.112.25', remotePort: 443, state: 'established', pid: null, inode: 33445 }
+    ])
+    const tcp6 = `${head}   0: 00000000000000000000000001000000:0277 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 22189 1\n   1: 0000000000000000FFFF00006600A8C0:A1B2 0000000000000000FFFF00000100A8C0:0035 01 00000000:00000000 00:00000000 00000000     0        0 5 1\n`
+    const six = parseProcNet(tcp6, 'tcp')
+    expect(six[0]).toMatchObject({ localIp: '::1', localPort: 631, state: 'listen' })
+    expect(six[1]).toMatchObject({ localIp: '192.168.0.102', remoteIp: '192.168.0.1', remotePort: 53 })
   })
 })

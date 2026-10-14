@@ -120,7 +120,27 @@ try {
       await until('device list', () => document.querySelector('.dev-row, .empty') !== null)
       await shot(`devices-${theme.toLowerCase()}`)
     })
+
+    await step(`connections page (${theme.toLowerCase()})`, async () => {
+      await until('Connections', clickText, 'Connections')
+      await until('connection data', () => document.querySelector('.page-head p')?.textContent !== 'Reading connections…' && document.querySelector('.ad-row, .list-empty') !== null)
+      // Without the location database (fresh data folder) the page offers to download it.
+      await until('the location banner', () => document.querySelector('.geo-banner') !== null)
+      await inPage(() => document.querySelector('.ad-toggle')?.click())
+      await shot(`connections-${theme.toLowerCase()}`)
+      await inPage(() => document.querySelector('.content').scrollTo(0, 1e6))
+      await shot(`connections-ports-${theme.toLowerCase()}`)
+      await inPage(() => document.querySelector('.content').scrollTo(0, 0))
+    })
   }
+
+  // Opt-in, because it downloads ~9 MB from db-ip.com: E2E_GEO=1 npm run e2e
+  if (process.env.E2E_GEO)
+    await step('location database', async () => {
+      await until('download button', clickText, 'Download (≈9 MB)')
+      await until('companies on connections', () => document.querySelector('.geo-banner') === null && document.querySelector('.orgs .tag') !== null)
+      await shot('connections-geo')
+    })
 
   await step('Uzbek', async () => {
     await until('Settings', clickText, 'Settings')

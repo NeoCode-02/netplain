@@ -58,3 +58,54 @@ export interface Neighbor {
 export interface Settings {
   theme: 'system' | 'light' | 'dark'
 }
+
+/** One open TCP/UDP socket as the OS lists it. */
+export interface Socket {
+  proto: 'tcp' | 'udp'
+  /** '0.0.0.0' / '::' = every address. */
+  localIp: string
+  localPort: number
+  remoteIp: string | null
+  remotePort: number | null
+  /** 'listen', 'established', 'time_wait', …; UDP is 'bound' until it has a peer. */
+  state: string
+  pid: number | null
+}
+
+export interface Proc {
+  pid: number
+  /** Executable name, e.g. "chrome". */
+  name: string
+  path: string | null
+  /** Human name where the OS has one ("Google Chrome"). */
+  title: string | null
+}
+
+export type Scope = 'internet' | 'local' | 'loopback'
+
+/** A socket with who owns it and where it goes. */
+export interface Conn extends Socket {
+  app: string
+  title: string | null
+  path: string | null
+  /** Domain name, when this computer looked it up recently. */
+  host: string | null
+  /** ISO 3166 code. */
+  country: string | null
+  org: string | null
+  scope: Scope
+}
+
+export interface Connections {
+  at: number
+  /** Sockets with a peer. */
+  conns: Conn[]
+  /** TCP ports waiting for others to connect. */
+  listening: Conn[]
+}
+
+export interface GeoInfo {
+  ready: boolean
+  /** When DB-IP built the database (ms). */
+  built: number | null
+}

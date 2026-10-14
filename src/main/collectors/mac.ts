@@ -1,7 +1,7 @@
-import type { Adapter, AdapterKind, Neighbor, Wifi } from '../../shared/types'
-import { noZone, run, tryRun } from '../exec'
+import type { Adapter, AdapterKind, Neighbor, Proc, Socket, Wifi } from '../../shared/types'
+import { cached, noZone, run, tryRun } from '../exec'
 import { adapterKind, normMac } from './kind'
-import { poll, type Collector } from './common'
+import { hostPort, poll, tcpState, type Collector } from './common'
 
 interface Iface {
   name: string
@@ -102,19 +102,7 @@ export function parseAirport(json: string): Map<string, Wifi> {
   return out
 }
 
-/** Slow commands (system_profiler takes ~1 s) are refreshed every few seconds, the rest every tick. */
-function cached<T>(ms: number, load: () => Promise<T>, empty: T) {
-  let value = empty
-  let at = 0
-  return async () => {
-    if (Date.now() - at > ms) {
-      at = Date.now()
-      value = await load()
-    }
-    return value
-  }
-}
-
+// Slow commands (system_profiler takes ~1 s) are refreshed every few seconds, the rest every tick.
 const ports = cached(30_000, async () => parsePorts(await tryRun('networksetup', ['-listallhardwareports'])), new Map<string, string>())
 const airport = cached(10_000, async () => parseAirport(await tryRun('system_profiler', ['SPAirPortDataType', '-json'], 15_000)), new Map<string, Wifi>())
 const dnsServers = cached(10_000, async () => parseScutil(await tryRun('scutil', ['--dns'])), [] as string[])
@@ -160,7 +148,60 @@ export async function snapshot(): Promise<Adapter[]> {
   })
 }
 
+/**
+ * `lsof -nP -iTCP -iUDP -F pPnT`: one field per line — p<pid>, then per socket f<fd>, P<proto>,
+ * n<local>[-><remote>], T<info> (TST=<state> for TCP).
+ */
+export function parseLsof(text: string): Socket[] {
+  const out: Socket[] = []
+  let pid: number | null = null
+  let cur: { proto: 'tcp' | 'udp'; name: string; state: string } | null = null
+  const flush = () => {
+    if (!cur?.name) return
+    const [l, r] = cur.name.split('->')
+    const local = hostPort(l)
+    const peer = r ? hostPort(r) : null
+    if (local)
+      out.push({
+        proto: cur.proto,
+        localIp: local.ip,
+        localPort: local.port,
+        remoteIp: peer?.ip ?? null,
+        remotePort: peer?.port ?? null,
+        state: cur.proto === 'tcp' ? tcpState(cur.state, !!peer) : peer ? 'established' : 'bound',
+        pid
+      })
+  }
+  for (const line of text.split('\n')) {
+    const v = line.slice(1)
+    if (line[0] === 'p') {
+      flush()
+      cur = null
+      pid = Number(v)
+    } else if (line[0] === 'f') {
+      flush()
+      cur = { proto: 'tcp', name: '', state: '' }
+    } else if (cur && line[0] === 'P') cur.proto = v === 'UDP' ? 'udp' : 'tcp'
+    else if (cur && line[0] === 'n') cur.name = v
+    else if (cur && line.startsWith('TST=')) cur.state = line.slice(4)
+  }
+  flush()
+  return out
+}
+
+/** `ps -axo pid=,comm=`: comm is the full path for apps; their bundle name is the friendly title. */
+export function parsePs(text: string): Proc[] {
+  return [...text.matchAll(/^\s*(\d+)\s+(.+)$/gm)].map(([, pid, comm]) => {
+    const path = comm.trim()
+    return { pid: Number(pid), name: path.split('/').pop()!, path: path.startsWith('/') ? path : null, title: /\/([^/]+)\.app\//.exec(path)?.[1] ?? null }
+  })
+}
+
 export const mac: Collector = {
   watch: poll(snapshot),
-  neighbors: async () => parseArpMac(await run('arp', ['-an']))
+  neighbors: async () => parseArpMac(await run('arp', ['-an'])),
+  // lsof exits with 1 when it finds nothing; without root it lists only this user's processes.
+  sockets: async () => parseLsof(await tryRun('lsof', ['-nP', '-iTCP', '-iUDP', '-F', 'pPnT'])),
+  processes: async () => parsePs(await run('ps', ['-axo', 'pid=,comm='])),
+  dnsCache: async () => []
 }

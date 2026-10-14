@@ -5,6 +5,9 @@ import { pathToFileURL } from 'node:url'
 import { CHANNELS, type Api } from '../shared/api'
 import type { Settings, Snapshot } from '../shared/types'
 import { collector } from './collectors'
+import { join } from './connections'
+import { cached } from './exec'
+import { createGeo } from './geodb'
 import { internetIp, realDevices, sweep } from './net'
 import { vendorTable } from './tshark'
 
@@ -67,6 +70,13 @@ async function devices() {
   return realDevices(list).map((n) => ({ ...n, vendor: vendors.get(n.mac.slice(0, 8)) ?? null }))
 }
 
+const geo = createGeo(path.join(app.getPath('userData'), 'geo'))
+// The process list costs ~0.4 s on Windows (PowerShell start), the DNS cache ~1 s.
+const processes = cached(5000, () => collector.processes(), [])
+const dnsNames = cached(30_000, async () => new Map(await collector.dnsCache()), new Map<string, string>())
+const icons = new Map<string, string | null>()
+let knownPaths = new Set<string>()
+
 const overlay = () => ({ color: '#00000000', symbolColor: nativeTheme.shouldUseDarkColors ? '#a1a4ab' : '#3f4148', height: 48 })
 const rendererFile = pathToFileURL(path.join(__dirname, '../renderer/index.html')).href
 
@@ -116,7 +126,25 @@ const handlers: Api = {
     await sweep(ip)
     return devices()
   },
-  openUrl: (url) => void shell.openExternal(url)
+  openUrl: (url) => void shell.openExternal(url),
+  connections: async () => {
+    const [sockets, procs, hosts] = await Promise.all([collector.sockets(), processes(), dnsNames()])
+    knownPaths = new Set(procs.flatMap((p) => (p.path ? [p.path] : [])))
+    return join(sockets, procs, hosts, geo.lookup)
+  },
+  appIcon: async (file) => {
+    if (!icons.has(file))
+      icons.set(
+        file,
+        await app.getFileIcon(file, { size: 'normal' }).then(
+          (i) => i.toDataURL(),
+          () => null
+        )
+      )
+    return icons.get(file) ?? null
+  },
+  geoInfo: () => geo.info(),
+  geoUpdate: () => geo.update()
 }
 
 const none = (a: unknown[]) => a.length === 0
@@ -134,7 +162,11 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   snapshot: none,
   neighbors: none,
   scan: none,
-  openUrl: (a) => httpsUrl(a[0])
+  openUrl: (a) => httpsUrl(a[0]),
+  connections: none,
+  appIcon: (a) => typeof a[0] === 'string' && knownPaths.has(a[0]),
+  geoInfo: none,
+  geoUpdate: none
 }
 
 /** Only our own window's page may call the main process. */

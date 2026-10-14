@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
-import type { Adapter, AdapterKind, Neighbor, Wifi } from '../../shared/types'
-import { tryRun } from '../exec'
+import type { Adapter, AdapterKind, Neighbor, Socket, Wifi } from '../../shared/types'
+import { cached, tryRun } from '../exec'
 import { adapterKind, normMac } from './kind'
 import { poll, type Collector } from './common'
 
@@ -16,6 +16,68 @@ const read = (p: string) => {
 
 /** /proc/net/route stores IPv4 addresses as little-endian hex. */
 const hexIp = (h: string) => [6, 4, 2, 0].map((i) => parseInt(h.slice(i, i + 2), 16)).join('.')
+
+/** /proc/net/tcp6 stores IPv6 as four little-endian 32-bit words. */
+function hexIp6(h: string): string {
+  const bytes = [0, 1, 2, 3].flatMap((w) => h.toLowerCase().slice(w * 8, w * 8 + 8).match(/../g)!.reverse())
+  if (bytes.slice(0, 10).every((b) => b === '00') && bytes[10] === 'ff' && bytes[11] === 'ff') return bytes.slice(12).map((b) => parseInt(b, 16)).join('.')
+  const full = [0, 2, 4, 6, 8, 10, 12, 14].map((i) => bytes[i] + bytes[i + 1]).join(':')
+  // The URL parser writes IPv6 in its shortest form.
+  return new URL(`http://[${full}]`).hostname.slice(1, -1)
+}
+
+const TCP_STATES: Record<string, string> = { '01': 'established', '02': 'syn_sent', '03': 'syn_received', '04': 'fin_wait', '05': 'fin_wait', '06': 'time_wait', '07': 'closed', '08': 'close_wait', '09': 'last_ack', '0A': 'listen', '0B': 'closing' }
+
+/** /proc/net/{tcp,tcp6,udp,udp6}: "sl local rem st … inode". */
+export function parseProcNet(text: string, proto: 'tcp' | 'udp'): (Socket & { inode: number })[] {
+  const out: (Socket & { inode: number })[] = []
+  for (const line of text.split('\n').slice(1)) {
+    const c = line.trim().split(/\s+/)
+    if (c.length < 10) continue
+    const [lip, lport] = c[1].split(':')
+    const [rip, rport] = c[2].split(':')
+    const ip = (h: string) => (h.length === 8 ? hexIp(h) : hexIp6(h))
+    const peer = parseInt(rport, 16) > 0
+    out.push({
+      proto,
+      localIp: ip(lip),
+      localPort: parseInt(lport, 16),
+      remoteIp: peer ? ip(rip) : null,
+      remotePort: peer ? parseInt(rport, 16) : null,
+      state: proto === 'tcp' ? (TCP_STATES[c[3].toUpperCase()] ?? 'other') : peer ? 'established' : 'bound',
+      pid: null,
+      inode: Number(c[9])
+    })
+  }
+  return out
+}
+
+const pids = () => fs.readdirSync('/proc').filter((d) => /^\d+$/.test(d)).map(Number)
+
+/**
+ * Socket inode → pid, from the "socket:[inode]" links in every process's fd folder (this is what ss -p does).
+ * ponytail: walks every fd on each refresh; fine for a desktop, cache by pid if it ever shows up in profiles.
+ */
+function socketOwners(): Map<number, number> {
+  const out = new Map<number, number>()
+  for (const pid of pids()) {
+    let fds: string[]
+    try {
+      fds = fs.readdirSync(`/proc/${pid}/fd`)
+    } catch {
+      continue
+    }
+    for (const fd of fds) {
+      try {
+        const m = /^socket:\[(\d+)\]$/.exec(fs.readlinkSync(`/proc/${pid}/fd/${fd}`))
+        if (m) out.set(Number(m[1]), pid)
+      } catch {
+        // closed meanwhile
+      }
+    }
+  }
+  return out
+}
 
 /** Default gateway per interface from /proc/net/route. */
 export function parseRoute(text: string): Map<string, string> {
@@ -76,17 +138,12 @@ function hint(dir: string, name: string): AdapterKind {
   return 'virtual'
 }
 
-let nm = new Map<string, Wifi>()
-let nmAt = 0
-
-async function wifiInfo(): Promise<Map<string, Wifi>> {
-  // nmcli is slow-ish and the answer changes rarely; --rescan no keeps it from scanning.
-  if (Date.now() - nmAt > 5000) {
-    nmAt = Date.now()
-    nm = parseNmcli(await tryRun('nmcli', ['-t', '-f', 'ACTIVE,SSID,BSSID,SIGNAL,CHAN,FREQ,RATE,SECURITY,DEVICE', 'dev', 'wifi', 'list', '--rescan', 'no'], 4000))
-  }
-  return nm
-}
+// nmcli is slow-ish and the answer changes rarely; --rescan no keeps it from scanning.
+const wifiInfo = cached(
+  5000,
+  async () => parseNmcli(await tryRun('nmcli', ['-t', '-f', 'ACTIVE,SSID,BSSID,SIGNAL,CHAN,FREQ,RATE,SECURITY,DEVICE', 'dev', 'wifi', 'list', '--rescan', 'no'], 4000)),
+  new Map<string, Wifi>()
+)
 
 export async function snapshot(): Promise<Adapter[]> {
   const addrs = os.networkInterfaces()
@@ -126,5 +183,22 @@ export async function snapshot(): Promise<Adapter[]> {
 
 export const linux: Collector = {
   watch: poll(snapshot),
-  neighbors: async () => parseProcArp(read('/proc/net/arp'))
+  neighbors: async () => parseProcArp(read('/proc/net/arp')),
+  async sockets() {
+    const owners = socketOwners()
+    return (['tcp', 'tcp6', 'udp', 'udp6'] as const).flatMap((f) =>
+      parseProcNet(read(`/proc/net/${f}`), f.startsWith('tcp') ? 'tcp' : 'udp').map(({ inode, ...s }) => ({ ...s, pid: owners.get(inode) ?? null }))
+    )
+  },
+  processes: async () =>
+    pids().map((pid) => {
+      let path: string | null = null
+      try {
+        path = fs.readlinkSync(`/proc/${pid}/exe`)
+      } catch {
+        // another user's process
+      }
+      return { pid, name: read(`/proc/${pid}/comm`), path, title: null }
+    }),
+  dnsCache: async () => []
 }

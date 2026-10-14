@@ -19,7 +19,9 @@ const PATHS = {
   chevron: 'M9 6l6 6-6 6',
   down: 'M12 5v14M5 12l7 7 7-7',
   up: 'M12 19V5M5 12l7-7 7 7',
-  dot: 'M12 12h.01'
+  dot: 'M12 12h.01',
+  link: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7',
+  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM20 20l-4-4'
 } as const
 export type IconName = keyof typeof PATHS
 

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { Settings as Prefs } from '../../../shared/types'
-import { getLang, LANGS, setLang, useT, type Lang } from '../i18n'
+import { useGeo } from '../geo'
+import { errText, getLang, LANGS, setLang, useT, type Lang } from '../i18n'
+import { Icon } from '../ui'
 
 export default function Settings() {
   const t = useT()
   const s = t.settings
+  const geo = useGeo()
   const [prefs, setPrefs] = useState<Prefs | null>(null)
   const [version, setVersion] = useState('')
 
@@ -46,6 +49,22 @@ export default function Settings() {
           </div>
         </div>
       </div>
+      <section className="section">
+        <div className="section-head">
+          <h3>{s.geo}</h3>
+        </div>
+        <div className="panel panel-pad stack tight">
+          <div className="setting">
+            <span>{geo.info?.ready && geo.info.built ? s.geoReady(new Date(geo.info.built).toLocaleDateString(getLang(), { day: 'numeric', month: 'long', year: 'numeric' })) : s.geoMissing}</span>
+            <button className="btn sm" onClick={geo.update} disabled={!geo.info || geo.busy}>
+              <Icon name={geo.info?.ready ? 'refresh' : 'down'} className={geo.busy ? 'spin' : undefined} />
+              {geo.busy ? s.geoBusy : geo.info?.ready ? s.geoUpdate : s.geoDownload}
+            </button>
+          </div>
+          <p className="small muted">{s.geoWhy}</p>
+          {geo.err !== null && <p className="note danger">{errText(t, geo.err)}</p>}
+        </div>
+      </section>
       <section className="section">
         <div className="section-head">
           <h3>{s.about}</h3>

@@ -1,8 +1,8 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import type { Adapter, AdapterKind, Neighbor, Wifi } from '../../shared/types'
+import type { Adapter, AdapterKind, Neighbor, Proc, Socket, Wifi } from '../../shared/types'
 import { list, noZone, run } from '../exec'
+import { hostPort, tcpState, type Collector } from './common'
 import { adapterKind, normMac } from './kind'
-import type { Collector } from './common'
 
 // One long-lived PowerShell prints a JSON line per second: starting powershell.exe costs ~250 ms,
 // a snapshot through .NET ~5 ms. netsh is the only Wi-Fi source that needs no admin rights.
@@ -117,6 +117,41 @@ export function parseArp(text: string): Neighbor[] {
   return out
 }
 
+/** `netstat -ano`: "TCP  192.168.0.2:52345  140.82.112.25:443  ESTABLISHED  5678"; UDP rows have no state. */
+export function parseNetstat(text: string): Socket[] {
+  const out: Socket[] = []
+  for (const line of text.split(/\r?\n/)) {
+    const c = line.trim().split(/\s+/)
+    if (c[0] !== 'TCP' && c[0] !== 'UDP') continue
+    const local = hostPort(c[1])
+    const remote = hostPort(c[2])
+    const pid = Number(c.at(-1))
+    if (!local) continue
+    const peer = remote && remote.port ? remote : null
+    const tcp = c[0] === 'TCP'
+    out.push({
+      proto: tcp ? 'tcp' : 'udp',
+      localIp: local.ip,
+      localPort: local.port,
+      remoteIp: peer?.ip ?? null,
+      remotePort: peer?.port ?? null,
+      state: tcp ? tcpState(c.length >= 5 ? c[3] : '', !!peer) : 'bound',
+      pid: Number.isInteger(pid) ? pid : null
+    })
+  }
+  return out
+}
+
+/** Tab-separated lines from the PowerShell commands below; a tab inside a value would only shorten it. */
+const rows = (text: string) => text.split(/\r?\n/).filter(Boolean).map((l) => l.split('\t'))
+
+export const parseProcs = (text: string): Proc[] =>
+  rows(text)
+    .filter((r) => /^\d+$/.test(r[0]))
+    .map(([pid, name, path, title]) => ({ pid: Number(pid), name, path: path || null, title: title || null }))
+
+const ps = (script: string) => run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], 15_000)
+
 export const win: Collector = {
   watch(on, onError) {
     let ps: ChildProcessWithoutNullStreams
@@ -156,5 +191,12 @@ export const win: Collector = {
       ps.kill()
     }
   },
-  neighbors: async () => parseArp(await run('arp', ['-a']))
+  neighbors: async () => parseArp(await run('arp', ['-a'])),
+  sockets: async () => parseNetstat(await run('netstat', ['-ano'])),
+  // Description is the program's own name ("Google Chrome"); paths of other users' and system processes stay hidden without admin rights.
+  processes: async () => parseProcs(await ps('Get-Process | ForEach-Object { ($_.Id, $_.ProcessName, $_.Path, $_.Description) -join [char]9 }')),
+  dnsCache: async () =>
+    rows(await ps('Get-DnsClientCache | Where-Object { $_.Type -in 1,28 -and $_.Data } | ForEach-Object { $_.Data + [char]9 + $_.Entry }')).map(
+      ([ip, name]) => [ip, name] as [string, string]
+    )
 }

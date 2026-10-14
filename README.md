@@ -2,11 +2,11 @@
 
 See what your computer does on the network, in plain language — without `ipconfig`, `netstat` or Wireshark filters.
 
-> Status: early development. Working now: **Network** (every adapter explained, Wi-Fi details, live traffic) and **Devices** (who is on your local network). Coming next: per-app connections and traffic, packets, usage history, alerts.
+> Status: early development. Working now: **Network** (every adapter explained, Wi-Fi details, live traffic), **Connections** (which app talks to which company and country, open ports) and **Devices** (who is on your local network). Coming next: per-app traffic, packets, usage history, alerts, diagnostics.
 
 - **Plain language** in English and Uzbek: what a VirtualBox or WSL adapter is, whether your Wi-Fi security is fine, what a private address means.
 - **Everything in one place**: adapters, Wi-Fi signal and band, IP / router / DNS, devices on your network and who made them.
-- **Local only**: everything is read on your computer; Netplain sends nothing anywhere.
+- **Local only**: everything is read on your computer. Netplain goes online only when you press a button that says so (e.g. downloading the free location database).
 
 ## Requirements
 
@@ -26,4 +26,4 @@ How data is read, per OS: Windows — .NET `NetworkInterface`, `netsh wlan`, `ar
 
 ## License
 
-MIT
+MIT. IP geolocation by [DB-IP](https://db-ip.com) (CC BY 4.0), downloaded from inside the app.

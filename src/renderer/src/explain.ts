@@ -71,3 +71,81 @@ export function summary(t: Dict, adapters: Adapter[], internetId: string | null)
   if (a.wifi?.ssid) return t.network.wifiSummary(a.wifi.ssid, a.name)
   return t.network.wiredSummary(a.name)
 }
+
+const PORTS: Record<string, string> = {
+  'tcp:443': 'https',
+  'tcp:8443': 'https',
+  'udp:443': 'quic',
+  'tcp:80': 'http',
+  'tcp:8080': 'httpAlt',
+  'udp:53': 'dns',
+  'tcp:53': 'dns',
+  'tcp:853': 'dot',
+  'tcp:22': 'ssh',
+  'tcp:21': 'ftp',
+  'tcp:23': 'telnet',
+  'tcp:25': 'mail',
+  'tcp:465': 'mail',
+  'tcp:587': 'mail',
+  'tcp:993': 'mail',
+  'tcp:995': 'mail',
+  'tcp:143': 'mailPlain',
+  'tcp:110': 'mailPlain',
+  'tcp:3389': 'rdp',
+  'tcp:445': 'smb',
+  'tcp:139': 'smb',
+  'tcp:135': 'rpc',
+  'tcp:5228': 'push',
+  'tcp:5223': 'push',
+  'tcp:5222': 'chat',
+  'udp:3478': 'calls',
+  'udp:19302': 'calls',
+  'udp:123': 'ntp',
+  'udp:5353': 'mdns',
+  'udp:1900': 'ssdp',
+  'tcp:1433': 'db',
+  'tcp:3306': 'db',
+  'tcp:5432': 'db',
+  'tcp:6379': 'db',
+  'tcp:27017': 'db',
+  'tcp:7680': 'delivery',
+  'tcp:5040': 'cdp',
+  'tcp:5357': 'wsd',
+  'tcp:3000': 'dev',
+  'tcp:5173': 'dev',
+  'tcp:8000': 'dev'
+}
+
+/** Well-known service on a port, as a key of the `services` dictionary. */
+export const service = (proto: string, port: number | null) => (port === null ? null : (PORTS[`${proto}:${port}`] ?? null))
+
+/** Services that send their content as readable text. */
+export const PLAIN = new Set(['http', 'httpAlt', 'dns', 'ftp', 'telnet', 'mailPlain'])
+
+/** "Google LLC" → "Google", "\"Uzbektelekom\" Joint Stock Company" → "Uzbektelekom". */
+export function company(org: string): string {
+  return (
+    org
+      .replace(/["“”]/g, '')
+      .replace(/[,\s]+(inc\.?|llc|ltd\.?|limited|co\.,?\s?ltd\.?|corporation|corp\.?|gmbh|s\.a\.|b\.v\.|plc|pbc|jsc|joint stock company|ag|oy|ab)$/i, '')
+      .trim() || org
+  )
+}
+
+/** Country name in the reader's language; the ISO code where the runtime has no name. */
+export function countryName(code: string, lang: string): string {
+  try {
+    return new Intl.DisplayNames([lang, 'en'], { type: 'region' }).of(code) ?? code
+  } catch {
+    return code
+  }
+}
+
+/** "A, B and C" in the reader's language. */
+export function listJoin(items: string[], lang: string): string {
+  try {
+    return new Intl.ListFormat(lang, { type: 'conjunction' }).format(items)
+  } catch {
+    return items.join(', ')
+  }
+}

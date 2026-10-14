@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { errText, useT } from './i18n'
 import { useLive } from './live'
+import Connections from './pages/Connections'
 import Devices from './pages/Devices'
 import Network from './pages/Network'
 import Settings from './pages/Settings'
 import { Icon, Mark, type IconName } from './ui'
 
-type Page = 'network' | 'devices' | 'settings'
+type Page = 'network' | 'connections' | 'devices' | 'settings'
 const NAV: [Page, IconName][] = [
   ['network', 'globe'],
+  ['connections', 'link'],
   ['devices', 'devices']
 ]
 
@@ -44,6 +46,7 @@ export default function App() {
         )}
         <div className="content">
           {page === 'network' && <Network />}
+          {page === 'connections' && <Connections />}
           {page === 'devices' && <Devices />}
           {page === 'settings' && <Settings />}
         </div>

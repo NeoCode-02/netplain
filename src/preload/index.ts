@@ -5,7 +5,19 @@ import type { Snapshot } from '../shared/types'
 type Async<T> = { [K in keyof T]: T[K] extends (...a: infer A) => infer R ? (...a: A) => Promise<Awaited<R>> : never }
 
 // Record (not an array) so TypeScript fails when a handler is missing here.
-const names: Record<keyof Api, true> = { appInfo: true, getSettings: true, saveSettings: true, snapshot: true, neighbors: true, scan: true, openUrl: true }
+const names: Record<keyof Api, true> = {
+  appInfo: true,
+  getSettings: true,
+  saveSettings: true,
+  snapshot: true,
+  neighbors: true,
+  scan: true,
+  openUrl: true,
+  connections: true,
+  appIcon: true,
+  geoInfo: true,
+  geoUpdate: true
+}
 
 const api = Object.fromEntries(Object.keys(names).map((n) => [n, (...a: unknown[]) => ipcRenderer.invoke(n, ...a)])) as Async<Api>
 

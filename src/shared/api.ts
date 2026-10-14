@@ -1,4 +1,4 @@
-import type { Neighbor, Settings, Snapshot } from './types'
+import type { Connections, GeoInfo, Neighbor, Settings, Snapshot } from './types'
 
 /** Main → renderer pushes. */
 export const CHANNELS = { snapshot: 'np:snapshot', problem: 'np:problem' } as const
@@ -19,4 +19,11 @@ export interface Api {
   scan(): Promise<Neighbor[]>
   /** Opens an https link in the default browser. */
   openUrl(url: string): void
+  /** Open sockets with their app, DNS name and location. */
+  connections(): Promise<Connections>
+  /** A running program's icon as a data URL; only paths of processes seen by `connections`. */
+  appIcon(path: string): Promise<string | null>
+  geoInfo(): GeoInfo
+  /** Downloads DB-IP Lite (~9 MB from db-ip.com) into the app's data folder. Throws E_GEO_DOWNLOAD. */
+  geoUpdate(): Promise<GeoInfo>
 }
