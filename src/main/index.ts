@@ -14,6 +14,8 @@ import { allowCaptureLinux, createTrafficWatch } from './traffic'
 import { vendorTable } from './tshark'
 import { isSettings, loadSettings, saveSettings } from './settings'
 import { createUsage } from './usage'
+import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './tools'
+import { flushDns, renewIp, restartAdapter } from './admin'
 
 // Separate data folder for tests / portable use.
 if (process.env.NETPLAIN_DATA) app.setPath('userData', process.env.NETPLAIN_DATA)
@@ -202,7 +204,22 @@ const handlers: Api = {
   clearAlerts: () => alerts.clear(),
   blocklistInfo: () => alerts.blocklistInfo(),
   updateFirehol: () => alerts.updateFirehol(),
-  removeFirehol: () => alerts.removeFirehol()
+  removeFirehol: () => alerts.removeFirehol(),
+  ping: (host) => ping(host),
+  trace: (host) => trace(host, geo.lookup),
+  lookup: (name) => lookup(name, geo.lookup),
+  checkPort: (host, port) => checkPort(host, port),
+  publicIp: () => publicIp(geo.lookup),
+  diagnose: () => diagnose(latest),
+  flushDns: () => flushDns(),
+  renewIp: (id) => renewIp(adapter(id)),
+  restartAdapter: (id) => restartAdapter(adapter(id))
+}
+
+function adapter(id: string) {
+  const a = latest?.adapters.find((x) => x.id === id)
+  if (!a) throw new Error('E_BAD_ARGS')
+  return a
 }
 
 const none = (a: unknown[]) => a.length === 0
@@ -240,7 +257,16 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   clearAlerts: none,
   blocklistInfo: none,
   updateFirehol: none,
-  removeFirehol: none
+  removeFirehol: none,
+  ping: (a) => isHost(a[0]),
+  trace: (a) => isHost(a[0]),
+  lookup: (a) => isHost(a[0]),
+  checkPort: (a) => isHost(a[0]) && int(a[1]) && (a[1] as number) >= 1 && (a[1] as number) <= 65535,
+  publicIp: none,
+  diagnose: none,
+  flushDns: none,
+  renewIp: (a) => typeof a[0] === 'string' && a[0].length <= 200,
+  restartAdapter: (a) => typeof a[0] === 'string' && a[0].length <= 200
 }
 
 /** Only our own window's page may call the main process. */

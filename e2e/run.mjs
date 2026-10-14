@@ -227,6 +227,37 @@ try {
     }
   })
 
+  await step('tools page', async () => {
+    await until('Tools', clickText, 'Tools')
+    await until('Check', clickText, 'Check')
+    await until('the diagnosis', () => document.querySelectorAll('.steps-list li').length === 5)
+    const ask = (i, host) => {
+      const form = document.querySelectorAll('.tool-form')[i]
+      const input = form.querySelector('input')
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, host)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      setTimeout(() => form.querySelector('button[type=submit]').click(), 50)
+      return true
+    }
+    await inPage(ask, 0, '127.0.0.1')
+    await until('ping result', hasText, 'answered')
+    await inPage(ask, 1, 'localhost')
+    await until('lookup result', hasText, 'Answered in')
+    await inPage(ask, 2, '127.0.0.1')
+    await until('port result', () => /Open:|Closed:|No answer:/.test(document.body.innerText))
+    await inPage(ask, 3, '127.0.0.1')
+    await until('route', () => document.querySelectorAll('.hops li').length >= 1)
+    if (process.env.E2E_FIXES) {
+      await until('Clear DNS cache', () => {
+        const row = [...document.querySelectorAll('.list-row')].find((r) => r.textContent.includes('Clear DNS cache'))
+        row?.querySelector('button').click()
+        return !!row
+      })
+      await until('the fix result', hasText, 'Clear DNS cache: Done.')
+    }
+    await shot('tools')
+  })
+
   await step('Uzbek', async () => {
     await until('Settings', clickText, 'Settings')
     await until('O‘zbekcha', clickText, 'O‘zbekcha')

@@ -250,3 +250,44 @@ export interface BlocklistInfo {
   firehol: number | null
   fireholAt: number | null
 }
+
+export interface PingResult {
+  host: string
+  ip: string | null
+  /** Round-trip times in ms; null for a lost probe. */
+  times: (number | null)[]
+}
+
+export interface Hop {
+  n: number
+  ip: string | null
+  /** Best of the probe times, ms. */
+  ms: number | null
+  org: string | null
+  country: string | null
+}
+
+export interface LookupResult {
+  name: string
+  addresses: { ip: string; org: string | null; country: string | null }[]
+  /** Names found for an IP (reverse lookup). */
+  names: string[]
+  ms: number
+}
+
+export type PortState = 'open' | 'closed' | 'filtered'
+
+export interface PublicIp {
+  ip: string
+  org: string | null
+  country: string | null
+}
+
+export type StepState = 'ok' | 'fail' | 'skip'
+
+/** "Why is there no internet?": one link of the chain from this computer to the internet. */
+export interface DiagnoseStep {
+  key: 'adapter' | 'address' | 'router' | 'dns' | 'internet'
+  state: StepState
+  detail: string
+}

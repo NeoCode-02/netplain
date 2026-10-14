@@ -1,4 +1,23 @@
-import type { Alert, BlocklistInfo, Connections, GeoInfo, Neighbor, PacketBatch, PacketDetail, Settings, Snapshot, Traffic, Usage, UsageRange } from './types'
+import type {
+  Alert,
+  BlocklistInfo,
+  Connections,
+  DiagnoseStep,
+  GeoInfo,
+  Hop,
+  LookupResult,
+  Neighbor,
+  PacketBatch,
+  PacketDetail,
+  PingResult,
+  PortState,
+  PublicIp,
+  Settings,
+  Snapshot,
+  Traffic,
+  Usage,
+  UsageRange
+} from './types'
 
 /** Main → renderer pushes. */
 export const CHANNELS = { snapshot: 'np:snapshot', problem: 'np:problem', traffic: 'np:traffic', alert: 'np:alert' } as const
@@ -51,4 +70,19 @@ export interface Api {
   /** Downloads FireHOL level 1 from GitHub. Throws E_BLOCKLIST_DOWNLOAD. */
   updateFirehol(): Promise<BlocklistInfo>
   removeFirehol(): BlocklistInfo
+  /** ICMP echo, 4 probes. */
+  ping(host: string): Promise<PingResult>
+  /** Route to a host, up to 15 hops, with each hop's company and country. */
+  trace(host: string): Promise<Hop[]>
+  /** Name → addresses, or IP → names. Throws E_NOT_FOUND. */
+  lookup(name: string): Promise<LookupResult>
+  checkPort(host: string, port: number): Promise<PortState>
+  /** Asks api.ipify.org for the address the internet sees. Throws E_PUBLIC_IP. */
+  publicIp(): Promise<PublicIp>
+  /** Checks adapter → address → router → DNS → internet. */
+  diagnose(): Promise<DiagnoseStep[]>
+  /** The following ask for admin rights through the OS prompt when needed; throw E_CANCELLED / E_ADMIN. */
+  flushDns(): Promise<void>
+  renewIp(adapterId: string): Promise<void>
+  restartAdapter(adapterId: string): Promise<void>
 }

@@ -10,9 +10,10 @@ import Network from './pages/Network'
 import Overview from './pages/Overview'
 import Packets from './pages/Packets'
 import Settings from './pages/Settings'
+import Tools from './pages/Tools'
 import { Icon, Mark, type IconName } from './ui'
 
-export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'packets' | 'devices' | 'history' | 'alerts' | 'settings'
+export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'packets' | 'devices' | 'history' | 'alerts' | 'tools' | 'settings'
 const NAV: [Page, IconName][] = [
   ['overview', 'chart'],
   ['network', 'globe'],
@@ -21,7 +22,8 @@ const NAV: [Page, IconName][] = [
   ['packets', 'list'],
   ['devices', 'devices'],
   ['history', 'clock'],
-  ['alerts', 'bell']
+  ['alerts', 'bell'],
+  ['tools', 'wrench']
 ]
 
 export default function App() {
@@ -65,6 +67,7 @@ export default function App() {
           {page === 'devices' && <Devices />}
           {page === 'history' && <History />}
           {page === 'alerts' && <Alerts />}
+          {page === 'tools' && <Tools />}
           {page === 'settings' && <Settings />}
         </div>
       </main>

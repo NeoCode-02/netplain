@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 
 const en = {
   lang: 'English',
-  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', settings: 'Settings' },
+  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', tools: 'Tools', settings: 'Settings' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobile', loopback: 'Loopback', other: 'Other' },
   /** What each kind of adapter is, for someone who has never opened ipconfig. */
   what: {
@@ -120,6 +120,59 @@ const en = {
     geoCredit: 'IP geolocation by DB-IP (CC BY 4.0)',
     capture: 'Watch traffic per app',
     captureWhy: 'Uses Wireshark’s engine on the adapter that reaches the internet. Everything stays on this computer.'
+  },
+  tools: {
+    title: 'Tools',
+    lead: 'What you would type in a terminal, as buttons — with the answer explained.',
+    diagnose: 'Is the internet not working?',
+    diagnoseLead: 'Checks each link from this computer to the internet and says where it breaks.',
+    check: 'Check',
+    checking: 'Checking…',
+    steps: {
+      adapter: ['Network adapter', (d: string) => `Connected through ${d}.`, 'No adapter is connected. Turn on Wi-Fi or plug in the cable.'],
+      address: ['Address', (d: string) => `This computer has the address ${d}.`, 'The router did not give this computer an address. Try “Renew IP address” below, or restart the router.'],
+      router: ['Router', (d: string) => `The router (${d}) answers.`, 'The router does not answer. Check the Wi-Fi signal or the cable, or restart the router.'],
+      dns: ['Name lookups (DNS)', () => 'Names like microsoft.com can be looked up.', 'Names can’t be looked up. Try “Clear DNS cache” below, or a different DNS server in the router.'],
+      internet: ['Internet', () => 'The internet answers. Everything works.', 'The router works but the internet does not answer: probably a problem at your provider.']
+    } as Record<string, [string, (d: string) => string, string]>,
+    skipped: 'Not checked: an earlier step failed.',
+    host: 'example.com or 1.1.1.1',
+    ping: 'Ping',
+    pingLead: 'Does a computer answer, and how fast?',
+    pingResult: (ok: number, n: number, avg: string) => `${ok} of ${n} answered, ${avg} on average.`,
+    pingNone: 'No answer. The computer may be off, or it ignores ping.',
+    speed: { fast: 'Very fast', good: 'Good', slow: 'Slow', poor: 'Very slow' },
+    trace: 'Route (traceroute)',
+    traceLead: 'Which stops your data passes on the way.',
+    traceRun: 'Trace',
+    tracing: 'Tracing… this can take up to half a minute.',
+    hopRouter: 'Your router',
+    hopLocal: 'Local or provider network',
+    hopLost: 'No answer (many routers stay quiet; that is normal)',
+    lookup: 'Name lookup (DNS)',
+    lookupLead: 'Which addresses a name points to, or which name an IP has.',
+    lookupRun: 'Look up',
+    took: (ms: number) => `Answered in ${ms} ms.`,
+    noNames: 'This address has no name.',
+    port: 'Port check',
+    portLead: 'Does a service answer on a port?',
+    portRun: 'Check',
+    ports: {
+      open: 'Open: something answers on this port.',
+      closed: 'Closed: the computer answered, but nothing listens there.',
+      filtered: 'No answer: a firewall drops it, or the computer is unreachable.'
+    },
+    publicIp: 'Your public IP',
+    publicIpLead: 'The address websites see. Asks api.ipify.org once.',
+    publicIpRun: 'Find out',
+    fixes: 'Fixes',
+    fixesLead: 'Some need administrator rights; the system asks with its own window.',
+    flush: ['Clear DNS cache', 'Forgets remembered name lookups. Helps when a site moved or will not open.'],
+    renew: ['Renew IP address', 'Gives back the address and asks the router for a new one. The connection drops for a few seconds.'],
+    restart: ['Restart adapter', 'Turns the internet adapter off and on again. The connection drops for a few seconds.'],
+    run: 'Run',
+    done: 'Done.',
+    noAdapter: 'No internet adapter right now.'
   },
   history: {
     title: 'History',
@@ -353,6 +406,10 @@ const en = {
     E_UNSUPPORTED: 'Not available on this system.',
     E_NO_CAPTURE: 'Traffic is not being watched right now.',
     E_BLOCKLIST_DOWNLOAD: 'The list could not be downloaded. Check the internet connection and try again.',
+    E_CANCELLED: 'Cancelled: administrator permission was not given.',
+    E_ADMIN: 'The command did not succeed.',
+    E_NOT_FOUND: 'No such name.',
+    E_PUBLIC_IP: 'Could not get the public address. Check the internet connection.',
     E_FILTER: (m: string) => `Wireshark did not understand the filter: ${m}`,
     unknown: (m: string) => `Something went wrong: ${m}`
   }
@@ -362,7 +419,7 @@ export type Dict = typeof en
 
 const uz: Dict = {
   lang: 'O‘zbekcha',
-  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', settings: 'Sozlamalar' },
+  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', tools: 'Asboblar', settings: 'Sozlamalar' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobil', loopback: 'Loopback', other: 'Boshqa' },
   what: {
     wifi: 'Simsiz adapter: kompyuterni Wi-Fi tarmoqlariga ulaydi.',
@@ -479,6 +536,59 @@ const uz: Dict = {
     geoCredit: 'IP joylashuvi: DB-IP (CC BY 4.0)',
     capture: 'Ilovalar trafigini kuzatish',
     captureWhy: 'Internetga chiqadigan adapterda Wireshark dvigateli ishlatiladi. Hamma narsa shu kompyuterda qoladi.'
+  },
+  tools: {
+    title: 'Asboblar',
+    lead: 'Terminalda yoziladigan buyruqlar — tugma ko‘rinishida, javobi tushuntirilgan holda.',
+    diagnose: 'Internet ishlamayaptimi?',
+    diagnoseLead: 'Kompyuterdan internetgacha bo‘lgan har bir bo‘g‘inni tekshiradi va qayerda uzilganini aytadi.',
+    check: 'Tekshirish',
+    checking: 'Tekshirilmoqda…',
+    steps: {
+      adapter: ['Tarmoq adapteri', (d) => `${d} orqali ulangan.`, 'Hech bir adapter ulanmagan. Wi-Fi’ni yoqing yoki kabelni ulang.'],
+      address: ['Manzil', (d) => `Kompyuterning manzili: ${d}.`, 'Router kompyuterga manzil bermadi. Pastdagi “IP manzilni yangilash”ni bosing yoki routerni qayta yoqing.'],
+      router: ['Router', (d) => `Router (${d}) javob bermoqda.`, 'Router javob bermayapti. Wi-Fi signali yoki kabelni tekshiring, yoki routerni qayta yoqing.'],
+      dns: ['Nom qidirish (DNS)', () => 'microsoft.com kabi nomlar topilmoqda.', 'Nomlarni topib bo‘lmayapti. Pastdagi “DNS keshni tozalash”ni bosing yoki routerda boshqa DNS server qo‘ying.'],
+      internet: ['Internet', () => 'Internet javob bermoqda. Hammasi ishlayapti.', 'Router ishlayapti, lekin internet javob bermayapti: ehtimol muammo provayderda.']
+    },
+    skipped: 'Tekshirilmadi: oldingi qadam ishlamadi.',
+    host: 'example.com yoki 1.1.1.1',
+    ping: 'Ping',
+    pingLead: 'Kompyuter javob beradimi va qanchalik tez?',
+    pingResult: (ok, n, avg) => `${n} tadan ${ok} tasi javob berdi, o‘rtacha ${avg}.`,
+    pingNone: 'Javob yo‘q. Kompyuter o‘chiq yoki ping’ga javob bermaydi.',
+    speed: { fast: 'Juda tez', good: 'Yaxshi', slow: 'Sekin', poor: 'Juda sekin' },
+    trace: 'Marshrut (traceroute)',
+    traceLead: 'Ma’lumotingiz yo‘lda qaysi bekatlardan o‘tadi.',
+    traceRun: 'Kuzatish',
+    tracing: 'Kuzatilmoqda… yarim daqiqagacha cho‘zilishi mumkin.',
+    hopRouter: 'Sizning routeringiz',
+    hopLocal: 'Lokal yoki provayder tarmog‘i',
+    hopLost: 'Javob yo‘q (ko‘p routerlar jim turadi, bu normal)',
+    lookup: 'Nom qidirish (DNS)',
+    lookupLead: 'Nom qaysi manzillarga olib boradi yoki IP qanday nomga ega.',
+    lookupRun: 'Qidirish',
+    took: (ms) => `${ms} ms da javob keldi.`,
+    noNames: 'Bu manzilning nomi yo‘q.',
+    port: 'Portni tekshirish',
+    portLead: 'Portda biror xizmat javob beradimi?',
+    portRun: 'Tekshirish',
+    ports: {
+      open: 'Ochiq: bu portda nimadir javob beradi.',
+      closed: 'Yopiq: kompyuter javob berdi, lekin u yerda hech narsa tinglamayapti.',
+      filtered: 'Javob yo‘q: xavfsizlik devori to‘sadi yoki kompyuterga yetib bo‘lmaydi.'
+    },
+    publicIp: 'Ommaviy IP manzilingiz',
+    publicIpLead: 'Saytlar ko‘radigan manzil. api.ipify.org’dan bir marta so‘raladi.',
+    publicIpRun: 'Bilish',
+    fixes: 'Tuzatish',
+    fixesLead: 'Ba’zilari administrator huquqini talab qiladi; tizim o‘z oynasi bilan so‘raydi.',
+    flush: ['DNS keshni tozalash', 'Eslab qolingan nom qidiruvlarini unutadi. Sayt ko‘chgan yoki ochilmayotgan bo‘lsa yordam beradi.'],
+    renew: ['IP manzilni yangilash', 'Manzilni qaytarib, routerdan yangisini so‘raydi. Ulanish bir necha soniyaga uziladi.'],
+    restart: ['Adapterni qayta ishga tushirish', 'Internet adapterini o‘chirib, qayta yoqadi. Ulanish bir necha soniyaga uziladi.'],
+    run: 'Bajarish',
+    done: 'Bajarildi.',
+    noAdapter: 'Hozir internet adapteri yo‘q.'
   },
   history: {
     title: 'Tarix',
@@ -708,6 +818,10 @@ const uz: Dict = {
     E_UNSUPPORTED: 'Bu tizimda mavjud emas.',
     E_NO_CAPTURE: 'Hozir trafik kuzatilmayapti.',
     E_BLOCKLIST_DOWNLOAD: 'Ro‘yxatni yuklab bo‘lmadi. Internet ulanishini tekshirib, qayta urinib ko‘ring.',
+    E_CANCELLED: 'Bekor qilindi: administrator ruxsati berilmadi.',
+    E_ADMIN: 'Buyruq bajarilmadi.',
+    E_NOT_FOUND: 'Bunday nom topilmadi.',
+    E_PUBLIC_IP: 'Ommaviy manzilni olib bo‘lmadi. Internet ulanishini tekshiring.',
     E_FILTER: (m) => `Wireshark filtrni tushunmadi: ${m}`,
     unknown: (m) => `Nimadir xato ketdi: ${m}`
   }
