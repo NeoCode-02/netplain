@@ -1,0 +1,137 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { adapterKind, normMac } from './kind'
+import { parseNmcli, parseProcArp, parseResolv, parseRoute, parseWireless } from './linux'
+import { parseAirport, parseArpMac, parseDefaultRoute, parseIfconfig, parseNetstat, parsePorts, parseScutil } from './mac'
+import { parseArp, parseSnapshot, parseWlan } from './win'
+
+const fixture = (f: string) => fs.readFileSync(path.join(__dirname, 'fixtures', f), 'utf8')
+
+describe('kind', () => {
+  it('lets names refine what the OS reports', () => {
+    expect(adapterKind('Local Area Connection* 9', 'Microsoft Wi-Fi Direct Virtual Adapter', 'wifi')).toBe('virtual')
+    expect(adapterKind('Ethernet', 'TAP-Windows Adapter V9', 'ethernet')).toBe('vpn')
+    expect(adapterKind('vEthernet (WSL (Hyper-V firewall))', 'Hyper-V Virtual Ethernet Adapter', 'ethernet')).toBe('virtual')
+    expect(adapterKind('WiFi', 'Intel(R) Wi-Fi 6 AX201 160MHz', 'wifi')).toBe('wifi')
+    expect(adapterKind('utun3', '', 'other')).toBe('vpn')
+    expect(adapterKind('docker0', '', 'virtual')).toBe('virtual')
+    expect(adapterKind('enp3s0', '', 'ethernet')).toBe('ethernet')
+  })
+  it('normalises MACs and drops empty ones', () => {
+    expect(normMac('3C9180445566')).toBe('3c:91:80:44:55:66')
+    expect(normMac('3c-91-80-44-55-66')).toBe('3c:91:80:44:55:66')
+    expect(normMac('2:1a:3b:4c:5d:6e')).toBe('02:1a:3b:4c:5d:6e')
+    expect(normMac('00:00:00:00:00:00')).toBe('')
+    expect(normMac('')).toBe('')
+  })
+})
+
+describe('windows', () => {
+  it('reads a real snapshot line', () => {
+    const list = parseSnapshot(fixture('win-snapshot.json'))
+    const wifi = list.find((a) => a.name === 'WiFi')!
+    expect(wifi).toMatchObject({ kind: 'wifi', up: true, mac: '3c:91:80:44:55:66', ipv4: ['192.168.0.102/24'], gateway: '192.168.0.1', dns: ['192.168.0.1'], dhcp: true })
+    expect(wifi.ipv6[0]).not.toContain('%')
+    expect(wifi.wifi).toMatchObject({ ssid: 'Home WiFi', bssid: 'a4:2b:b0:11:22:33', band: '2.4 GHz', channel: 5, radio: '802.11n', auth: 'WPA2-Personal', rxMbps: 54 })
+    expect(list.find((a) => a.name === 'Ethernet 2')).toMatchObject({ kind: 'virtual', dns: [], gateway: null })
+    expect(list.find((a) => a.name === 'Ethernet')?.kind).toBe('vpn')
+    expect(list.find((a) => a.name.startsWith('Loopback'))?.kind).toBe('loopback')
+  })
+  it('finds Wi-Fi facts by value on translated Windows', () => {
+    const ru = ['    Имя                    : WiFi', '    Физический адрес       : 3c:91:80:44:55:66', '    SSID                   : Дом', '    BSSID                  : a4:2b:b0:11:22:33', '    Диапазон               : 5 ГГц', '    Тип радио              : 802.11ax', '    Сигнал                 : 72%'].join('\r\n')
+    expect(parseWlan(ru).get('3c:91:80:44:55:66')).toMatchObject({ ssid: 'Дом', bssid: 'a4:2b:b0:11:22:33', signal: 72, band: '5 ГГц', radio: '802.11ax', channel: null })
+    expect(parseWlan('There is 1 interface on the system:\n\n    Name : WiFi\n    State : disconnected\n').size).toBe(0)
+  })
+  it('reads arp -a', () => {
+    const list = parseArp(fixture('win-arp.txt'))
+    expect(list[0]).toEqual({ ip: '192.168.0.1', mac: 'a4:2b:b0:11:22:33', via: '192.168.0.102', vendor: null })
+    expect(list.find((n) => n.ip === '172.27.16.226')?.via).toBe('172.27.16.1')
+  })
+})
+
+describe('linux', () => {
+  it('reads the default gateway per interface', () => {
+    const text = 'Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT\nwlan0\t00000000\t0100A8C0\t0003\t0\t0\t600\t00000000\t0\t0\t0\nwlan0\t0000A8C0\t00000000\t0001\t0\t0\t600\t00FFFFFF\t0\t0\t0\n'
+    expect([...parseRoute(text)]).toEqual([['wlan0', '192.168.0.1']])
+  })
+  it('reads /proc/net/arp without incomplete entries', () => {
+    const text = 'IP address       HW type     Flags       HW address            Mask     Device\n192.168.0.1      0x1         0x2         a4:2b:b0:11:22:33     *        wlan0\n192.168.0.50     0x1         0x0         00:00:00:00:00:00     *        wlan0\n'
+    expect(parseProcArp(text)).toEqual([{ ip: '192.168.0.1', mac: 'a4:2b:b0:11:22:33', via: 'wlan0', vendor: null }])
+  })
+  it('reads wireless quality, resolvers and nmcli', () => {
+    expect(parseWireless('Inter-| sta-|   Quality        |\n face | tus | link level noise |\n wlan0: 0000   54.  -56.  -256        0      0\n').get('wlan0')).toBe(77)
+    expect(parseResolv('# generated\nnameserver 192.168.0.1\nnameserver 1.1.1.1\nsearch lan\n')).toEqual(['192.168.0.1', '1.1.1.1'])
+    const nm = parseNmcli('no:Neighbour:11\\:22\\:33\\:44\\:55\\:66:30:1:2412 MHz:65 Mbit/s:WPA2:wlan0\nyes:Home\\:WiFi:A4\\:2B\\:B0\\:11\\:22\\:33:77:36:5180 MHz:540 Mbit/s:WPA2:wlan0\n')
+    expect(nm.get('wlan0')).toMatchObject({ ssid: 'Home:WiFi', bssid: 'a4:2b:b0:11:22:33', signal: 77, channel: 36, band: '5 GHz', rxMbps: 540 })
+  })
+})
+
+describe('macos', () => {
+  const ifconfig = [
+    'lo0: flags=8049<UP,LOOPBACK,RUNNING,MULTICAST> mtu 16384',
+    '\tinet 127.0.0.1 netmask 0xff000000',
+    'en0: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500',
+    '\tether 3c:91:80:44:55:66',
+    '\tinet6 fe80::1c2b:3d4e:5f60:7182%en0 prefixlen 64 secured scopeid 0xe',
+    '\tinet 192.168.0.23 netmask 0xffffff00 broadcast 192.168.0.255',
+    '\tmedia: autoselect',
+    '\tstatus: active',
+    'en1: flags=8963<UP,BROADCAST,SMART,RUNNING,PROMISC,SIMPLEX,MULTICAST> mtu 1500',
+    '\tether 36:7d:1c:00:00:01',
+    '\tstatus: inactive',
+    'en7: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500',
+    '\tether 00:e0:4c:68:00:01',
+    '\tinet 10.0.0.5 netmask 0xffffff00 broadcast 10.0.0.255',
+    '\tmedia: autoselect (1000baseT <full-duplex>)',
+    '\tstatus: active',
+    'utun3: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1380',
+    '\tinet6 fe80::ce81:b1c:bd2c:69e%utun3 prefixlen 64 scopeid 0x10'
+  ].join('\n')
+
+  it('reads ifconfig', () => {
+    const list = parseIfconfig(ifconfig)
+    expect(list.map((i) => i.name)).toEqual(['lo0', 'en0', 'en1', 'en7', 'utun3'])
+    expect(list[1]).toEqual({ name: 'en0', up: true, mac: '3c:91:80:44:55:66', ipv4: ['192.168.0.23/24'], ipv6: ['fe80::1c2b:3d4e:5f60:7182/64'], speed: null })
+    expect(list[2].up).toBe(false)
+    expect(list[3].speed).toBe(1e9)
+  })
+  it('reads counters, ports, route, resolvers and arp', () => {
+    const netstat = [
+      'Name       Mtu   Network       Address            Ipkts Ierrs     Ibytes    Opkts Oerrs     Obytes  Coll',
+      'lo0        16384 <Link#1>                         10000     0    2000000    10000     0    2000001     0',
+      'en0        1500  <Link#14>   3c:91:80:44:55:66   500000     0  600000000   300000     0   40000000     0',
+      'en0        1500  192.168.0     192.168.0.23        500000     -  590000000   300000     -   39000000     -'
+    ].join('\n')
+    expect(parseNetstat(netstat).get('lo0')).toEqual({ rx: 2000000, tx: 2000001 })
+    expect(parseNetstat(netstat).get('en0')).toEqual({ rx: 600000000, tx: 40000000 })
+    expect(parsePorts('\nHardware Port: Wi-Fi\nDevice: en0\nEthernet Address: 3c:91:80:44:55:66\n\nHardware Port: USB 10/100/1000 LAN\nDevice: en7\n').get('en7')).toBe('USB 10/100/1000 LAN')
+    expect(parseDefaultRoute('   route to: default\n    gateway: 192.168.0.1\n  interface: en0\n')).toEqual({ gateway: '192.168.0.1', iface: 'en0' })
+    expect(parseScutil('DNS configuration\n\nresolver #1\n  nameserver[0] : 192.168.0.1\n  nameserver[1] : fe80::1%en0\n\nresolver #2\n  nameserver[0] : 10.0.0.1\n')).toEqual(['192.168.0.1', 'fe80::1'])
+    const arp = '? (192.168.0.1) at a4:2b:b0:11:22:33 on en0 ifscope [ethernet]\n? (192.168.0.42) at (incomplete) on en0 ifscope [ethernet]\n? (192.168.0.77) at 2:1a:3b:4c:5d:6e on en0 ifscope [ethernet]\n? (192.168.0.255) at ff:ff:ff:ff:ff:ff on en0 ifscope [ethernet]\n'
+    expect(parseArpMac(arp).map((n) => n.mac)).toEqual(['a4:2b:b0:11:22:33', '02:1a:3b:4c:5d:6e'])
+  })
+  it('reads system_profiler Wi-Fi details', () => {
+    const json = JSON.stringify({
+      SPAirPortDataType: [
+        {
+          spairport_airport_interfaces: [
+            {
+              _name: 'en0',
+              spairport_current_network_information: {
+                _name: '<redacted>',
+                spairport_network_channel: '36 (5GHz, 80MHz)',
+                spairport_network_phymode: '802.11ax',
+                spairport_network_rate: 864,
+                spairport_security_mode: 'spairport_security_mode_wpa2_personal',
+                spairport_signal_noise: '-55 dBm / -92 dBm'
+              }
+            }
+          ]
+        }
+      ]
+    })
+    expect(parseAirport(json).get('en0')).toMatchObject({ ssid: '', signal: 90, channel: 36, band: '5 GHz', radio: '802.11ax', auth: 'WPA2 PERSONAL', rxMbps: 864 })
+    expect(parseAirport('not json').size).toBe(0)
+  })
+})

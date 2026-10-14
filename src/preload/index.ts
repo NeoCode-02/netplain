@@ -1,0 +1,28 @@
+import { contextBridge, ipcRenderer } from 'electron'
+import { CHANNELS, type Api } from '../shared/api'
+import type { Snapshot } from '../shared/types'
+
+type Async<T> = { [K in keyof T]: T[K] extends (...a: infer A) => infer R ? (...a: A) => Promise<Awaited<R>> : never }
+
+// Record (not an array) so TypeScript fails when a handler is missing here.
+const names: Record<keyof Api, true> = { appInfo: true, getSettings: true, saveSettings: true, snapshot: true, neighbors: true, scan: true, openUrl: true }
+
+const api = Object.fromEntries(Object.keys(names).map((n) => [n, (...a: unknown[]) => ipcRenderer.invoke(n, ...a)])) as Async<Api>
+
+function listen<A extends unknown[]>(channel: string, cb: (...a: A) => void) {
+  const fn = (_e: unknown, ...a: unknown[]) => cb(...(a as A))
+  ipcRenderer.on(channel, fn)
+  return () => {
+    ipcRenderer.removeListener(channel, fn)
+  }
+}
+
+const bridge = {
+  ...api,
+  onSnapshot: (cb: (s: Snapshot) => void) => listen(CHANNELS.snapshot, cb),
+  /** An error code while data can't be read (null once it can again). */
+  onProblem: (cb: (code: string | null) => void) => listen(CHANNELS.problem, cb)
+}
+export type Bridge = typeof bridge
+
+contextBridge.exposeInMainWorld('netplain', bridge)
