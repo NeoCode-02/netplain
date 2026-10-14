@@ -95,6 +95,7 @@ export function createTrafficWatch(deps: Deps, enabled: boolean) {
     if (!capture) state = 'missing'
   }
   find()
+  view = { ...view, state }
 
   async function tick() {
     if (busy || state !== 'on') return

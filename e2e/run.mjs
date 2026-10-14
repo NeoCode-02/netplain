@@ -170,13 +170,15 @@ try {
   await step('apps page', async () => {
     await until('Apps', clickText, 'Apps')
     // With Wireshark installed the list fills; without it the page explains how to get it.
-    await until('traffic or the Wireshark hint', () => document.querySelector('.ad-row') !== null || document.body.innerText.includes('Get Wireshark'))
+    await until('traffic, or why there is none', () => document.querySelector('.ad-row, .empty') !== null || /Watching\.|Starting to watch/.test(document.body.innerText))
+    // Watching is on by default; "off" here meant a missing Wireshark was reported as switched off.
+    if (await inPage(hasText, 'Traffic watching is off')) throw new Error('Apps says watching is off although it is on')
     await shot('apps')
   })
 
   await step('packets page', async () => {
     await until('Packets', clickText, 'Packets')
-    const watching = await until('packets or the Wireshark hint', () => (document.querySelector('.pk-body .pk-row') ? 'yes' : document.body.innerText.includes('Get Wireshark') ? 'no' : false))
+    const watching = await until('packets or the Wireshark hint', () => (document.querySelector('.pk-body .pk-row') ? 'yes' : document.querySelector('.empty') ? 'no' : false))
     if (watching === 'yes') {
       await inPage(() => document.querySelector('.pk-body .pk-row').click())
       await until('packet details', () => document.querySelectorAll('.pk-layer').length >= 2)
