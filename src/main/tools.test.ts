@@ -1,6 +1,6 @@
 import net from 'node:net'
 import { describe, expect, it } from 'vitest'
-import { safeName, uacScript } from './admin'
+import { safeName, uacScript, userCommand, userGuard } from './admin'
 import { checkPort, isHost, lookup, parsePing, parseTestConnection, parseTrace, ping } from './tools'
 
 describe('parsers', () => {
@@ -73,5 +73,30 @@ describe('defender commands', () => {
     expect(scanArgs('full')).toEqual(['-Scan', '-ScanType', '2'])
     expect(MPCMD).toMatch(/Windows Defender[\\/]MpCmdRun\.exe$/)
     expect(uacScript(`"${MPCMD}" -Scan -ScanType 1`)).toContain(`-ArgumentList '/c "${MPCMD}" -Scan -ScanType 1'`)
+  })
+})
+
+describe('user changes', () => {
+  const users = [
+    { name: 'Administrator', enabled: false, last: null, sid: 'S-1-5-21-1-500', admin: true, me: false },
+    { name: 'alice', enabled: true, last: null, sid: 'S-1-5-21-1-1001', admin: true, me: true },
+    { name: 'bob', enabled: true, last: null, sid: 'S-1-5-21-1-1002', admin: true, me: false },
+    { name: 'postgres', enabled: true, last: null, sid: 'S-1-5-21-1-1003', admin: false, me: false }
+  ]
+  it('never locks the owner out', () => {
+    expect(userGuard(users, 'alice', 'disable')).toBe('E_SELF')
+    expect(userGuard(users, 'alice', 'unadmin')).toBe('E_SELF')
+    expect(userGuard(users, 'bob', 'unadmin')).toBeNull()
+    expect(userGuard(users, 'postgres', 'disable')).toBeNull()
+    expect(userGuard(users, 'nobody', 'disable')).toBe('E_BAD_ARGS')
+    const alone = users.map((u) => (u.name === 'bob' ? { ...u, admin: false } : u)).map((u) => (u.name === 'alice' ? { ...u, me: false } : u))
+    expect(userGuard(alone, 'alice', 'unadmin')).toBe('E_LAST_ADMIN')
+  })
+  it('builds the commands, refusing odd names', () => {
+    expect(userCommand('postgres', 'disable')).toBe('net user "postgres" /active:no')
+    expect(userCommand('John Doe', 'enable')).toBe('net user "John Doe" /active:yes')
+    expect(userCommand('bob', 'unadmin')).toBe("powershell -NoProfile -NonInteractive -Command Remove-LocalGroupMember -SID S-1-5-32-544 -Member 'bob'")
+    expect(() => userCommand('a"&calc', 'disable')).toThrow('E_BAD_ARGS')
+    expect(() => userCommand("o'brien", 'unadmin')).toThrow('E_BAD_ARGS')
   })
 })

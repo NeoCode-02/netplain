@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import type { Adapter } from '../shared/types'
+import type { Adapter, SecUser } from '../shared/types'
 import { run } from './exec'
 
 /** Adapter names that are safe inside a quoted command line (no quotes, no shell operators). */
@@ -57,4 +57,29 @@ export async function restartAdapter(a: Adapter): Promise<void> {
   if (process.platform === 'win32') await elevate(`netsh interface set interface name="${a.name}" admin=disabled & netsh interface set interface name="${a.name}" admin=enabled`)
   else if (process.platform === 'darwin') await elevate(`ifconfig ${a.id} down; ifconfig ${a.id} up`)
   else await elevate(`nmcli device disconnect ${a.id}; nmcli device connect ${a.id}`)
+}
+
+export type UserAction = 'disable' | 'enable' | 'unadmin'
+
+/** Windows user names cannot hold " / \ [ ] : ; | = , + * ? < >; this is stricter still. */
+export const safeUser = (name: string) => /^[\w .-]{1,64}$/.test(name)
+
+/** The command line for a user change; group membership goes by SID, which is the same in every language. */
+export function userCommand(name: string, action: UserAction): string {
+  if (!safeUser(name)) throw new Error('E_BAD_ARGS')
+  if (action === 'unadmin') return `powershell -NoProfile -NonInteractive -Command Remove-LocalGroupMember -SID S-1-5-32-544 -Member '${name}'`
+  return `net user "${name}" /active:${action === 'disable' ? 'no' : 'yes'}`
+}
+
+/**
+ * Refuses changes that could lock the owner out: touching your own account, or taking the rights of
+ * the last enabled administrator. Returns an error code, or null when the change is safe.
+ */
+export function userGuard(users: SecUser[], name: string, action: UserAction): string | null {
+  const u = users.find((x) => x.name === name)
+  if (!u) return 'E_BAD_ARGS'
+  if (u.me && action !== 'enable') return 'E_SELF'
+  const admins = users.filter((x) => x.admin && x.enabled)
+  if ((action === 'unadmin' || action === 'disable') && u.admin && u.enabled && admins.length <= 1) return 'E_LAST_ADMIN'
+  return null
 }

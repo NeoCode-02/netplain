@@ -7,7 +7,7 @@ import { Empty, Icon, type IconName } from '../ui'
 const WINDOWS = /Windows/.test(navigator.userAgent)
 const MARK: Record<Finding['level'], IconName> = { bad: 'alert', warn: 'alert', info: 'dot', ok: 'shield' }
 /** Tabs that exist so far; the rest arrive with their own commits. */
-const TABS: SecurityTab[] = ['status', 'antivirus']
+const TABS: SecurityTab[] = ['status', 'antivirus', 'users']
 
 function Status({ sec, t, onTab, onFixed }: { sec: Data; t: Dict; onTab(tab: SecurityTab): void; onFixed(): void }) {
   const s = t.security
@@ -234,6 +234,73 @@ function Antivirus({ sec, t, onChanged }: { sec: Data; t: Dict; onChanged(): voi
   )
 }
 
+function Users({ sec, t, onChanged }: { sec: Data; t: Dict; onChanged(): void }) {
+  const u = t.security.users
+  const lang = getLang()
+  const [busy, setBusy] = useState<string | null>(null)
+  const [err, setErr] = useState<unknown>(null)
+  const act = async (name: string, action: 'disable' | 'enable' | 'unadmin') => {
+    setBusy(`${name}|${action}`)
+    setErr(null)
+    try {
+      await window.netplain.setUser(name, action)
+      onChanged()
+    } catch (e) {
+      setErr(e)
+    } finally {
+      setBusy(null)
+    }
+  }
+  // You first, then people who can sign in, then the rest.
+  const users = [...sec.users].sort((a, b) => Number(b.me) - Number(a.me) || Number(b.enabled) - Number(a.enabled) || a.name.localeCompare(b.name))
+  return (
+    <>
+      <p className="muted section-lead">{u.lead}</p>
+      {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      <div className="list">
+        {users.map((x) => {
+          const builtin = u.builtin[x.sid.split('-').at(-1) ?? '']
+          // Accounts that services sign in as: turning them off stops those services.
+          const runs = sec.services.filter((s) => s.account.toLowerCase().endsWith(`\\${x.name.toLowerCase()}`)).map((s) => s.display || s.name)
+          const note = runs.length ? u.service(runs.slice(0, 3).join(', ')) : (builtin ?? (!x.me && x.enabled ? u.unknown : ''))
+          return (
+            <div className={`list-row finding ${x.enabled ? '' : 'muted-row'}`} key={x.sid}>
+              <span className={`ad-icon ${x.admin && x.enabled ? 'level-warn' : ''}`}>
+                <Icon name="user" size={16} />
+              </span>
+              <div className="app-main">
+                <div className="row">
+                  <span className="alert-title">{x.name}</span>
+                  {x.me && <span className="tag accent">{u.me}</span>}
+                  {x.admin && <span className="tag">{u.admin}</span>}
+                  {!x.enabled && <span className="tag">{u.off}</span>}
+                </div>
+                <p className="small muted">
+                  {[x.last ? u.last(new Date(x.last).toLocaleDateString(lang, { day: 'numeric', month: 'short', year: 'numeric' })) : u.never, note].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+              {!x.me && (
+                <div className="row finding-actions">
+                  {x.admin && x.enabled && (
+                    <button className="btn quiet sm" disabled={busy !== null} onClick={() => void act(x.name, 'unadmin')}>
+                      {u.unadmin}
+                    </button>
+                  )}
+                  <button className="btn sm" disabled={busy !== null} onClick={() => void act(x.name, x.enabled ? 'disable' : 'enable')}>
+                    {busy?.startsWith(`${x.name}|`) && <Icon name="refresh" className="spin" />}
+                    {x.enabled ? u.disable : u.enable}
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+      <p className="small faint foot-note">{u.note}</p>
+    </>
+  )
+}
+
 export default function Security() {
   const t = useT()
   const s = t.security
@@ -290,6 +357,7 @@ export default function Security() {
       {!sec && err === null && <p className="muted">{s.reading}</p>}
       {sec && tab === 'status' && <Status sec={sec} t={t} onTab={setTab} onFixed={() => load(true)} />}
       {sec && tab === 'antivirus' && <Antivirus sec={sec} t={t} onChanged={() => load(true)} />}
+      {sec && tab === 'users' && <Users sec={sec} t={t} onChanged={() => load(true)} />}
     </div>
   )
 }

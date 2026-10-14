@@ -240,6 +240,9 @@ try {
       await until('Antivirus tab', clickText, 'Antivirus')
       await until('defender cards', () => document.querySelectorAll('.kpi').length === 4)
       await shot('security-antivirus')
+      await until('Users tab', clickText, 'Users')
+      await until('the accounts', () => [...document.querySelectorAll('.tag')].some((t) => t.textContent === 'You'))
+      await shot('security-users')
     }
   })
 

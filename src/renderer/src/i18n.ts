@@ -136,6 +136,26 @@ const en = {
     open: 'Details',
     fix: { firewallOn: 'Turn the firewall on', openDefender: 'Open Windows Security' },
     fixed: 'Done. Checking again…',
+    users: {
+      lead: 'Accounts on this computer, and which of them have full control (administrator).',
+      me: 'You',
+      admin: 'Administrator',
+      off: 'Off',
+      last: (d: string) => `Last sign-in: ${d}`,
+      never: 'Never signed in',
+      builtin: {
+        '500': 'Windows’s built-in administrator. Safest kept off.',
+        '501': 'Guest account for visitors. Safest kept off.',
+        '503': 'Windows’s own helper account; normally off.',
+        '504': 'Used by Windows Defender Application Guard; normally off.'
+      } as Record<string, string>,
+      unknown: 'If you don’t know this account, turn it off.',
+      service: (names: string) => 'Services run as this account (' + names + '); turning it off stops them.',
+      disable: 'Turn off',
+      enable: 'Turn on',
+      unadmin: 'Remove admin rights',
+      note: 'Turning an account off keeps its files, and it can be turned back on any time. Netplain never deletes accounts.'
+    },
     av: {
       realtime: 'Real-time protection',
       definitions: 'Definitions',
@@ -501,6 +521,8 @@ const en = {
     E_NO_CAPTURE: 'Traffic is not being watched right now.',
     E_BLOCKLIST_DOWNLOAD: 'The list could not be downloaded. Check the internet connection and try again.',
     E_CANCELLED: 'Cancelled: administrator permission was not given.',
+    E_SELF: 'Your own account can’t be changed here — you could lock yourself out.',
+    E_LAST_ADMIN: 'This is the last administrator; taking it away would leave nobody in control.',
     E_ADMIN: 'The command did not succeed.',
     E_NOT_FOUND: 'No such name.',
     E_PUBLIC_IP: 'Could not get the public address. Check the internet connection.',
@@ -646,6 +668,26 @@ const uz: Dict = {
     open: 'Batafsil',
     fix: { firewallOn: 'Firewall’ni yoqish', openDefender: 'Windows Security’ni ochish' },
     fixed: 'Bajarildi. Qayta tekshirilmoqda…',
+    users: {
+      lead: 'Shu kompyuterdagi akkauntlar va ulardan qaysi biri to‘liq boshqaruvga (administrator) ega.',
+      me: 'Siz',
+      admin: 'Administrator',
+      off: 'O‘chiq',
+      last: (d) => `Oxirgi kirish: ${d}`,
+      never: 'Hech qachon kirmagan',
+      builtin: {
+        '500': 'Windows’ning o‘rnatilgan administratori. O‘chiq turgani xavfsizroq.',
+        '501': 'Mehmonlar uchun akkaunt. O‘chiq turgani xavfsizroq.',
+        '503': 'Windows’ning o‘z yordamchi akkaunti; odatda o‘chiq.',
+        '504': 'Windows Defender Application Guard ishlatadi; odatda o‘chiq.'
+      },
+      unknown: 'Bu akkauntni tanimasangiz, o‘chirib qo‘ying.',
+      service: (names) => 'Bu akkaunt nomidan xizmatlar ishlaydi (' + names + '); o‘chirilsa, ular ham to‘xtaydi.',
+      disable: 'O‘chirish',
+      enable: 'Yoqish',
+      unadmin: 'Admin huquqini olish',
+      note: 'Akkaunt o‘chirilganda fayllari saqlanadi va istalgan vaqtda qayta yoqiladi. Netplain akkauntlarni hech qachon o‘chirib tashlamaydi.'
+    },
     av: {
       realtime: 'Real vaqt himoyasi',
       definitions: 'Baza',
@@ -1007,6 +1049,8 @@ const uz: Dict = {
     E_NO_CAPTURE: 'Hozir trafik kuzatilmayapti.',
     E_BLOCKLIST_DOWNLOAD: 'Ro‘yxatni yuklab bo‘lmadi. Internet ulanishini tekshirib, qayta urinib ko‘ring.',
     E_CANCELLED: 'Bekor qilindi: administrator ruxsati berilmadi.',
+    E_SELF: 'O‘z akkauntingizni bu yerda o‘zgartirib bo‘lmaydi — o‘zingizni bloklab qo‘yishingiz mumkin.',
+    E_LAST_ADMIN: 'Bu oxirgi administrator; uni olib qo‘ysangiz, kompyuterni hech kim boshqara olmaydi.',
     E_ADMIN: 'Buyruq bajarilmadi.',
     E_NOT_FOUND: 'Bunday nom topilmadi.',
     E_PUBLIC_IP: 'Ommaviy manzilni olib bo‘lmadi. Internet ulanishini tekshiring.',

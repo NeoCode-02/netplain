@@ -15,7 +15,7 @@ import { vendorTable } from './tshark'
 import { isSettings, loadSettings, saveSettings } from './settings'
 import { createUsage } from './usage'
 import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './tools'
-import { elevate, flushDns, renewIp, restartAdapter } from './admin'
+import { elevate, flushDns, renewIp, restartAdapter, safeUser, userCommand, userGuard } from './admin'
 import { createSecurity } from './security'
 import { createScanner } from './defender'
 
@@ -237,6 +237,13 @@ const handlers: Api = {
   startScan: (kind, admin) => scanner.start(kind, admin),
   updateDefinitions: () => scanner.updateDefinitions(),
   removeThreats: () => scanner.removeThreats(),
+  setUser: async (name, action) => {
+    const sec = await security!.get()
+    const refused = userGuard(sec.users, name, action)
+    if (refused) throw new Error(refused)
+    await elevate(userCommand(name, action))
+    await security!.get(true)
+  },
   fixFinding: async (fix) => {
     if (fix === 'openDefender') return void shell.openExternal('windowsdefender:')
     await elevate('netsh advfirewall set allprofiles state on')
@@ -299,7 +306,8 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   scanState: none,
   startScan: (a) => (a[0] === 'quick' || a[0] === 'full') && typeof a[1] === 'boolean',
   updateDefinitions: none,
-  removeThreats: none
+  removeThreats: none,
+  setUser: (a) => typeof a[0] === 'string' && safeUser(a[0]) && (a[1] === 'disable' || a[1] === 'enable' || a[1] === 'unadmin')
 }
 
 /** Only our own window's page may call the main process. */

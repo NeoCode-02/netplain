@@ -237,3 +237,5 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .scan-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .threat-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
 .threat-res { margin-top: 4px; overflow-wrap: anywhere; }
+.section-lead { margin: -4px 0 14px; max-width: 80ch; }
+.muted-row { opacity: 0.72; }
