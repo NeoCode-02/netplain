@@ -4,6 +4,7 @@ import { daySummary } from '../explain'
 import { getLang, useT, type Dict } from '../i18n'
 import QualityChart from '../QualityChart'
 import { Empty, Icon } from '../ui'
+import Monitors from './Monitors'
 
 /** The connection checks, refreshed every 5 s while shown, with the time they were read. */
 export function useUptime() {
@@ -120,6 +121,7 @@ export default function Uptime() {
           </section>
         </>
       )}
+      <Monitors />
       <section className="section">
         <div className="section-head">
           <h3>{u.outages}</h3>

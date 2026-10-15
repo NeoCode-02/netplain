@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { Alert, AlertKind, BlocklistInfo, Connections, Outage } from '../shared/types'
 import { createBlocklist } from './blocklist'
+import type { MonitorEvent } from './monitors'
 import { dayKey } from './usage'
 
 const KEEP = 300
@@ -92,6 +93,11 @@ export function createAlerts(dir: string, emit: (a: Alert) => void) {
     /** A connection drop of a minute or more, told once it is over (detail: "cause|milliseconds"). */
     outage(rules: Rules, o: Outage) {
       if (o.end !== null && o.end - o.start >= 60_000) push(rules, 'outage', o.network ?? '', `${o.cause}|${o.end - o.start}`)
+    },
+
+    /** A watched site or server went down, came back, or its certificate runs out soon. */
+    monitor(rules: Rules, [kind, detail]: MonitorEvent, target: string) {
+      push(rules, kind, target, detail)
     },
 
     /** A program sent something readable by anyone on the way (HTTP, FTP, Telnet). */

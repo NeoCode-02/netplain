@@ -25,6 +25,8 @@ import type {
   Snapshot,
   Traffic,
   Usage,
+  MonitorKind,
+  MonitorState,
   Uptime,
   UsageRange
 } from './types'
@@ -48,6 +50,12 @@ export interface Api {
   uiLang(lang: 'en' | 'uz'): void
   /** The connection checks: the latest one, the last 24 hours by minute, and every drop. */
   uptime(): Uptime
+  /** The user's watched sites and servers. */
+  monitors(): MonitorState[]
+  /** Adds one and checks it at once. Throws E_MONITOR_TARGET / E_MONITOR_MAX / E_MONITOR_EXISTS. */
+  addMonitor(kind: MonitorKind, target: string, every: 60 | 300): Promise<MonitorState[]>
+  removeMonitor(id: string): MonitorState[]
+  checkMonitor(id: string): Promise<MonitorState[]>
   /** The latest adapter snapshot, or null before the first one arrives. */
   snapshot(): Snapshot | null
   /** Devices on the local networks, with their maker when Wireshark is installed. */

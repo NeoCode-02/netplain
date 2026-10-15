@@ -4,7 +4,7 @@ import { errText, getLang, useT } from '../i18n'
 import { alertText, setAlerts, useLive } from '../live'
 import { Empty, Icon, type IconName } from '../ui'
 
-const ICON: Record<AlertKind, IconName> = { newApp: 'globe', exposed: 'link', plain: 'alert', blocklist: 'shield', outage: 'pulse' }
+const ICON: Record<AlertKind, IconName> = { newApp: 'globe', exposed: 'link', plain: 'alert', blocklist: 'shield', outage: 'pulse', monitorDown: 'pulse', monitorUp: 'pulse', certExpiry: 'shield' }
 const KINDS = Object.keys(ICON) as AlertKind[]
 
 export default function Alerts() {

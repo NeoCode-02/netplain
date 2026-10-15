@@ -423,6 +423,42 @@ try {
     await shot('uptime')
   })
 
+  await step('watched sites and servers', async () => {
+    const http = await import('node:http')
+    const site = http.createServer((_q, r) => r.end('ok'))
+    await new Promise((r) => site.listen(0, '127.0.0.1', r))
+    const setField = (sel, v) => {
+      const el = document.querySelector(sel)
+      const select = el.tagName === 'SELECT'
+      Object.getOwnPropertyDescriptor((select ? HTMLSelectElement : HTMLInputElement).prototype, 'value').set.call(el, v)
+      el.dispatchEvent(new Event(select ? 'change' : 'input', { bubbles: true }))
+      return true
+    }
+    const watch = async (kind, target) => {
+      await inPage(setField, '.monitor-form select', kind)
+      await inPage(setField, '.monitor-form input', target)
+      await inPage(() => (document.querySelector('.monitor-form button[type=submit]').click(), true))
+    }
+    try {
+      await watch('tcp', 'no-port-here')
+      await until('the address error', hasText, 'Check the address')
+      const url = `http://127.0.0.1:${site.address().port}/`
+      await watch('http', url)
+      await until('the local site up', (u) => [...document.querySelectorAll('.monitor-row')].some((r) => r.textContent.includes(u) && / ms/.test(r.textContent) && r.querySelector('.tag.ok')), url)
+      // A real https site: its certificate is read too.
+      await watch('http', 'https://one.one.one.one')
+      await until('the certificate', () => /certificate: \d+ days left/.test(document.body.innerText))
+      await shot('monitors')
+      await until('both removed', () => {
+        const b = document.querySelector('.monitor-row button[aria-label="Stop watching"]:not(:disabled)')
+        b?.click()
+        return document.body.innerText.includes('Nothing watched yet')
+      })
+    } finally {
+      site.close()
+    }
+  })
+
   await step('running in the background', async () => {
     await until('Settings', clickText, 'Settings')
     await until('the background switches', () => document.querySelectorAll('.switch').length >= 4)

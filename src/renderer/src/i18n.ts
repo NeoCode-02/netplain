@@ -382,6 +382,43 @@ const en = {
     noApps: 'History per app is recorded while traffic watching (Wireshark) is on.',
     empty: 'No data for this period yet.'
   },
+  monitors: {
+    title: 'Your sites and servers',
+    lead: 'Checked every 1 or 5 minutes. Netplain tells you when one stops answering, comes back, or its certificate is running out.',
+    kinds: { http: 'Website', tcp: 'Server port', ping: 'Ping' },
+    placeholder: { http: 'https://example.com', tcp: 'example.com:22', ping: 'example.com' },
+    every: { 60: 'Every minute', 300: 'Every 5 minutes' },
+    target: 'Address',
+    add: 'Watch',
+    check: 'Check now',
+    remove: 'Stop watching',
+    none: 'Nothing watched yet. Add a site you run, a server port, or any computer to ping.',
+    up: 'Up',
+    down: 'Down',
+    pending: 'Checking…',
+    upFor: (span: string) => `up for ${span}`,
+    downSince: (time: string) => `down since ${time}`,
+    day: (pct: string) => `${pct}% in 24 h`,
+    cert: (days: number) => (days <= 0 ? 'certificate expired' : `certificate: ${days} days left`),
+    why: (code: string): string =>
+      /^HTTP \d+$/.test(code)
+        ? `It answered with error ${code.slice(5)}`
+        : ({
+            E_TIMEOUT: 'No answer in time',
+            E_NO_PING: 'No answer to ping',
+            ECONNREFUSED: 'Nothing listens there (connection refused)',
+            ENOTFOUND: 'This name does not exist',
+            EAI_AGAIN: 'The name could not be looked up',
+            ECONNRESET: 'The connection was cut',
+            EHOSTUNREACH: 'Not reachable from here',
+            ENETUNREACH: 'Not reachable from here',
+            CERT_HAS_EXPIRED: 'Its certificate has expired',
+            DEPTH_ZERO_SELF_SIGNED_CERT: 'Its certificate is self-signed',
+            SELF_SIGNED_CERT_IN_CHAIN: 'Its certificate is self-signed',
+            UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'Its certificate cannot be verified',
+            ERR_TLS_CERT_ALTNAME_INVALID: 'Its certificate is for another name'
+          }[code] ?? code)
+  },
   uptime: {
     title: 'Is the internet steady?',
     lead: 'Netplain checks the router, the internet and name lookups every 15 seconds (every 5 while something is wrong) and logs every drop with where it broke.',
@@ -432,7 +469,10 @@ const en = {
       exposed: ['New port open to the network', 'When a program starts waiting for connections from other devices.'],
       plain: ['Unencrypted traffic', 'When a program sends readable data (HTTP, FTP, Telnet).'],
       blocklist: ['Dangerous address', 'When something talks to an address on a list of attackers and malware servers.'],
-      outage: ['Internet drop', 'When the connection was down for a minute or more, with where it broke.']
+      outage: ['Internet drop', 'When the connection was down for a minute or more, with where it broke.'],
+      monitorDown: ['Site or server down', 'When a site or server you watch stops answering.'],
+      monitorUp: ['Site or server back', 'When it answers again.'],
+      certExpiry: ['Certificate running out', 'When a watched site’s https certificate has 14 days or less left.']
     } satisfies Record<AlertKind, [string, string]>,
     say: {
       newApp: (app: string, d: string) => [`${app} went online for the first time`, `It connected to ${d}. If you don’t know this program, check where it came from.`],
@@ -446,7 +486,13 @@ const en = {
         const [cause, ms] = d.split('|')
         const [what, why] = en.uptime.causes[cause as OutageCause] ?? en.uptime.causes.provider
         return [`The internet was down for ${en.uptime.span(Number(ms))}`, `${what}${network ? ` (${network})` : ''}. ${why}`]
-      }
+      },
+      monitorDown: (target: string, why: string): [string, string] => [`${target} is down`, `${en.monitors.why(why)}. Netplain keeps checking and tells you when it is back.`],
+      monitorUp: (target: string, ms: string): [string, string] => [`${target} is back`, `It was down for ${en.uptime.span(Number(ms))}.`],
+      certExpiry: (target: string, days: string): [string, string] => [
+        Number(days) <= 0 ? `${target}: the certificate expires today` : `${target}: the certificate expires in ${days} days`,
+        'Renew it before then, or visitors will see a security warning.'
+      ]
     } satisfies Record<AlertKind, (app: string, detail: string) => [string, string]>,
     unknownApp: 'Unknown program',
     blocklist: 'Blocklist',
@@ -653,6 +699,9 @@ const en = {
     E_NOT_FOUND: 'No such name.',
     E_PUBLIC_IP: 'Could not get the public address. Check the internet connection.',
     E_NO_TRACE: 'No route tool on this computer: install the “traceroute” package.',
+    E_MONITOR_TARGET: 'Check the address: a website (https://example.com), a server port (example.com:22) or a host name.',
+    E_MONITOR_MAX: 'Up to 50 can be watched.',
+    E_MONITOR_EXISTS: 'This one is already watched.',
     E_FILTER: (m: string) => `Wireshark did not understand the filter: ${m}`,
     E_NO_CLOUDFLARED: 'Download Cloudflare’s connector first, or choose localhost.run.',
     E_NO_SSH: 'This computer has no ssh program. Choose Cloudflare, or install OpenSSH.',
@@ -1045,6 +1094,43 @@ const uz: Dict = {
     noApps: 'Ilovalar bo‘yicha tarix trafik kuzatuvi (Wireshark) yoqilganda yoziladi.',
     empty: 'Bu davr uchun hali ma’lumot yo‘q.'
   },
+  monitors: {
+    title: 'Saytlaringiz va serverlaringiz',
+    lead: 'Har 1 yoki 5 daqiqada tekshiriladi. Biri javob bermay qolsa, qayta ishlasa yoki sertifikat muddati tugayotgan bo‘lsa, Netplain xabar beradi.',
+    kinds: { http: 'Sayt', tcp: 'Server porti', ping: 'Ping' },
+    placeholder: { http: 'https://example.com', tcp: 'example.com:22', ping: 'example.com' },
+    every: { 60: 'Har daqiqada', 300: 'Har 5 daqiqada' },
+    target: 'Manzil',
+    add: 'Kuzatish',
+    check: 'Hozir tekshirish',
+    remove: 'Kuzatishni to‘xtatish',
+    none: 'Hali hech narsa kuzatilmayapti. O‘zingiz yuritadigan saytni, server portini yoki ping qilinadigan kompyuterni qo‘shing.',
+    up: 'Ishlayapti',
+    down: 'Ishlamayapti',
+    pending: 'Tekshirilmoqda…',
+    upFor: (span) => `${span} dan beri ishlayapti`,
+    downSince: (time) => `${time} dan beri ishlamayapti`,
+    day: (pct) => `24 soatda ${pct}%`,
+    cert: (days) => (days <= 0 ? 'sertifikat muddati tugagan' : `sertifikat: ${days} kun qoldi`),
+    why: (code) =>
+      /^HTTP \d+$/.test(code)
+        ? `${code.slice(5)} xato kodi bilan javob berdi`
+        : ({
+            E_TIMEOUT: 'Vaqtida javob kelmadi',
+            E_NO_PING: 'Ping’ga javob yo‘q',
+            ECONNREFUSED: 'U yerda hech narsa tinglamayapti (ulanish rad etildi)',
+            ENOTFOUND: 'Bunday nom mavjud emas',
+            EAI_AGAIN: 'Nomni aniqlab bo‘lmadi',
+            ECONNRESET: 'Ulanish uzib qo‘yildi',
+            EHOSTUNREACH: 'Bu yerdan yetib bo‘lmaydi',
+            ENETUNREACH: 'Bu yerdan yetib bo‘lmaydi',
+            CERT_HAS_EXPIRED: 'Sertifikati muddati o‘tgan',
+            DEPTH_ZERO_SELF_SIGNED_CERT: 'Sertifikati o‘z-o‘zidan imzolangan',
+            SELF_SIGNED_CERT_IN_CHAIN: 'Sertifikati o‘z-o‘zidan imzolangan',
+            UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'Sertifikatini tekshirib bo‘lmadi',
+            ERR_TLS_CERT_ALTNAME_INVALID: 'Sertifikati boshqa nom uchun berilgan'
+          })[code] ?? code
+  },
   uptime: {
     title: 'Internet barqarormi?',
     lead: 'Netplain har 15 soniyada (nimadir ishlamay qolsa, har 5 soniyada) router, internet va nomlarni aniqlashni tekshiradi va har bir uzilishni qayerda uzilgani bilan yozib boradi.',
@@ -1094,7 +1180,10 @@ const uz: Dict = {
       exposed: ['Tarmoqqa yangi port ochildi', 'Dastur boshqa qurilmalardan ulanishni kuta boshlaganda.'],
       plain: ['Shifrlanmagan trafik', 'Dastur o‘qilishi mumkin bo‘lgan ma’lumot yuborganda (HTTP, FTP, Telnet).'],
       blocklist: ['Xavfli manzil', 'Hujumchilar va zararli serverlar ro‘yxatidagi manzil bilan aloqa bo‘lganda.'],
-      outage: ['Internet uzilishi', 'Ulanish bir daqiqa yoki undan ko‘proq uzilganda, qayerda uzilgani bilan.']
+      outage: ['Internet uzilishi', 'Ulanish bir daqiqa yoki undan ko‘proq uzilganda, qayerda uzilgani bilan.'],
+      monitorDown: ['Sayt yoki server ishlamay qoldi', 'Siz kuzatayotgan sayt yoki server javob bermay qolganda.'],
+      monitorUp: ['Sayt yoki server qayta ishladi', 'U yana javob bera boshlaganda.'],
+      certExpiry: ['Sertifikat muddati tugayapti', 'Kuzatilayotgan saytning https sertifikatiga 14 kun yoki undan kam qolganda.']
     },
     say: {
       newApp: (app, d) => [`${app} birinchi marta internetga chiqdi`, `U ${d} ga ulandi. Bu dasturni tanimasangiz, qayerdan kelganini tekshiring.`],
@@ -1105,7 +1194,13 @@ const uz: Dict = {
         const [cause, ms] = d.split('|')
         const [what, why] = uz.uptime.causes[cause as OutageCause] ?? uz.uptime.causes.provider
         return [`Internet ${uz.uptime.span(Number(ms))} uzilib qoldi`, `${what}${network ? ` (${network})` : ''}. ${why}`]
-      }
+      },
+      monitorDown: (target, why) => [`${target} ishlamayapti`, `${uz.monitors.why(why)}. Netplain tekshirishda davom etadi va qayta ishlasa, xabar beradi.`],
+      monitorUp: (target, ms) => [`${target} yana ishlayapti`, `U ${uz.uptime.span(Number(ms))} ishlamadi.`],
+      certExpiry: (target, days) => [
+        Number(days) <= 0 ? `${target}: sertifikat muddati bugun tugaydi` : `${target}: sertifikat muddati ${days} kunda tugaydi`,
+        'Undan oldin yangilang, aks holda tashrif buyuruvchilar xavfsizlik ogohlantirishini ko‘radi.'
+      ]
     },
     unknownApp: 'Noma’lum dastur',
     blocklist: 'Qora ro‘yxat',
@@ -1311,6 +1406,9 @@ const uz: Dict = {
     E_NOT_FOUND: 'Bunday nom topilmadi.',
     E_PUBLIC_IP: 'Ommaviy manzilni olib bo‘lmadi. Internet ulanishini tekshiring.',
     E_NO_TRACE: 'Bu kompyuterda marshrut asbobi yo‘q: “traceroute” paketini o‘rnating.',
+    E_MONITOR_TARGET: 'Manzilni tekshiring: sayt (https://example.com), server porti (example.com:22) yoki host nomi.',
+    E_MONITOR_MAX: 'Ko‘pi bilan 50 tasini kuzatish mumkin.',
+    E_MONITOR_EXISTS: 'Bu allaqachon kuzatilmoqda.',
     E_FILTER: (m) => `Wireshark filtrni tushunmadi: ${m}`,
     E_NO_CLOUDFLARED: 'Avval Cloudflare ulagichini yuklab oling yoki localhost.run’ni tanlang.',
     E_NO_SSH: 'Bu kompyuterda ssh dasturi yo‘q. Cloudflare’ni tanlang yoki OpenSSH o‘rnating.',

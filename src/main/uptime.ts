@@ -50,7 +50,7 @@ export function parsePingOnce(text: string, windows: boolean): number | null {
   return m ? Number(m[1]) : null
 }
 
-function pingOnce(host: string): Promise<number | null> {
+export function pingOnce(host: string): Promise<number | null> {
   const win = process.platform === 'win32'
   const args = win ? ['-n', '1', '-w', '1000', host] : ['-c', '1', process.platform === 'darwin' ? '-t' : '-W', '1', host]
   return new Promise((resolve) =>

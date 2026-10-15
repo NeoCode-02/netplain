@@ -8,7 +8,7 @@ import { createBlocklist } from './blocklist'
 import { isSettings, loadSettings, normalize, saveSettings } from './settings'
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'netplain-alerts-'))
-const ALL = { newApp: true, exposed: true, plain: true, blocklist: true, outage: true }
+const ALL = { newApp: true, exposed: true, plain: true, blocklist: true, outage: true, monitorDown: true, monitorUp: true, certExpiry: true }
 
 describe('blocklist', () => {
   it('matches addresses and ranges, ignoring comments and junk', () => {
@@ -80,7 +80,7 @@ describe('settings', () => {
     // Unknown keys are dropped; a wrong value falls back to the default.
     fs.writeFileSync(file, JSON.stringify({ theme: 'dark', alerts: { plain: false }, updates: 'yes', extra: 1 }))
     const s = loadSettings(file)
-    expect(s).toEqual({ theme: 'dark', capture: true, alerts: { newApp: true, exposed: true, plain: false, blocklist: true, outage: true }, blocklist: '', updates: true, background: process.platform !== 'linux', autostart: false, uptime: true })
+    expect(s).toEqual({ theme: 'dark', capture: true, alerts: { newApp: true, exposed: true, plain: false, blocklist: true, outage: true, monitorDown: true, monitorUp: true, certExpiry: true }, blocklist: '', updates: true, background: process.platform !== 'linux', autostart: false, uptime: true })
     expect(isSettings(s)).toBe(true)
     expect(normalize({ ...s, extra: 1 })).toEqual(s)
     expect(isSettings({ ...s, alerts: { ...s.alerts, plain: 'no' } })).toBe(false)

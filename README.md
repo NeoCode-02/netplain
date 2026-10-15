@@ -13,7 +13,7 @@ See what your computer does on the network, in plain language — without `ipcon
 - **Packets** — every packet in plain words, Wireshark display filters, full details, save as `.pcapng` or open in Wireshark.
 - **Devices** — who is on your local network and who made each device.
 - **History** — data per hour and day, per app and adapter, kept 90 days.
-- **Uptime** — is the internet steady? The router, the internet and name lookups are checked every 15 seconds; every drop is logged with where it broke (Wi-Fi, router, provider or DNS), next to 24 hours of response times.
+- **Uptime** — is the internet steady? The router, the internet and name lookups are checked every 15 seconds; every drop is logged with where it broke (Wi-Fi, router, provider or DNS), next to 24 hours of response times; your own sites, server ports and hosts are watched too, with alerts when one goes down or its https certificate runs out.
 - **Alerts** — a new app went online, a new port opened to the network, unencrypted traffic, a known-bad address (your own list or FireHOL level 1), an internet drop of a minute or more.
 - **Tools** — the terminal as buttons: "is the internet not working?" (adapter → address → router → DNS → internet), ping, traceroute, DNS lookup, port check, public IP; fixes: clear DNS cache, renew IP, restart adapter.
 - **Share** — give a site on localhost an https:// link that opens anywhere, like ngrok without an account: Cloudflare Quick Tunnel or localhost.run, an optional password, and every visit with its headers and body, sent again with one click.

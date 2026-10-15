@@ -244,7 +244,35 @@ export interface Usage {
   tx: number
 }
 
-export type AlertKind = 'newApp' | 'exposed' | 'plain' | 'blocklist' | 'outage'
+export type AlertKind = 'newApp' | 'exposed' | 'plain' | 'blocklist' | 'outage' | 'monitorDown' | 'monitorUp' | 'certExpiry'
+
+/** A site or server the user wants watched: a web address, "host:port", or a host to ping. */
+export type MonitorKind = 'http' | 'tcp' | 'ping'
+
+export interface Monitor {
+  id: string
+  kind: MonitorKind
+  target: string
+  /** Seconds between checks. */
+  every: 60 | 300
+}
+
+export interface MonitorState extends Monitor {
+  /** null before the first check. */
+  up: boolean | null
+  ms: number | null
+  /** HTTP status of the last answer. */
+  status: number | null
+  /** Why the last check failed: an E_ code or a TLS / network error code. */
+  error: string | null
+  /** Days until the https certificate expires. */
+  certDays: number | null
+  /** When the current up/down state began. */
+  since: number | null
+  checked: number | null
+  /** The last 24 hours of checks (ms, or null when it failed). */
+  history: { at: number; ms: number | null }[]
+}
 
 /** Where a drop in the connection came from, nearest to this computer first. */
 export type OutageCause = 'adapter' | 'router' | 'provider' | 'dns'
