@@ -8,7 +8,7 @@ import { createBlocklist } from './blocklist'
 import { isSettings, loadSettings, normalize, saveSettings } from './settings'
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'netplain-alerts-'))
-const ALL = { newApp: true, exposed: true, plain: true, blocklist: true }
+const ALL = { newApp: true, exposed: true, plain: true, blocklist: true, outage: true }
 
 describe('blocklist', () => {
   it('matches addresses and ranges, ignoring comments and junk', () => {
@@ -61,6 +61,17 @@ describe('alerts', () => {
     a.plaintext(ALL, 'svchost', 'http://ctldl.windowsupdate.com')
     expect(got.map((x) => x.detail)).toEqual(['http://example.com'])
   })
+
+  it('tells about connection drops of a minute or more, once they are over', () => {
+    const got: Alert[] = []
+    const a = createAlerts(tmp(), (x) => got.push(x))
+    const drop = { id: '1', start: 0, end: 90_000, cause: 'provider' as const, network: 'Home' }
+    a.outage(ALL, { ...drop, end: 30_000 })
+    a.outage(ALL, { ...drop, end: null })
+    a.outage({ ...ALL, outage: false }, drop)
+    a.outage(ALL, drop)
+    expect(got.map((x) => [x.kind, x.app, x.detail])).toEqual([['outage', 'Home', 'provider|90000']])
+  })
 })
 
 describe('settings', () => {
@@ -69,7 +80,7 @@ describe('settings', () => {
     // Unknown keys are dropped; a wrong value falls back to the default.
     fs.writeFileSync(file, JSON.stringify({ theme: 'dark', alerts: { plain: false }, updates: 'yes', extra: 1 }))
     const s = loadSettings(file)
-    expect(s).toEqual({ theme: 'dark', capture: true, alerts: { newApp: true, exposed: true, plain: false, blocklist: true }, blocklist: '', updates: true, background: process.platform !== 'linux', autostart: false })
+    expect(s).toEqual({ theme: 'dark', capture: true, alerts: { newApp: true, exposed: true, plain: false, blocklist: true, outage: true }, blocklist: '', updates: true, background: process.platform !== 'linux', autostart: false, uptime: true })
     expect(isSettings(s)).toBe(true)
     expect(normalize({ ...s, extra: 1 })).toEqual(s)
     expect(isSettings({ ...s, alerts: { ...s.alerts, plain: 'no' } })).toBe(false)

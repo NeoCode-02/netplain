@@ -14,9 +14,10 @@ import Security from './pages/Security'
 import Settings from './pages/Settings'
 import Share from './pages/Share'
 import Tools from './pages/Tools'
+import Uptime from './pages/Uptime'
 import { Icon, Mark, type IconName } from './ui'
 
-export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'packets' | 'devices' | 'history' | 'alerts' | 'security' | 'tools' | 'share' | 'settings'
+export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'packets' | 'devices' | 'history' | 'uptime' | 'alerts' | 'security' | 'tools' | 'share' | 'settings'
 const NAV: [Page, IconName][] = [
   ['overview', 'chart'],
   ['network', 'globe'],
@@ -25,6 +26,7 @@ const NAV: [Page, IconName][] = [
   ['packets', 'list'],
   ['devices', 'devices'],
   ['history', 'clock'],
+  ['uptime', 'pulse'],
   ['alerts', 'bell'],
   ['security', 'shield'],
   ['tools', 'wrench'],
@@ -92,6 +94,7 @@ export default function App() {
           {page === 'packets' && <Packets />}
           {page === 'devices' && <Devices />}
           {page === 'history' && <History />}
+          {page === 'uptime' && <Uptime />}
           {page === 'alerts' && <Alerts />}
           {page === 'security' && <Security />}
           {page === 'tools' && <Tools />}

@@ -1,8 +1,9 @@
 import { useSyncExternalStore } from 'react'
+import type { AlertKind, OutageCause } from '../../shared/types'
 
 const en = {
   lang: 'English',
-  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', security: 'Security', tools: 'Tools', share: 'Share', settings: 'Settings' },
+  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', security: 'Security', tools: 'Tools', share: 'Share', uptime: 'Uptime', settings: 'Settings' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobile', loopback: 'Loopback', other: 'Other' },
   /** What each kind of adapter is, for someone who has never opened ipconfig. */
   what: {
@@ -151,11 +152,11 @@ const en = {
     language: 'Language',
     about: 'About',
     version: (v: string) => `Netplain ${v}`,
-    privacy: 'Everything here is read on this computer. Netplain goes online only when you press a button that says so, and once at start to ask GitHub whether a new version is out.',
+    privacy: 'Everything here is read on this computer. Netplain goes online only when you press a button that says so, once at start to ask GitHub whether a new version is out, and for the internet-drop checks while they are on.',
     updates: 'Check for new versions',
     running: 'In the background',
     background: 'Keep running in the tray when the window is closed',
-    backgroundWhy: 'History and alerts keep going while the window is closed. To quit, use the tray icon’s menu.',
+    backgroundWhy: 'History, alerts and the internet-drop checks keep going while the window is closed. To quit, use the tray icon’s menu.',
     autostart: 'Start at login',
     autostartWin: 'Start with Windows',
     autostartWhy: 'Opens quietly in the tray when you log in.',
@@ -168,7 +169,9 @@ const en = {
     geoBusy: 'Downloading…',
     geoCredit: 'IP geolocation by DB-IP (CC BY 4.0)',
     capture: 'Watch traffic per app',
-    captureWhy: 'Uses Wireshark’s engine on the adapter that reaches the internet. Everything stays on this computer.'
+    captureWhy: 'Uses Wireshark’s engine on the adapter that reaches the internet. Everything stays on this computer.',
+    uptime: 'Watch for internet drops',
+    uptimeWhy: 'Checks the router, name lookups and the internet (one connection to 1.1.1.1 or 8.8.8.8) every 15 seconds, under 40 MB a month, and logs every drop.'
   },
   security: {
     title: 'Security',
@@ -379,9 +382,47 @@ const en = {
     noApps: 'History per app is recorded while traffic watching (Wireshark) is on.',
     empty: 'No data for this period yet.'
   },
+  uptime: {
+    title: 'Is the internet steady?',
+    lead: 'Netplain checks the router, the internet and name lookups every 15 seconds (every 5 while something is wrong) and logs every drop with where it broke.',
+    offTitle: 'Connection checks are off',
+    offBody: 'Turn them on to log every drop and see how steady the connection is.',
+    turnOn: 'Turn on',
+    waiting: 'The first check runs in a few seconds…',
+    router: 'Router',
+    internet: 'Internet',
+    dns: 'Name lookups',
+    noAnswer: 'No answer',
+    ignores: 'Ignores checks',
+    works: 'Works',
+    fails: 'Fails',
+    ok: 'The internet works.',
+    downNow: (since: string, what: string) => `No internet since ${since}. ${what}.`,
+    day: (pct: string, drops: number, longest: string | null) =>
+      `Last 24 hours: online ${pct}% of the time` + (drops ? `, ${drops === 1 ? '1 drop' : `${drops} drops`} (longest ${longest})` : ', no drops') + '.',
+    chart: 'Response time, last 24 hours',
+    chartLabel: (inet: string, router: string) => `Response time over the last 24 hours. Latest: internet ${inet}, router ${router}.`,
+    lost: (pct: number) => `${pct}% of checks failed`,
+    outages: 'Drops',
+    none: 'No drops recorded yet.',
+    going: 'still going',
+    causes: {
+      adapter: ['This computer was offline', 'Wi-Fi or the cable was disconnected, so not even the router could be reached.'],
+      router: ['The router did not answer', 'Wi-Fi or the router itself had a problem. Restarting the router, or moving closer to it, usually helps.'],
+      provider: ['The provider’s side was down', 'Your router answered, but the internet behind it did not. If it happens often, show this list to your internet provider.'],
+      dns: ['Name lookups failed', 'The internet worked, but names like google.com could not be looked up. Another DNS (1.1.1.1 or 8.8.8.8) may help.']
+    } satisfies Record<OutageCause, [string, string]>,
+    span: (ms: number) => {
+      const s = Math.round(ms / 1000)
+      if (s < 60) return `${s} s`
+      const m = Math.round(s / 60)
+      return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`
+    },
+    ms: (v: number) => `${v} ms`
+  },
   alerts: {
     title: 'Alerts',
-    lead: 'Security signs Netplain keeps an eye on. Each one says what it means and what to do.',
+    lead: 'Security signs and connection drops Netplain keeps an eye on. Each one says what it means and what to do.',
     none: 'No alerts so far. All quiet.',
     markRead: 'Mark all as read',
     clear: 'Clear',
@@ -390,8 +431,9 @@ const en = {
       newApp: ['New app online', 'When a program connects to the internet for the first time.'],
       exposed: ['New port open to the network', 'When a program starts waiting for connections from other devices.'],
       plain: ['Unencrypted traffic', 'When a program sends readable data (HTTP, FTP, Telnet).'],
-      blocklist: ['Dangerous address', 'When something talks to an address on a list of attackers and malware servers.']
-    } as Record<string, [string, string]>,
+      blocklist: ['Dangerous address', 'When something talks to an address on a list of attackers and malware servers.'],
+      outage: ['Internet drop', 'When the connection was down for a minute or more, with where it broke.']
+    } satisfies Record<AlertKind, [string, string]>,
     say: {
       newApp: (app: string, d: string) => [`${app} went online for the first time`, `It connected to ${d}. If you don’t know this program, check where it came from.`],
       exposed: (app: string, d: string) => [
@@ -399,8 +441,13 @@ const en = {
         'Other devices on your network can now try to connect to it. Fine for programs you use for sharing or development; otherwise close it.'
       ],
       plain: (app: string, d: string) => [`${app} sent unencrypted data`, `To ${d}. Anyone on the same network or along the way could read or change it. Don’t enter passwords there.`],
-      blocklist: (app: string, d: string) => [`${app} talked to a dangerous address`, `${d} is on a list of attackers and malware servers. Scan the computer with Microsoft Defender and check this program.`]
-    } as Record<string, (app: string, detail: string) => [string, string]>,
+      blocklist: (app: string, d: string) => [`${app} talked to a dangerous address`, `${d} is on a list of attackers and malware servers. Scan the computer with Microsoft Defender and check this program.`],
+      outage: (network: string, d: string): [string, string] => {
+        const [cause, ms] = d.split('|')
+        const [what, why] = en.uptime.causes[cause as OutageCause] ?? en.uptime.causes.provider
+        return [`The internet was down for ${en.uptime.span(Number(ms))}`, `${what}${network ? ` (${network})` : ''}. ${why}`]
+      }
+    } satisfies Record<AlertKind, (app: string, detail: string) => [string, string]>,
     unknownApp: 'Unknown program',
     blocklist: 'Blocklist',
     blocklistWhy: 'Connections to these addresses raise an alert. One IP or range per line (e.g. 203.0.113.0/24).',
@@ -620,7 +667,7 @@ export type Dict = typeof en
 
 const uz: Dict = {
   lang: 'O‘zbekcha',
-  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', security: 'Xavfsizlik', tools: 'Asboblar', share: 'Ulashish', settings: 'Sozlamalar' },
+  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', security: 'Xavfsizlik', tools: 'Asboblar', share: 'Ulashish', uptime: 'Barqarorlik', settings: 'Sozlamalar' },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobil', loopback: 'Loopback', other: 'Boshqa' },
   what: {
     wifi: 'Simsiz adapter: kompyuterni Wi-Fi tarmoqlariga ulaydi.',
@@ -768,11 +815,11 @@ const uz: Dict = {
     language: 'Til',
     about: 'Dastur haqida',
     version: (v) => `Netplain ${v}`,
-    privacy: 'Bu yerdagi hamma narsa shu kompyuterning o‘zida o‘qiladi. Netplain internetga faqat siz shuni aytadigan tugmani bosganingizda chiqadi, yana ishga tushganda bir marta GitHub’dan yangi versiya bor-yo‘qligini so‘raydi.',
+    privacy: 'Bu yerdagi hamma narsa shu kompyuterning o‘zida o‘qiladi. Netplain internetga faqat siz shuni aytadigan tugmani bosganingizda chiqadi, ishga tushganda bir marta GitHub’dan yangi versiya bor-yo‘qligini so‘raydi va internet uzilishlari kuzatuvi yoqiq bo‘lsa, tekshiruvlar yuboradi.',
     updates: 'Yangi versiyalarni tekshirish',
     running: 'Fonda ishlash',
     background: 'Oyna yopilganda tray’da ishlashda davom etish',
-    backgroundWhy: 'Oyna yopiq bo‘lsa ham tarix va signallar yozilaveradi. Chiqish uchun tray belgisining menyusidan foydalaning.',
+    backgroundWhy: 'Oyna yopiq bo‘lsa ham tarix, signallar va internet uzilishlari kuzatuvi davom etadi. Chiqish uchun tray belgisining menyusidan foydalaning.',
     autostart: 'Kompyuterga kirganda ishga tushish',
     autostartWin: 'Windows bilan birga ishga tushish',
     autostartWhy: 'Tizimga kirganingizda tray’da jimgina ochiladi.',
@@ -785,7 +832,9 @@ const uz: Dict = {
     geoBusy: 'Yuklanmoqda…',
     geoCredit: 'IP joylashuvi: DB-IP (CC BY 4.0)',
     capture: 'Ilovalar trafigini kuzatish',
-    captureWhy: 'Internetga chiqadigan adapterda Wireshark dvigateli ishlatiladi. Hamma narsa shu kompyuterda qoladi.'
+    captureWhy: 'Internetga chiqadigan adapterda Wireshark dvigateli ishlatiladi. Hamma narsa shu kompyuterda qoladi.',
+    uptime: 'Internet uzilishlarini kuzatish',
+    uptimeWhy: 'Router, nomlarni aniqlash va internetni (1.1.1.1 yoki 8.8.8.8 ga bitta ulanish) har 15 soniyada tekshiradi, oyiga 40 MB dan kam, va har bir uzilishni yozib boradi.'
   },
   security: {
     title: 'Xavfsizlik',
@@ -996,9 +1045,46 @@ const uz: Dict = {
     noApps: 'Ilovalar bo‘yicha tarix trafik kuzatuvi (Wireshark) yoqilganda yoziladi.',
     empty: 'Bu davr uchun hali ma’lumot yo‘q.'
   },
+  uptime: {
+    title: 'Internet barqarormi?',
+    lead: 'Netplain har 15 soniyada (nimadir ishlamay qolsa, har 5 soniyada) router, internet va nomlarni aniqlashni tekshiradi va har bir uzilishni qayerda uzilgani bilan yozib boradi.',
+    offTitle: 'Ulanish tekshiruvi o‘chiq',
+    offBody: 'Har bir uzilishni yozib borish va ulanish qanchalik barqarorligini ko‘rish uchun yoqing.',
+    turnOn: 'Yoqish',
+    waiting: 'Birinchi tekshiruv bir necha soniyada boshlanadi…',
+    router: 'Router',
+    internet: 'Internet',
+    dns: 'Nomlarni aniqlash',
+    noAnswer: 'Javob yo‘q',
+    ignores: 'Tekshiruvga javob bermaydi',
+    works: 'Ishlayapti',
+    fails: 'Ishlamayapti',
+    ok: 'Internet ishlayapti.',
+    downNow: (since, what) => `${since} dan beri internet yo‘q. ${what}.`,
+    day: (pct, drops, longest) => `So‘nggi 24 soat: vaqtning ${pct}% da internet bor edi` + (drops ? `, ${drops} ta uzilish (eng uzuni ${longest})` : ', uzilish bo‘lmadi') + '.',
+    chart: 'Javob vaqti, so‘nggi 24 soat',
+    chartLabel: (inet, router) => `So‘nggi 24 soatdagi javob vaqti. Oxirgisi: internet ${inet}, router ${router}.`,
+    lost: (pct) => `Tekshiruvlarning ${pct}% i muvaffaqiyatsiz`,
+    outages: 'Uzilishlar',
+    none: 'Hali uzilish yozilmagan.',
+    going: 'davom etmoqda',
+    causes: {
+      adapter: ['Kompyuter tarmoqdan uzilgan edi', 'Wi-Fi yoki kabel uzilgan, hatto routerga ham yetib bo‘lmadi.'],
+      router: ['Router javob bermadi', 'Wi-Fi yoki routerning o‘zida muammo bo‘lgan. Routerni qayta yoqish yoki unga yaqinroq o‘tirish odatda yordam beradi.'],
+      provider: ['Provayder tomonda uzilish', 'Routeringiz javob berdi, lekin undan keyingi internet javob bermadi. Tez-tez takrorlansa, bu ro‘yxatni provayderingizga ko‘rsating.'],
+      dns: ['Nomlarni aniqlash ishlamadi', 'Internet bor edi, lekin google.com kabi nomlarni topib bo‘lmadi. Boshqa DNS (1.1.1.1 yoki 8.8.8.8) yordam berishi mumkin.']
+    },
+    span: (ms) => {
+      const s = Math.round(ms / 1000)
+      if (s < 60) return `${s} soniya`
+      const m = Math.round(s / 60)
+      return m < 60 ? `${m} daqiqa` : `${Math.floor(m / 60)} soat ${m % 60} daqiqa`
+    },
+    ms: (v) => `${v} ms`
+  },
   alerts: {
     title: 'Signallar',
-    lead: 'Netplain kuzatib boradigan xavfsizlik belgilari. Har biri nimani anglatishi va nima qilish kerakligi yozilgan.',
+    lead: 'Netplain kuzatib boradigan xavfsizlik belgilari va internet uzilishlari. Har biri nimani anglatishi va nima qilish kerakligi yozilgan.',
     none: 'Hozircha signal yo‘q. Hammasi tinch.',
     markRead: 'Hammasini o‘qildi deb belgilash',
     clear: 'Tozalash',
@@ -1007,14 +1093,20 @@ const uz: Dict = {
       newApp: ['Yangi ilova internetga chiqdi', 'Ilova birinchi marta internetga ulanganda.'],
       exposed: ['Tarmoqqa yangi port ochildi', 'Dastur boshqa qurilmalardan ulanishni kuta boshlaganda.'],
       plain: ['Shifrlanmagan trafik', 'Dastur o‘qilishi mumkin bo‘lgan ma’lumot yuborganda (HTTP, FTP, Telnet).'],
-      blocklist: ['Xavfli manzil', 'Hujumchilar va zararli serverlar ro‘yxatidagi manzil bilan aloqa bo‘lganda.']
-    } as Record<string, [string, string]>,
+      blocklist: ['Xavfli manzil', 'Hujumchilar va zararli serverlar ro‘yxatidagi manzil bilan aloqa bo‘lganda.'],
+      outage: ['Internet uzilishi', 'Ulanish bir daqiqa yoki undan ko‘proq uzilganda, qayerda uzilgani bilan.']
+    },
     say: {
       newApp: (app, d) => [`${app} birinchi marta internetga chiqdi`, `U ${d} ga ulandi. Bu dasturni tanimasangiz, qayerdan kelganini tekshiring.`],
       exposed: (app, d) => [`${app} tarmoqqa ${d}-portni ochdi`, 'Tarmog‘ingizdagi boshqa qurilmalar endi unga ulanishga urinishi mumkin. Ulashish yoki dasturlash uchun ishlatadigan dastur bo‘lsa, bu normal; aks holda uni yoping.'],
       plain: (app, d) => [`${app} shifrlanmagan ma’lumot yubordi`, `Manzil: ${d}. Shu tarmoqdagi yoki yo‘ldagi har kim uni o‘qishi yoki o‘zgartirishi mumkin. U yerda parol kiritmang.`],
-      blocklist: (app, d) => [`${app} xavfli manzil bilan bog‘landi`, `${d} hujumchilar va zararli serverlar ro‘yxatida. Kompyuterni Microsoft Defender bilan tekshiring va bu dasturni ko‘rib chiqing.`]
-    } as Record<string, (app: string, detail: string) => [string, string]>,
+      blocklist: (app, d) => [`${app} xavfli manzil bilan bog‘landi`, `${d} hujumchilar va zararli serverlar ro‘yxatida. Kompyuterni Microsoft Defender bilan tekshiring va bu dasturni ko‘rib chiqing.`],
+      outage: (network, d) => {
+        const [cause, ms] = d.split('|')
+        const [what, why] = uz.uptime.causes[cause as OutageCause] ?? uz.uptime.causes.provider
+        return [`Internet ${uz.uptime.span(Number(ms))} uzilib qoldi`, `${what}${network ? ` (${network})` : ''}. ${why}`]
+      }
+    },
     unknownApp: 'Noma’lum dastur',
     blocklist: 'Qora ro‘yxat',
     blocklistWhy: 'Bu manzillarga ulanish signal beradi. Har qatorda bitta IP yoki diapazon (masalan 203.0.113.0/24).',

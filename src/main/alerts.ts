@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
-import type { Alert, AlertKind, BlocklistInfo, Connections } from '../shared/types'
+import type { Alert, AlertKind, BlocklistInfo, Connections, Outage } from '../shared/types'
 import { createBlocklist } from './blocklist'
 import { dayKey } from './usage'
 
@@ -87,6 +87,11 @@ export function createAlerts(dir: string, emit: (a: Alert) => void) {
         seen.ports = [...ports]
         writeJson(seenFile, seen)
       }
+    },
+
+    /** A connection drop of a minute or more, told once it is over (detail: "cause|milliseconds"). */
+    outage(rules: Rules, o: Outage) {
+      if (o.end !== null && o.end - o.start >= 60_000) push(rules, 'outage', o.network ?? '', `${o.cause}|${o.end - o.start}`)
     },
 
     /** A program sent something readable by anyone on the way (HTTP, FTP, Telnet). */

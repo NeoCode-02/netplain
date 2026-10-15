@@ -410,6 +410,19 @@ try {
       }
     })
 
+  // Late in the run, so a few minutes of checks are there to draw.
+  await step('uptime page', async () => {
+    await until('Uptime', clickText, 'Uptime')
+    await until('the latest check', () => {
+      const v = [...document.querySelectorAll('.uptime-tile strong')].map((s) => s.textContent)
+      // Internet answers on a runner and here; the router may ignore checks.
+      return v.length === 3 && /\d+ ms/.test(v[1]) && v[0] !== '—' ? v : false
+    })
+    if (await inPage(hasText, 'No internet since')) throw new Error('the internet looks down, while the tests reach it')
+    await until(['the response-time chart', 120_000], () => document.querySelector('.rate-plot .series.down')?.getAttribute('d')?.includes('L') ?? false)
+    await shot('uptime')
+  })
+
   await step('running in the background', async () => {
     await until('Settings', clickText, 'Settings')
     await until('the background switches', () => document.querySelectorAll('.switch').length >= 4)

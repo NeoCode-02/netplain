@@ -13,7 +13,8 @@ See what your computer does on the network, in plain language — without `ipcon
 - **Packets** — every packet in plain words, Wireshark display filters, full details, save as `.pcapng` or open in Wireshark.
 - **Devices** — who is on your local network and who made each device.
 - **History** — data per hour and day, per app and adapter, kept 90 days.
-- **Alerts** — a new app went online, a new port opened to the network, unencrypted traffic, a known-bad address (your own list or FireHOL level 1).
+- **Uptime** — is the internet steady? The router, the internet and name lookups are checked every 15 seconds; every drop is logged with where it broke (Wi-Fi, router, provider or DNS), next to 24 hours of response times.
+- **Alerts** — a new app went online, a new port opened to the network, unencrypted traffic, a known-bad address (your own list or FireHOL level 1), an internet drop of a minute or more.
 - **Tools** — the terminal as buttons: "is the internet not working?" (adapter → address → router → DNS → internet), ping, traceroute, DNS lookup, port check, public IP; fixes: clear DNS cache, renew IP, restart adapter.
 - **Share** — give a site on localhost an https:// link that opens anywhere, like ngrok without an account: Cloudflare Quick Tunnel or localhost.run, an optional password, and every visit with its headers and body, sent again with one click.
 - **Always on** — closing the window keeps Netplain in the tray, with the live speed in its tooltip, so history and alerts keep going; it can start with Windows (or at login on macOS and Linux).
@@ -43,6 +44,7 @@ Everything is read on your computer; there is no telemetry. Netplain goes online
 
 - when you press a button that says so — the location database ([DB-IP Lite](https://db-ip.com), ~9 MB), FireHOL level 1 from GitHub, your public IP from api.ipify.org, Cloudflare's `cloudflared` from its GitHub releases (checksum and, on Windows, Cloudflare's signature are checked);
 - while you share a local site — through Cloudflare or localhost.run, which carry the visits to it;
+- while the internet-drop checks are on: one TCP handshake with 1.1.1.1 or 8.8.8.8 every 15 seconds, under 40 MB a month (off in Settings);
 - once at start, to ask the GitHub API whether a new version is out (off in Settings).
 
 ## Development

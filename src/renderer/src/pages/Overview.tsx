@@ -7,6 +7,7 @@ import { getLang, useT } from '../i18n'
 import { useLive } from '../live'
 import RateChart from '../RateChart'
 import { AppIcon, Icon } from '../ui'
+import { NowTiles, uptimeStory, useUptime } from './Uptime'
 
 export default function Overview({ go }: { go: (p: Page) => void }) {
   const t = useT()
@@ -15,6 +16,8 @@ export default function Overview({ go }: { go: (p: Page) => void }) {
   const { snap, hist, traffic } = useLive()
   const [conns, setConns] = useState<Connections | null>(null)
   const [devices, setDevices] = useState<Neighbor[] | null>(null)
+  const up = useUptime()
+  const steady = up?.data.on ? uptimeStory(t, up.data, up.now) : null
 
   useEffect(() => {
     const load = () => window.netplain.connections().then(setConns, () => {})
@@ -42,13 +45,15 @@ export default function Overview({ go }: { go: (p: Page) => void }) {
   const exposed = new Set((conns?.listening ?? []).filter((c) => c.scope !== 'loopback').map((c) => `${c.localPort}|${c.pid}`)).size
 
   const story = [
+    steady?.down && steady.status,
     snap && summary(t, snap.adapters, snap.defaultId),
     internet?.wifi?.signal != null && o.signal(t.network.quality[quality(internet.wifi.signal)], internet.wifi.signal),
     now && o.speed(bits(now.down), bits(now.up)),
     top ? o.topApp(top.title ?? t.procs[top.app] ?? top.app, bytes(top.rx + top.tx), top.places[0]?.name ?? null) : traffic?.state === 'missing' ? o.noCapture : null,
     talking > 0 && o.talking(talking, listJoin(orgs.slice(0, 3).map(([n]) => n), lang)),
     devices && devices.length > 0 && o.devices(devices.length),
-    exposed > 0 && o.exposed(exposed)
+    exposed > 0 && o.exposed(exposed),
+    !steady?.down && steady?.day
   ].filter((s): s is string => !!s)
 
   const more = (p: Page) => (
@@ -76,6 +81,16 @@ export default function Overview({ go }: { go: (p: Page) => void }) {
         </div>
         <RateChart points={points} />
       </section>
+
+      {up?.data.on && (
+        <section className="panel panel-pad section">
+          <div className="section-head">
+            <h3>{t.uptime.title}</h3>
+            {more('uptime')}
+          </div>
+          <NowTiles t={t} now={up.data.now} />
+        </section>
+      )}
 
       <div className="overview-grid section">
         <section className="panel">

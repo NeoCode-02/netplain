@@ -15,6 +15,7 @@ import { vendorTable } from './tshark'
 import { isSettings, loadSettings, normalize, saveSettings } from './settings'
 import { autostart, setAutostart } from './autostart'
 import { createTray } from './tray'
+import { createUptime } from './uptime'
 import { createUsage } from './usage'
 import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './tools'
 import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
@@ -119,8 +120,13 @@ const share = createShare({
 // After a scan the threat list and the last-scan dates change.
 const scanner = createScanner(() => void security?.get(true).catch(console.error))
 
+const uptime = primary ? createUptime({ dir: dataDir, snapshot: () => latest, on: () => settings.uptime, onEnd: (o) => alerts.outage(settings.alerts, o) }) : null
+
 if (primary) {
-  setInterval(() => usage.save(), 60_000)
+  setInterval(() => {
+    usage.save()
+    uptime?.save()
+  }, 60_000)
   // Signals are checked in the background, whichever page is open.
   setInterval(() => currentConnections().then((c) => alerts.connections(c, settings.alerts), console.error), Number(process.env.NETPLAIN_CHECK_MS) || 15_000)
   // The first security reading takes ~10 s (file signatures); have it ready before the page is opened.
@@ -218,7 +224,9 @@ const handlers: Api = {
     }
     if (settings.blocklist !== before.blocklist) alerts.setOwnBlocklist(settings.blocklist)
     if (settings.autostart !== autostart()) setAutostart(settings.autostart)
+    if (before.uptime && !settings.uptime) uptime?.pause()
   },
+  uptime: () => uptime?.view() ?? { on: false, now: null, points: [], outages: [] },
   showWindow: () => show(),
   uiLang: (lang) => tray?.setLang(lang),
   snapshot: () => latest,
@@ -353,6 +361,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   saveSettings: (a) => isSettings(a[0]),
   showWindow: none,
   uiLang: (a) => a[0] === 'en' || a[0] === 'uz',
+  uptime: none,
   snapshot: none,
   neighbors: none,
   scan: none,
@@ -440,12 +449,16 @@ if (primary)
     // Started at login: stay in the tray (only when there is one to come back from).
     createWindow(process.argv.includes('--hidden') && tray !== null)
     powerMonitor.on('shutdown', () => (quitting = true))
+    // Sleep is not a connection drop.
+    powerMonitor.on('suspend', () => uptime?.pause())
+    powerMonitor.on('resume', () => uptime?.resume())
   })
 app.on('before-quit', () => {
   quitting = true
   stopWatch()
   traffic?.stop()
   share.stop()
+  uptime?.stop()
   usage.save()
 })
 app.on('window-all-closed', () => app.quit())

@@ -25,6 +25,7 @@ import type {
   Snapshot,
   Traffic,
   Usage,
+  Uptime,
   UsageRange
 } from './types'
 
@@ -45,6 +46,8 @@ export interface Api {
   showWindow(): void
   /** The language the UI is shown in, for the tray menu. */
   uiLang(lang: 'en' | 'uz'): void
+  /** The connection checks: the latest one, the last 24 hours by minute, and every drop. */
+  uptime(): Uptime
   /** The latest adapter snapshot, or null before the first one arrives. */
   snapshot(): Snapshot | null
   /** Devices on the local networks, with their maker when Wireshark is installed. */

@@ -59,6 +59,8 @@
 .key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; align-self: center; }
 .key.down { background: var(--down); }
 .key.up { background: var(--up); }
+.key.drop { width: 10px; height: 10px; border-radius: 2px; background: color-mix(in srgb, var(--danger) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 55%, transparent); }
+.rate-plot .band { fill: color-mix(in srgb, var(--danger) 16%, transparent); }
 .rate-when { margin-left: auto; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .rate-plot { display: block; margin-top: 8px; outline: none; border-radius: 8px; touch-action: none; }
 .rate-plot:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
@@ -188,7 +190,8 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .alert-title { font-weight: 600; }
 .alert-row.unread { background: color-mix(in srgb, var(--accent) 5%, transparent); }
 .alert-row.unread .alert-title::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 8px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
-.ad-icon.alert-plain, .ad-icon.alert-exposed { color: #b45309; background: rgb(245 158 11 / 14%); }
+.ad-icon.alert-plain, .ad-icon.alert-exposed, .ad-icon.alert-outage { color: #b45309; background: rgb(245 158 11 / 14%); }
+@media (prefers-color-scheme: dark) { .ad-icon.alert-plain, .ad-icon.alert-exposed, .ad-icon.alert-outage { color: #fbbf24; } }
 .ad-icon.alert-blocklist { color: var(--danger); background: var(--danger-soft); }
 .setting > div:first-child { min-width: 0; }
 
@@ -263,3 +266,10 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .share-part { min-width: 0; }
 .share-part h4 { font-size: 12.5px; margin-bottom: 6px; color: var(--text-2); }
 .share-pre { font-family: var(--mono); font-size: 12px; background: var(--sunken); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; max-height: 260px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* uptime */
+.uptime-now { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.uptime-tile { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 10px; background: var(--sunken); min-width: 0; }
+.uptime-tile strong { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.uptime-tile strong.bad { color: var(--danger); }
+.uptime-when { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; max-width: 220px; text-align: right; }

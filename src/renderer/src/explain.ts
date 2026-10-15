@@ -1,4 +1,4 @@
-import type { Adapter, Neighbor, PacketRow } from '../../shared/types'
+import type { Adapter, Neighbor, Outage, PacketRow, QualityPoint } from '../../shared/types'
 import type { Dict } from './i18n'
 import { addr } from './format'
 
@@ -201,3 +201,16 @@ export function threatParts(name: string): { category: string; platform: string;
 
 /** Caught by behaviour (what it did) rather than by a known file. */
 export const behavioural = (name: string) => /Behavior:|Susp|!ml|!MTB/i.test(name)
+
+/**
+ * The last 24 hours of connection checks: share of checked time online, drops that touched the window and
+ * the longest one. Only minutes with checks count (the app may not have run all day); null without any.
+ */
+export function daySummary(points: QualityPoint[], outages: Outage[], now: number): { online: number; drops: number; longest: number } | null {
+  const from = now - 86_400_000
+  const checked = points.filter((p) => p.at >= from).length * 60_000
+  if (!checked) return null
+  const inside = outages.filter((o) => (o.end ?? now) > from)
+  const down = inside.reduce((sum, o) => sum + (o.end ?? now) - Math.max(o.start, from), 0)
+  return { online: Math.max(0, 1 - down / checked), drops: inside.length, longest: Math.max(0, ...inside.map((o) => (o.end ?? now) - o.start)) }
+}

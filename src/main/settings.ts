@@ -6,12 +6,13 @@ const THEMES: readonly Settings['theme'][] = ['system', 'light', 'dark']
 const defaults = (): Settings => ({
   theme: 'system',
   capture: true,
-  alerts: { newApp: true, exposed: true, plain: true, blocklist: true },
+  alerts: { newApp: true, exposed: true, plain: true, blocklist: true, outage: true },
   blocklist: '',
   updates: true,
   // Some Linux desktops show no tray icon; a closed window would leave the app unreachable there.
   background: process.platform !== 'linux',
-  autostart: false
+  autostart: false,
+  uptime: true
 })
 const KINDS = Object.keys(defaults().alerts) as AlertKind[]
 
@@ -26,7 +27,8 @@ const FIELDS: Record<keyof Settings, (v: unknown) => boolean> = {
   blocklist: (v) => typeof v === 'string' && v.length <= 200_000,
   updates: bool,
   background: bool,
-  autostart: bool
+  autostart: bool,
+  uptime: bool
 }
 const KEYS = Object.keys(FIELDS) as (keyof Settings)[]
 

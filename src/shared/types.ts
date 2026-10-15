@@ -69,6 +69,8 @@ export interface Settings {
   background: boolean
   /** Start in the tray at login. Read from the system, not from the settings file. */
   autostart: boolean
+  /** Check the router, the internet and DNS every 5 s and log connection drops. */
+  uptime: boolean
 }
 
 /** A newer Netplain on GitHub. */
@@ -242,7 +244,42 @@ export interface Usage {
   tx: number
 }
 
-export type AlertKind = 'newApp' | 'exposed' | 'plain' | 'blocklist'
+export type AlertKind = 'newApp' | 'exposed' | 'plain' | 'blocklist' | 'outage'
+
+/** Where a drop in the connection came from, nearest to this computer first. */
+export type OutageCause = 'adapter' | 'router' | 'provider' | 'dns'
+
+export interface Outage {
+  id: string
+  start: number
+  /** null while it lasts. */
+  end: number | null
+  cause: OutageCause
+  /** The network it happened on: Wi-Fi name or adapter name. */
+  network: string | null
+}
+
+/** One minute of connection checks. */
+export interface QualityPoint {
+  /** Start of the minute. */
+  at: number
+  /** Average time to reach the internet / the router, ms; null when none answered. */
+  internet: number | null
+  router: number | null
+  /** Share of internet checks that failed, 0–1. */
+  loss: number
+}
+
+export interface Uptime {
+  /** Checking is switched on in Settings. */
+  on: boolean
+  /** The latest check (one every 5 s); router null = no answer, routerKnown false = it never answers checks. */
+  now: { at: number; internet: number | null; router: number | null; routerKnown: boolean; dns: boolean | null } | null
+  /** The last 24 hours. */
+  points: QualityPoint[]
+  /** Newest first. */
+  outages: Outage[]
+}
 
 export interface Alert {
   id: string

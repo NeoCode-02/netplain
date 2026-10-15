@@ -4,7 +4,7 @@ import { useGeo } from '../geo'
 import { errText, getLang, LANGS, setLang, useT, type Lang } from '../i18n'
 import { Icon } from '../ui'
 
-type Switch = 'capture' | 'background' | 'autostart' | 'updates'
+type Switch = 'capture' | 'uptime' | 'background' | 'autostart' | 'updates'
 
 export default function Settings() {
   const t = useT()
@@ -67,6 +67,7 @@ export default function Settings() {
           </div>
         </div>
         {toggle('capture', s.capture, s.captureWhy)}
+        {toggle('uptime', s.uptime, s.uptimeWhy)}
       </div>
       <section className="section">
         <div className="section-head">

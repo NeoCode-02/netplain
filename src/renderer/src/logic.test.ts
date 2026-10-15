@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Adapter, PacketRow, Snapshot } from '../../shared/types'
-import { addressKind, authKey, bandKey, behavioural, describePacket, layerKey, PRESETS, quality, randomMac, summary, threatParts, what } from './explain'
+import { addressKind, authKey, bandKey, behavioural, daySummary, describePacket, layerKey, PRESETS, quality, randomMac, summary, threatParts, what } from './explain'
 import { bits, bytes } from './format'
 import { errText, LANGS } from './i18n'
 import { advance, KEEP } from './live'
@@ -94,5 +94,21 @@ describe('threat names', () => {
     expect(threatParts('PUADlManager:Win32/OfferCore!ml')).toEqual({ category: 'PUADlManager', platform: 'Win32', family: 'OfferCore' })
     expect(threatParts('weird')).toBeNull()
     expect(['Trojan:Win32/SuspExec.SE', 'Behavior:Win32/Foo.A', 'Trojan:Win32/Wacatac.B!ml', 'Virus:DOS/EICAR_Test_File'].map(behavioural)).toEqual([true, true, true, false])
+  })
+})
+
+describe('uptime', () => {
+  const now = new Date('2026-10-15T12:00:00').getTime()
+  const minutes = (n: number) => Array.from({ length: n }, (_, i) => ({ at: now - (i + 1) * 60_000, internet: 20, router: 2, loss: 0 }))
+  it('counts only checked time and drops inside the last 24 hours', () => {
+    expect(daySummary([], [], now)).toBeNull()
+    // 10 checked minutes, a 1-minute drop inside, one from yesterday that does not count.
+    const drops = [
+      { id: 'a', start: now - 5 * 60_000, end: now - 4 * 60_000, cause: 'provider' as const, network: null },
+      { id: 'b', start: now - 30 * 3_600_000, end: now - 29 * 3_600_000, cause: 'router' as const, network: null }
+    ]
+    expect(daySummary(minutes(10), drops, now)).toEqual({ online: 0.9, drops: 1, longest: 60_000 })
+    // A drop still going counts up to now.
+    expect(daySummary(minutes(10), [{ ...drops[0], end: null }], now)?.longest).toBe(5 * 60_000)
   })
 })
