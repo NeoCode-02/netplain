@@ -11,6 +11,9 @@ export interface Point {
 
 export const KEEP = 60
 
+/** Window event asking the app to open a page (detail: the page). */
+export const GO = 'netplain:go'
+
 /** Adds one throughput point per adapter from two consecutive snapshots. A counter that went down was reset: 0, not negative. */
 export function advance(prev: Snapshot | null, next: Snapshot, hist: Map<string, Point[]>): Map<string, Point[]> {
   const out = new Map<string, Point[]>()
@@ -60,7 +63,11 @@ function start() {
     set({ alerts: [a, ...state.alerts] })
     // The OS notification, in the language the app is shown in.
     const [title, body] = alertText(a)
-    new Notification(title, { body, silent: false })
+    // Clicking it opens the app (it may be hidden in the tray) on the Alerts page.
+    new Notification(title, { body, silent: false }).onclick = () => {
+      void window.netplain.showWindow()
+      window.dispatchEvent(new CustomEvent(GO, { detail: 'alerts' }))
+    }
   })
   void window.netplain.alerts().then((alerts) => set({ alerts }))
   void window.netplain.snapshot().then((s) => s && !state.snap && push(s))

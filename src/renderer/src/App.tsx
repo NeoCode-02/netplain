@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Release } from '../../shared/types'
-import { errText, useT } from './i18n'
-import { useLive } from './live'
+import { errText, getLang, useT } from './i18n'
+import { GO, useLive } from './live'
 import Alerts from './pages/Alerts'
 import Apps from './pages/Apps'
 import Connections from './pages/Connections'
@@ -38,6 +38,13 @@ export default function App() {
   const [page, setPage] = useState<Page>('overview')
   const [release, setRelease] = useState<Release | null>(null)
   useEffect(() => void window.netplain.update().then(setRelease), [])
+  const lang = getLang()
+  useEffect(() => void window.netplain.uiLang(lang), [lang])
+  useEffect(() => {
+    const go = (e: Event) => setPage((e as CustomEvent<Page>).detail)
+    window.addEventListener(GO, go)
+    return () => window.removeEventListener(GO, go)
+  }, [])
 
   const item = (p: Page, icon: IconName) => (
     <button key={p} className={`rail-item ${page === p ? 'on' : ''}`} aria-current={page === p ? 'page' : undefined} onClick={() => setPage(p)}>

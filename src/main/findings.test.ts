@@ -56,7 +56,7 @@ describe('findings', () => {
     hosts: ['127.0.0.1 kubernetes.docker.internal', '192.168.0.101 host.docker.internal'],
     updated: '2026-10-10'
   }
-  const ctx: Context = { now: new Date('2026-10-14T12:00:00').getTime(), dns: ['192.168.0.1'], online: [], signers: new Map(), geo: () => ({ org: 'Uzbektelekom' }) }
+  const ctx: Context = { now: new Date('2026-10-14T12:00:00').getTime(), dns: ['192.168.0.1'], online: [], signers: new Map(), geo: () => ({ org: 'Uzbektelekom' }), self: 'C:\\Users\\alice\\AppData\\Local\\Programs\\Netplain\\Netplain.exe' }
   const keys = (s: Omit<Security, 'findings'>, c: Partial<Context> = {}) => findings(s, { ...ctx, ...c }).map((f) => `${f.level}:${f.key}`)
 
   it('says only good things about a healthy computer', () => {
@@ -107,6 +107,12 @@ describe('findings', () => {
   it('does not call Store apps unsigned (they are signed as a package)', () => {
     const store = 'C:\\Program Files\\WindowsApps\\Microsoft.Start_1.0_x64\\Feed.exe'
     expect(keys(clean, { online: [{ app: 'Feed', path: store }], signers: new Map([[store, none]]) })).not.toContain('warn:netUnsigned')
+  })
+
+  it('does not flag Netplain itself (unsigned builds start at login from AppData and go online)', () => {
+    const own = ctx.self.toUpperCase()
+    const s = { ...clean, startup: [{ ...clean.startup[0], name: 'Netplain', exe: own, signer: none }] }
+    expect(keys(s, { online: [{ app: 'Netplain', path: own }], signers: new Map([[own, none]]) })).toEqual(keys(clean))
   })
 
   it('treats a missing Defender as the worst sign', () => {

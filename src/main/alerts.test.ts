@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import type { Alert, Conn, Connections } from '../shared/types'
 import { createAlerts } from './alerts'
 import { createBlocklist } from './blocklist'
-import { isSettings, loadSettings, saveSettings } from './settings'
+import { isSettings, loadSettings, normalize, saveSettings } from './settings'
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'netplain-alerts-'))
 const ALL = { newApp: true, exposed: true, plain: true, blocklist: true }
@@ -66,12 +66,15 @@ describe('alerts', () => {
 describe('settings', () => {
   it('fills keys missing from older files and checks what the UI sends', () => {
     const file = path.join(tmp(), 'settings.json')
-    fs.writeFileSync(file, JSON.stringify({ theme: 'dark', alerts: { plain: false } }))
+    // Unknown keys are dropped; a wrong value falls back to the default.
+    fs.writeFileSync(file, JSON.stringify({ theme: 'dark', alerts: { plain: false }, updates: 'yes', extra: 1 }))
     const s = loadSettings(file)
-    expect(s).toEqual({ theme: 'dark', capture: true, alerts: { newApp: true, exposed: true, plain: false, blocklist: true }, blocklist: '', updates: true })
+    expect(s).toEqual({ theme: 'dark', capture: true, alerts: { newApp: true, exposed: true, plain: false, blocklist: true }, blocklist: '', updates: true, background: process.platform !== 'linux', autostart: false })
     expect(isSettings(s)).toBe(true)
+    expect(normalize({ ...s, extra: 1 })).toEqual(s)
     expect(isSettings({ ...s, alerts: { ...s.alerts, plain: 'no' } })).toBe(false)
     expect(isSettings({ ...s, blocklist: 'x'.repeat(200_001) })).toBe(false)
+    expect(isSettings({ ...s, background: undefined })).toBe(false)
     saveSettings(file, { ...s, capture: false })
     expect(loadSettings(file).capture).toBe(false)
     expect(loadSettings(path.join(tmp(), 'missing.json')).theme).toBe('system')

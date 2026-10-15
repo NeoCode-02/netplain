@@ -38,6 +38,8 @@ export interface Context {
   online: { app: string; path: string | null }[]
   signers: Map<string, Signer>
   geo: (ip: string) => { org: string | null }
+  /** Netplain's own program: unsigned builds start at login and go online too, and are not a finding. */
+  self: string
 }
 
 const names = (xs: string[]) => [...new Set(xs)].slice(0, 5).join(', ')
@@ -74,15 +76,16 @@ export function findings(s: Omit<Security, 'findings'>, c: Context): Finding[] {
   const others = s.users.filter((u) => u.admin && u.enabled && !u.me && !u.sid.endsWith('-500'))
   if (others.length) add({ key: 'otherAdmins', level: 'info', params: { names: names(others.map((u) => u.name)) }, tab: 'users' })
 
-  const badStart = s.startup.filter((x) => x.enabled && suspicious(x.exe, x.signer))
+  const mine = (p: string | null) => p?.toLowerCase() === c.self.toLowerCase()
+  const badStart = s.startup.filter((x) => x.enabled && !mine(x.exe) && suspicious(x.exe, x.signer))
   if (badStart.length) add({ key: 'startupSuspicious', level: 'warn', params: { names: names(badStart.map((x) => x.name)) }, tab: 'startup' })
-  const plainStart = s.startup.filter((x) => x.enabled && unsigned(x.signer, x.exe) && !suspicious(x.exe, x.signer))
+  const plainStart = s.startup.filter((x) => x.enabled && !mine(x.exe) && unsigned(x.signer, x.exe) && !suspicious(x.exe, x.signer))
   if (plainStart.length) add({ key: 'startupUnsigned', level: 'info', params: { names: names(plainStart.map((x) => x.name)) }, tab: 'startup' })
 
   const badSvc = s.services.filter((x) => x.start !== 'Disabled' && (suspicious(x.exe, x.signer) || (unsigned(x.signer, x.exe) && x.state === 'Running')))
   if (badSvc.length) add({ key: 'servicesUnsigned', level: 'warn', params: { names: names(badSvc.map((x) => x.display || x.name)) }, tab: 'services' })
 
-  const netBad = c.online.filter((p) => p.path && !isMicrosoft(c.signers.get(p.path) ?? null) && unsigned(c.signers.get(p.path) ?? null, p.path))
+  const netBad = c.online.filter((p) => p.path && !mine(p.path) && !isMicrosoft(c.signers.get(p.path) ?? null) && unsigned(c.signers.get(p.path) ?? null, p.path))
   if (netBad.length) add({ key: 'netUnsigned', level: 'warn', params: { names: names(netBad.map((p) => p.app)) } })
 
   // hosts lines sending real-looking names to another real address (not blocking, not local tooling).

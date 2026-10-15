@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, powerMonitor, shell, type IpcMainInvokeEvent } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -12,7 +12,9 @@ import { createGeo } from './geodb'
 import { internetIp, realDevices, sweep } from './net'
 import { allowCaptureLinux, createTrafficWatch } from './traffic'
 import { vendorTable } from './tshark'
-import { isSettings, loadSettings, saveSettings } from './settings'
+import { isSettings, loadSettings, normalize, saveSettings } from './settings'
+import { autostart, setAutostart } from './autostart'
+import { createTray } from './tray'
 import { createUsage } from './usage'
 import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './tools'
 import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
@@ -35,6 +37,9 @@ nativeTheme.themeSource = settings.theme
 const dataDir = path.join(app.getPath('userData'), 'data')
 
 let win: BrowserWindow | null = null
+let tray: ReturnType<typeof createTray> | null = null
+/** Set once the app is really quitting, so closing the window no longer just hides it. */
+let quitting = false
 let latest: Snapshot | null = null
 let problem: string | null = null
 let release: Promise<Release | null> | undefined
@@ -127,7 +132,13 @@ const stopWatch = primary
       async (adapters) => {
         const ip = await internetIp()
         const internet = ip ? adapters.find((a) => a.ipv4.some((c) => c.split('/')[0] === ip)) : undefined
+        const prev = latest
         latest = { at: Date.now(), adapters: adapters.filter((a) => a.kind !== 'loopback'), defaultId: internet?.id ?? null }
+        // The tray tooltip: speed of the adapter the internet goes through.
+        const now = latest.adapters.find((a) => a.id === latest?.defaultId)
+        const was = prev?.adapters.find((a) => a.id === now?.id)
+        const dt = prev ? (latest.at - prev.at) / 1000 : 0
+        if (now && was && dt > 0) tray?.rate((Math.max(0, now.rx - was.rx) * 8) / dt, (Math.max(0, now.tx - was.tx) * 8) / dt)
         report(null)
         send(CHANNELS.snapshot, latest)
         traffic?.follow(latest)
@@ -148,7 +159,8 @@ async function devices() {
 const overlay = () => ({ color: '#00000000', symbolColor: nativeTheme.shouldUseDarkColors ? '#a1a4ab' : '#3f4148', height: 48 })
 const rendererFile = pathToFileURL(path.join(__dirname, '../renderer/index.html')).href
 
-function createWindow() {
+/** `hidden`: started at login, so it waits in the tray until opened. */
+function createWindow(hidden = false) {
   win = new BrowserWindow({
     width: 1280,
     height: 840,
@@ -162,7 +174,21 @@ function createWindow() {
     trafficLightPosition: { x: 16, y: 17 },
     webPreferences: { preload: path.join(__dirname, '../preload/index.js'), sandbox: true, contextIsolation: true }
   })
-  win.once('ready-to-show', () => win?.show())
+  win.once('ready-to-show', () => !hidden && win?.show())
+  // Closing hides the window to the tray, so watching, history and alerts go on.
+  win.on('close', (e) => {
+    if (quitting || !settings.background || !tray) return
+    e.preventDefault()
+    win?.hide()
+    const told = path.join(app.getPath('userData'), 'tray-told')
+    if (!fs.existsSync(told)) {
+      fs.writeFileSync(told, '')
+      tray.tellHidden()
+    }
+  })
+  // Logging off or shutting down Windows must not be held up by a window that only hides.
+  win.on('query-session-end', () => (quitting = true))
+  win.on('session-end', () => (quitting = true))
   // Links never open inside the app.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https://')) void shell.openExternal(url)
@@ -180,15 +206,21 @@ nativeTheme.on('updated', () => {
 const handlers: Api = {
   appInfo: () => ({ version: app.getVersion(), platform: process.platform }),
   update: () => (settings.updates ? (release ??= checkRelease(app.getVersion()).catch(() => null)) : Promise.resolve(null)),
-  getSettings: () => settings,
+  getSettings: () => ({ ...settings, autostart: autostart() }),
   saveSettings: (s) => {
     const before = settings
-    settings = { theme: s.theme, capture: s.capture, alerts: { ...s.alerts }, blocklist: s.blocklist, updates: s.updates }
+    settings = normalize(s)
     nativeTheme.themeSource = settings.theme
     saveSettings(settingsFile, settings)
-    if (settings.capture !== before.capture) traffic?.setEnabled(settings.capture, latest)
+    if (settings.capture !== before.capture) {
+      traffic?.setEnabled(settings.capture, latest)
+      tray?.refresh()
+    }
     if (settings.blocklist !== before.blocklist) alerts.setOwnBlocklist(settings.blocklist)
+    if (settings.autostart !== autostart()) setAutostart(settings.autostart)
   },
+  showWindow: () => show(),
+  uiLang: (lang) => tray?.setLang(lang),
   snapshot: () => latest,
   neighbors: devices,
   scan: async () => {
@@ -288,6 +320,13 @@ const handlers: Api = {
   }
 }
 
+function show() {
+  if (!win || win.isDestroyed()) return createWindow()
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+}
+
 function adapter(id: string) {
   const a = latest?.adapters.find((x) => x.id === id)
   if (!a) throw new Error('E_BAD_ARGS')
@@ -312,6 +351,8 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   update: none,
   getSettings: none,
   saveSettings: (a) => isSettings(a[0]),
+  showWindow: none,
+  uiLang: (a) => a[0] === 'en' || a[0] === 'uz',
   snapshot: none,
   neighbors: none,
   scan: none,
@@ -385,15 +426,23 @@ for (const [key, fn] of Object.entries(handlers)) {
   })
 }
 
-app.on('second-instance', () => {
-  if (!win) return
-  if (win.isMinimized()) win.restore()
-  win.show()
-  win.focus()
-})
+app.on('second-instance', show)
+// macOS: clicking the Dock icon brings the hidden window back.
+app.on('activate', show)
 
-if (primary) void app.whenReady().then(createWindow)
+if (primary)
+  void app.whenReady().then(() => {
+    try {
+      tray = createTray({ show, quit: () => app.quit(), capture: () => settings.capture, setCapture: (on) => handlers.saveSettings({ ...settings, autostart: autostart(), capture: on }) })
+    } catch (e) {
+      console.error(e)
+    }
+    // Started at login: stay in the tray (only when there is one to come back from).
+    createWindow(process.argv.includes('--hidden') && tray !== null)
+    powerMonitor.on('shutdown', () => (quitting = true))
+  })
 app.on('before-quit', () => {
+  quitting = true
   stopWatch()
   traffic?.stop()
   share.stop()

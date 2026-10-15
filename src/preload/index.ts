@@ -10,6 +10,8 @@ const names: Record<keyof Api, true> = {
   update: true,
   getSettings: true,
   saveSettings: true,
+  showWindow: true,
+  uiLang: true,
   snapshot: true,
   neighbors: true,
   scan: true,

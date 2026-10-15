@@ -4,28 +4,41 @@ import { useGeo } from '../geo'
 import { errText, getLang, LANGS, setLang, useT, type Lang } from '../i18n'
 import { Icon } from '../ui'
 
+type Switch = 'capture' | 'background' | 'autostart' | 'updates'
+
 export default function Settings() {
   const t = useT()
   const s = t.settings
   const geo = useGeo()
   const [prefs, setPrefs] = useState<Prefs | null>(null)
-  const [version, setVersion] = useState('')
+  const [info, setInfo] = useState({ version: '', platform: '' })
+  const [err, setErr] = useState<unknown>(null)
 
   useEffect(() => {
     void window.netplain.getSettings().then(setPrefs)
-    void window.netplain.appInfo().then((i) => setVersion(i.version))
+    void window.netplain.appInfo().then(setInfo)
   }, [])
 
-  const theme = (th: Prefs['theme']) => {
-    const next = { ...prefs!, theme: th }
-    setPrefs(next)
-    void window.netplain.saveSettings(next)
-  }
+  // Saved at once; read back, because "start at login" is whatever the system ends up with.
   const set = (patch: Partial<Prefs>) => {
     const next = { ...prefs!, ...patch }
     setPrefs(next)
-    void window.netplain.saveSettings(next)
+    setErr(null)
+    void window.netplain
+      .saveSettings(next)
+      .catch(setErr)
+      .then(() => window.netplain.getSettings().then(setPrefs))
   }
+
+  const toggle = (key: Switch, label: string, why?: string) => (
+    <div className="stack tight">
+      <div className="setting">
+        <span>{label}</span>
+        <button className={`switch ${prefs?.[key] ? 'on' : ''}`} role="switch" aria-checked={!!prefs?.[key]} aria-label={label} disabled={!prefs} onClick={() => set({ [key]: !prefs?.[key] })} />
+      </div>
+      {why && <p className="small muted">{why}</p>}
+    </div>
+  )
 
   return (
     <div className="page">
@@ -37,7 +50,7 @@ export default function Settings() {
           <span>{s.theme}</span>
           <div className="seg" role="group" aria-label={s.theme}>
             {(['system', 'light', 'dark'] as const).map((th) => (
-              <button key={th} className={prefs?.theme === th ? 'on' : ''} aria-pressed={prefs?.theme === th} onClick={() => theme(th)} disabled={!prefs}>
+              <button key={th} className={prefs?.theme === th ? 'on' : ''} aria-pressed={prefs?.theme === th} onClick={() => set({ theme: th })} disabled={!prefs}>
                 {s.themes[th]}
               </button>
             ))}
@@ -53,21 +66,18 @@ export default function Settings() {
             ))}
           </div>
         </div>
-        <div className="stack tight">
-          <div className="setting">
-            <span>{s.capture}</span>
-            <button
-              className={`switch ${prefs?.capture ? 'on' : ''}`}
-              role="switch"
-              aria-checked={!!prefs?.capture}
-              aria-label={s.capture}
-              disabled={!prefs}
-              onClick={() => set({ capture: !prefs?.capture })}
-            />
-          </div>
-          <p className="small muted">{s.captureWhy}</p>
-        </div>
+        {toggle('capture', s.capture, s.captureWhy)}
       </div>
+      <section className="section">
+        <div className="section-head">
+          <h3>{s.running}</h3>
+        </div>
+        <div className="panel panel-pad stack">
+          {toggle('background', s.background, s.backgroundWhy)}
+          {toggle('autostart', info.platform === 'win32' ? s.autostartWin : s.autostart, s.autostartWhy)}
+          {err !== null && <p className="note danger">{errText(t, err)}</p>}
+        </div>
+      </section>
       <section className="section">
         <div className="section-head">
           <h3>{s.geo}</h3>
@@ -89,18 +99,8 @@ export default function Settings() {
           <h3>{s.about}</h3>
         </div>
         <div className="panel panel-pad stack tight">
-          <strong>{s.version(version)}</strong>
-          <div className="setting">
-            <span>{s.updates}</span>
-            <button
-              className={`switch ${prefs?.updates ? 'on' : ''}`}
-              role="switch"
-              aria-checked={!!prefs?.updates}
-              aria-label={s.updates}
-              disabled={!prefs}
-              onClick={() => set({ updates: !prefs?.updates })}
-            />
-          </div>
+          <strong>{s.version(info.version)}</strong>
+          {toggle('updates', s.updates)}
           <p className="muted">{s.privacy}</p>
         </div>
       </section>

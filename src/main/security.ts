@@ -184,7 +184,7 @@ export function createSecurity(deps: Deps) {
       hosts: list(raw.hosts),
       updated: list(raw.updated)[0] ?? null
     }
-    return { ...sec, findings: findings(sec, { now: Date.now(), dns: deps.dns(), online, signers, geo: deps.geo }) }
+    return { ...sec, findings: findings(sec, { now: Date.now(), dns: deps.dns(), online, signers, geo: deps.geo, self: process.execPath }) }
   }
 
   return {

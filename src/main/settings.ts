@@ -3,42 +3,51 @@ import path from 'node:path'
 import type { AlertKind, Settings } from '../shared/types'
 
 const THEMES: readonly Settings['theme'][] = ['system', 'light', 'dark']
-const KINDS: readonly AlertKind[] = ['newApp', 'exposed', 'plain', 'blocklist']
-const defaults = (): Settings => ({ theme: 'system', capture: true, alerts: { newApp: true, exposed: true, plain: true, blocklist: true }, blocklist: '', updates: true })
+const defaults = (): Settings => ({
+  theme: 'system',
+  capture: true,
+  alerts: { newApp: true, exposed: true, plain: true, blocklist: true },
+  blocklist: '',
+  updates: true,
+  // Some Linux desktops show no tray icon; a closed window would leave the app unreachable there.
+  background: process.platform !== 'linux',
+  autostart: false
+})
+const KINDS = Object.keys(defaults().alerts) as AlertKind[]
 
 const obj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && Object.getPrototypeOf(v) === Object.prototype
+const bool = (v: unknown) => typeof v === 'boolean'
+
+/** One check per key: TypeScript fails here when Settings gets a key without one. */
+const FIELDS: Record<keyof Settings, (v: unknown) => boolean> = {
+  theme: (v) => THEMES.includes(v as Settings['theme']),
+  capture: bool,
+  alerts: (v) => obj(v) && KINDS.every((k) => bool(v[k])),
+  blocklist: (v) => typeof v === 'string' && v.length <= 200_000,
+  updates: bool,
+  background: bool,
+  autostart: bool
+}
+const KEYS = Object.keys(FIELDS) as (keyof Settings)[]
 
 /** Exact shape check for settings sent by the UI. */
-export function isSettings(v: unknown): v is Settings {
-  return (
-    obj(v) &&
-    THEMES.includes(v.theme as Settings['theme']) &&
-    typeof v.capture === 'boolean' &&
-    obj(v.alerts) &&
-    KINDS.every((k) => typeof (v.alerts as Record<string, unknown>)[k] === 'boolean') &&
-    typeof v.blocklist === 'string' &&
-    v.blocklist.length <= 200_000 &&
-    typeof v.updates === 'boolean'
-  )
+export const isSettings = (v: unknown): v is Settings => obj(v) && KEYS.every((k) => FIELDS[k](v[k]))
+
+/** Only the known keys, each valid one kept and the rest default (files from older versions lack newer keys). */
+export function normalize(s: unknown): Settings {
+  const out = defaults()
+  if (!obj(s)) return out
+  for (const k of KEYS) if (k !== 'alerts' && FIELDS[k](s[k])) (out as unknown as Record<string, unknown>)[k] = s[k]
+  const alerts = obj(s.alerts) ? s.alerts : {}
+  for (const k of KINDS) if (bool(alerts[k])) out.alerts[k] = alerts[k] as boolean
+  return out
 }
 
-/** Settings from disk: every valid key is kept (older files lack newer ones), the rest default. */
 export function loadSettings(file: string): Settings {
-  const d = defaults()
-  let s: unknown
   try {
-    s = JSON.parse(fs.readFileSync(file, 'utf8'))
+    return normalize(JSON.parse(fs.readFileSync(file, 'utf8')))
   } catch {
-    return d
-  }
-  if (!obj(s)) return d
-  const alerts = obj(s.alerts) ? s.alerts : {}
-  return {
-    theme: THEMES.includes(s.theme as Settings['theme']) ? (s.theme as Settings['theme']) : d.theme,
-    capture: typeof s.capture === 'boolean' ? s.capture : d.capture,
-    alerts: Object.fromEntries(KINDS.map((k) => [k, typeof alerts[k] === 'boolean' ? alerts[k] : d.alerts[k]])) as Settings['alerts'],
-    blocklist: typeof s.blocklist === 'string' && s.blocklist.length <= 200_000 ? s.blocklist : d.blocklist,
-    updates: typeof s.updates === 'boolean' ? s.updates : d.updates
+    return defaults()
   }
 }
 

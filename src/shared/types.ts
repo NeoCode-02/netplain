@@ -65,6 +65,10 @@ export interface Settings {
   blocklist: string
   /** Ask GitHub once per start whether a newer version is out. */
   updates: boolean
+  /** Closing the window keeps Netplain running in the tray. */
+  background: boolean
+  /** Start in the tray at login. Read from the system, not from the settings file. */
+  autostart: boolean
 }
 
 /** A newer Netplain on GitHub. */

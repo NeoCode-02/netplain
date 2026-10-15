@@ -41,6 +41,10 @@ export interface Api {
   update(): Promise<Release | null>
   getSettings(): Settings
   saveSettings(s: Settings): void
+  /** Brings the window back (from the tray), e.g. when a notification is clicked. */
+  showWindow(): void
+  /** The language the UI is shown in, for the tray menu. */
+  uiLang(lang: 'en' | 'uz'): void
   /** The latest adapter snapshot, or null before the first one arrives. */
   snapshot(): Snapshot | null
   /** Devices on the local networks, with their maker when Wireshark is installed. */

@@ -14,7 +14,8 @@ const data = fs.mkdtempSync(path.join(os.tmpdir(), 'netplain-e2e-'))
 
 const require_ = (await import('node:module')).createRequire(import.meta.url)
 const electron = require_('electron')
-const args = [root, '--remote-debugging-port=0', ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [])]
+// --inspect opens the main process too (unpacked Electron only), for what the page cannot do, such as a real window close.
+const args = [root, '--remote-debugging-port=0', '--inspect=0', ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [])]
 const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000' }, stdio: ['ignore', 'pipe', 'pipe'] })
 let appLog = ''
 app.stdout.on('data', (d) => (appLog += d))
@@ -30,6 +31,25 @@ const devtools = await new Promise((resolve, reject) => {
   })
   app.on('exit', (code) => reject(new Error(`The app exited (${code}):\n${appLog}`)))
 })
+
+const inspector = /Debugger listening on (ws:\/\/[^\s]+)/.exec(appLog)?.[1]
+
+/** Evaluates `expr` in the app's main process (`process.mainModule.require('electron')` reaches Electron). */
+async function inMain(expr) {
+  if (!inspector) throw new Error('the main process has no inspector')
+  const ws = new WebSocket(inspector)
+  await new Promise((resolve, reject) => (ws.addEventListener('open', resolve), ws.addEventListener('error', reject)))
+  const r = await new Promise((resolve) => {
+    ws.addEventListener('message', (m) => {
+      const d = JSON.parse(m.data)
+      if (d.id === 1) resolve(d)
+    })
+    ws.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: { expression: expr, awaitPromise: true, returnByValue: true } }))
+  })
+  ws.close()
+  if (r.result?.exceptionDetails) throw new Error(r.result.exceptionDetails.exception?.description ?? 'main process error')
+  return r.result?.result?.value
+}
 
 const port = new URL(devtools).port
 let page
@@ -48,7 +68,19 @@ socket.addEventListener('message', (m) => {
   if (d.method === 'Runtime.exceptionThrown') consoleErrors.push(d.params.exceptionDetails.exception?.description ?? d.params.exceptionDetails.text)
   if (d.method === 'Runtime.consoleAPICalled' && d.params.type === 'error') consoleErrors.push(d.params.args.map((a) => a.value ?? a.description).join(' '))
 })
-const cdp = (method, params = {}) => new Promise((r) => (pending.set(++seq, r), socket.send(JSON.stringify({ id: seq, method, params }))))
+let gone = null
+const cdp = (method, params = {}) =>
+  new Promise((resolve, reject) => {
+    if (gone) return reject(gone)
+    pending.set(++seq, (d) => (d instanceof Error ? reject(d) : resolve(d)))
+    socket.send(JSON.stringify({ id: seq, method, params }))
+  })
+// The page went away (the app quit or crashed): fail with its output instead of waiting forever.
+socket.addEventListener('close', () => {
+  gone = new Error(`The app closed the page. Its output:\n${appLog.slice(-3000)}`)
+  for (const f of pending.values()) f(gone)
+  pending.clear()
+})
 await cdp('Runtime.enable')
 
 async function inPage(fn, ...a) {
@@ -378,6 +410,45 @@ try {
       }
     })
 
+  await step('running in the background', async () => {
+    await until('Settings', clickText, 'Settings')
+    await until('the background switches', () => document.querySelectorAll('.switch').length >= 4)
+    await shot('settings-background')
+    // Linux keeps the old behaviour by default (not every desktop shows a tray icon).
+    if (process.platform !== 'linux') {
+      // As the title bar's ✕ does (the page's own window.close() skips the window's close event).
+      await inMain("process.mainModule.require('electron').BrowserWindow.getAllWindows()[0].close()")
+      await until('the window to hide', () => document.visibilityState === 'hidden')
+      if (app.exitCode !== null) throw new Error('closing the window quit the app')
+      if (!fs.existsSync(path.join(data, 'tray-told'))) throw new Error('the first close did not explain the tray')
+      await inPage(() => window.netplain.showWindow().then(() => true))
+      await until('the window to come back', () => document.visibilityState === 'visible')
+    }
+    // Only on CI runners: it writes the login items of the machine it runs on.
+    if (process.env.CI) {
+      const { execSync } = await import('node:child_process')
+      const registered = () =>
+        process.platform === 'win32'
+          ? execSync('reg query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run')
+              .toString()
+              .split('\n')
+              .some((l) => l.includes('--hidden') && l.toLowerCase().includes(root.toLowerCase()))
+          : fs.existsSync(path.join(os.homedir(), '.config', 'autostart', 'netplain.desktop'))
+      const flip = (label) => {
+        const b = document.querySelector(`.switch[aria-label="${label}"]`)
+        b.click()
+        return b.getAttribute('aria-checked')
+      }
+      const label = process.platform === 'win32' ? 'Start with Windows' : 'Start at login'
+      await inPage(flip, label)
+      await until('the switch on', () => document.querySelector('.switch[aria-checked="true"][aria-label^="Start"]') !== null)
+      if (!registered()) throw new Error('start at login was not registered')
+      await inPage(flip, label)
+      await until('the switch off', () => document.querySelector('.switch[aria-checked="false"][aria-label^="Start"]') !== null)
+      if (registered()) throw new Error('start at login was not removed')
+    }
+  })
+
   await step('Uzbek', async () => {
     await until('Settings', clickText, 'Settings')
     await until('O‘zbekcha', clickText, 'O‘zbekcha')
@@ -391,13 +462,16 @@ try {
 } catch (e) {
   failed = true
   console.error(`\n${e.message}`)
+  if (gone) console.error(gone.message)
   await shot('failure').catch(() => {})
   if (process.env.GITHUB_ACTIONS) console.log(`::error title=E2E::${e.message.replace(/%/g, '%25').replace(/\r/g, '').replace(/\n/g, '%0A')}`)
 } finally {
   socket.close()
-  const exited = new Promise((r) => app.once('exit', r))
-  app.kill()
-  await exited
+  if (app.exitCode === null && app.signalCode === null) {
+    const exited = new Promise((r) => app.once('exit', r))
+    app.kill()
+    await exited
+  }
   fs.rmSync(data, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
 }
 if (failed) process.exit(1)
