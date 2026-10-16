@@ -18,19 +18,41 @@ import Uptime from './pages/Uptime'
 import { Icon, Mark, type IconName } from './ui'
 
 export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'packets' | 'devices' | 'history' | 'uptime' | 'alerts' | 'security' | 'tools' | 'share' | 'settings'
-const NAV: [Page, IconName][] = [
-  ['overview', 'chart'],
-  ['network', 'globe'],
-  ['apps', 'grid'],
-  ['connections', 'link'],
-  ['packets', 'list'],
-  ['devices', 'devices'],
-  ['history', 'clock'],
-  ['uptime', 'pulse'],
-  ['alerts', 'bell'],
-  ['security', 'shield'],
-  ['tools', 'wrench'],
-  ['share', 'share']
+type Group = 'connection' | 'traffic' | 'home' | 'protection' | 'tools'
+/** Pages in groups, so a newcomer sees where to look; the Overview stays on top. */
+const NAV: [Group | null, [Page, IconName][]][] = [
+  [null, [['overview', 'chart']]],
+  [
+    'connection',
+    [
+      ['network', 'globe'],
+      ['uptime', 'pulse'],
+      ['history', 'clock']
+    ]
+  ],
+  [
+    'traffic',
+    [
+      ['apps', 'grid'],
+      ['connections', 'link'],
+      ['packets', 'list']
+    ]
+  ],
+  ['home', [['devices', 'devices']]],
+  [
+    'protection',
+    [
+      ['security', 'shield'],
+      ['alerts', 'bell']
+    ]
+  ],
+  [
+    'tools',
+    [
+      ['tools', 'wrench'],
+      ['share', 'share']
+    ]
+  ]
 ]
 
 export default function App() {
@@ -49,7 +71,7 @@ export default function App() {
   }, [])
 
   const item = (p: Page, icon: IconName) => (
-    <button key={p} className={`rail-item ${page === p ? 'on' : ''}`} aria-current={page === p ? 'page' : undefined} onClick={() => setPage(p)}>
+    <button key={p} className={`rail-item ${page === p ? 'on' : ''}`} title={t.navHints[p]} aria-current={page === p ? 'page' : undefined} onClick={() => setPage(p)}>
       <Icon name={icon} />
       <span className="label">{t.nav[p]}</span>
       {p === 'alerts' && unread > 0 && <span className="badge">{unread}</span>}
@@ -63,7 +85,14 @@ export default function App() {
           <Mark />
           Netplain
         </div>
-        <div className="rail-list">{NAV.map(([p, icon]) => item(p, icon))}</div>
+        <div className="rail-list">
+          {NAV.map(([group, items]) => (
+            <div key={group ?? 'top'} role="group" aria-label={group ? t.navGroups[group] : undefined} className="rail-section">
+              {group && <div className="rail-group">{t.navGroups[group]}</div>}
+              {items.map(([p, icon]) => item(p, icon))}
+            </div>
+          ))}
+        </div>
         <div className="rail-foot">{item('settings', 'sliders')}</div>
       </nav>
       <main className="main">

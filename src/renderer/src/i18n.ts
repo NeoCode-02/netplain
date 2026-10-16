@@ -5,6 +5,23 @@ import { bytes } from './format'
 const en = {
   lang: 'English',
   nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', security: 'Security', tools: 'Tools', share: 'Share', uptime: 'Uptime', settings: 'Settings' },
+  navGroups: { connection: 'Connection', traffic: 'Apps & traffic', home: 'Home network', protection: 'Protection', tools: 'Tools' },
+  /** One line each, shown when hovering a page in the sidebar. */
+  navHints: {
+    overview: 'What is happening right now, in a few sentences',
+    network: 'Your Wi-Fi and adapters, address, router and DNS — explained',
+    uptime: 'Is the internet steady? Drops, response times, your own sites',
+    history: 'How much data was used, per day, app and network',
+    apps: 'How much each app sends and receives',
+    connections: 'Which app talks to which company and country',
+    packets: 'Every single packet, like Wireshark — for experts',
+    devices: 'Phones, TVs and other devices on your network',
+    security: '“Was I hacked?” check, antivirus, accounts, services',
+    alerts: 'What Netplain noticed: new apps, open ports, drops',
+    tools: 'Ping, route, name lookup, port check and quick fixes',
+    share: 'Give a site on this computer an https:// link',
+    settings: 'Language, theme, running in the background, data limit'
+  },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobile', loopback: 'Loopback', other: 'Other' },
   /** What each kind of adapter is, for someone who has never opened ipconfig. */
   what: {
@@ -750,6 +767,22 @@ export type Dict = typeof en
 const uz: Dict = {
   lang: 'O‘zbekcha',
   nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', security: 'Xavfsizlik', tools: 'Asboblar', share: 'Ulashish', uptime: 'Barqarorlik', settings: 'Sozlamalar' },
+  navGroups: { connection: 'Ulanish', traffic: 'Ilovalar va trafik', home: 'Uy tarmog‘i', protection: 'Himoya', tools: 'Asboblar' },
+  navHints: {
+    overview: 'Hozir nima bo‘layotgani, bir necha jumlada',
+    network: 'Wi-Fi va adapterlaringiz, manzil, router va DNS — tushuntirilgan',
+    uptime: 'Internet barqarormi? Uzilishlar, javob vaqti, o‘z saytlaringiz',
+    history: 'Qancha ma’lumot ishlatildi: kun, ilova va tarmoq bo‘yicha',
+    apps: 'Har bir ilova qancha yuboradi va oladi',
+    connections: 'Qaysi ilova qaysi kompaniya va davlat bilan bog‘lanmoqda',
+    packets: 'Har bir paket, Wireshark kabi — mutaxassislar uchun',
+    devices: 'Tarmog‘ingizdagi telefon, televizor va boshqa qurilmalar',
+    security: '“Buzilganmi?” tekshiruvi, antivirus, akkauntlar, xizmatlar',
+    alerts: 'Netplain payqagan narsalar: yangi ilovalar, ochiq portlar, uzilishlar',
+    tools: 'Ping, marshrut, nomni aniqlash, port tekshiruvi va tezkor tuzatishlar',
+    share: 'Shu kompyuterdagi saytga https:// havola berish',
+    settings: 'Til, mavzu, fonda ishlash, trafik limiti'
+  },
   kind: { wifi: 'Wi-Fi', ethernet: 'Ethernet', virtual: 'Virtual', vpn: 'VPN', bluetooth: 'Bluetooth', cellular: 'Mobil', loopback: 'Loopback', other: 'Boshqa' },
   what: {
     wifi: 'Simsiz adapter: kompyuterni Wi-Fi tarmoqlariga ulaydi.',

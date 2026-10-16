@@ -156,6 +156,8 @@ try {
     return b !== null
   })
   await until('English', clickText, 'English')
+  // The sidebar in groups, each page with a one-line hint.
+  await until('the sidebar groups', () => document.querySelectorAll('.rail-group').length === 5 && [...document.querySelectorAll('.rail-item')].every((b) => b.title))
 
   for (const theme of ['Light', 'Dark']) {
     await step(`${theme.toLowerCase()} theme`, async () => {

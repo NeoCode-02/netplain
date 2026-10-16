@@ -111,6 +111,8 @@ p { margin: 0; text-wrap: pretty; }
 .rail-item:hover { background: var(--raised); color: var(--text); }
 .rail-item.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm), var(--highlight); }
 .rail-item.on::before { content: ''; position: absolute; left: -8px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.rail-section { display: flex; flex-direction: column; gap: 1px; }
+.rail-group { padding: 14px 10px 4px; font-size: 11.5px; font-weight: 550; color: var(--text-3); letter-spacing: 0.01em; }
 .rail-item .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rail-item .meta { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .rail-foot { padding: 8px; border-top: 1px solid var(--line); }
