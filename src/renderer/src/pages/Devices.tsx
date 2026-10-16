@@ -34,6 +34,7 @@ export default function Devices() {
   const { snap } = useLive()
   const [list, setList] = useState<Neighbor[] | null>(null)
   const [busy, setBusy] = useState(false)
+  const [scanned, setScanned] = useState(false)
   const [err, setErr] = useState<unknown>(null)
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function Devices() {
     setErr(null)
     try {
       setList(await window.netplain.scan())
+      setScanned(true)
     } catch (e) {
       setErr(e)
     } finally {
@@ -63,6 +65,8 @@ export default function Devices() {
   }
   const sorted = [...groups.values()].sort((a, b) => Number(b.adapter?.id === snap?.defaultId) - Number(a.adapter?.id === snap?.defaultId))
   const noVendors = !!list?.length && list.every((n) => !n.vendor)
+  // Before a scan only the devices this computer talked to show up — usually just the router.
+  const few = !!list && list.length > 0 && list.length <= 2 && !busy
 
   return (
     <div className="page wide">
@@ -71,14 +75,27 @@ export default function Devices() {
           <h2>{d.title}</h2>
           <p>{d.lead}</p>
         </div>
-        <button className="btn primary" onClick={scan} disabled={busy}>
-          <Icon name="refresh" className={busy ? 'spin' : undefined} />
-          {busy ? d.scanning : d.scan}
-        </button>
+        {!(few && !scanned) && (
+          <button className="btn primary" onClick={scan} disabled={busy}>
+            <Icon name="refresh" className={busy ? 'spin' : undefined} />
+            {busy ? d.scanning : d.scan}
+          </button>
+        )}
       </header>
       {err !== null && <p className="note danger">{errText(t, err)}</p>}
       {noVendors && <p className="note">{d.noVendors}</p>}
       {list && list.length === 0 && <Empty icon="devices" title={d.empty} body={d.emptyBody} />}
+      {few && (
+        <div className="note row devices-hint">
+          <span className="spacer">{scanned ? d.scanNone : d.fewHint}</span>
+          {!scanned && (
+            <button className="btn sm primary" onClick={scan}>
+              <Icon name="refresh" />
+              {d.scan}
+            </button>
+          )}
+        </div>
+      )}
       {sorted.map((g) => (
         <section className="section" key={g.adapter?.id ?? g.items[0].via}>
           <div className="section-head">

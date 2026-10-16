@@ -193,6 +193,9 @@ try {
     await step(`devices page (${theme.toLowerCase()})`, async () => {
       await until('Devices', clickText, 'Devices')
       await until('device list', () => document.querySelector('.dev-row, .empty') !== null)
+      // With only the router known, the page says how to find the rest.
+      const seen = await inPage(() => document.querySelectorAll('.dev-row').length)
+      if (seen > 0 && seen <= 2) await until('the scan hint', () => document.querySelector('.devices-hint button') !== null)
       await shot(`devices-${theme.toLowerCase()}`)
     })
 

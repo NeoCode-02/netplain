@@ -107,6 +107,8 @@ const en = {
     scan: 'Scan network',
     scanning: 'Scanning…',
     scanNote: 'Scanning sends one tiny packet to every address of your local network (/24) so that devices answer. Nothing leaves your network.',
+    fewHint: 'Only the devices this computer has talked to show up by themselves — usually just the router. Scan the network to find phones, TVs and the rest.',
+    scanNone: 'No other device answered. Phones often stay quiet while their screen is off; try again later.',
     router: 'Router',
     routerNote: 'Your gateway to the internet.',
     randomMac: 'Private MAC',
@@ -411,7 +413,7 @@ const en = {
     apps: 'Apps',
     adapters: 'Adapters',
     noApps: 'History per app is recorded while traffic watching (Wireshark) is on.',
-    empty: 'No data for this period yet.'
+    empty: 'Nothing recorded for this period yet. History is written from the first start of Netplain on — check back in an hour.'
   },
   cap: {
     title: 'Monthly data limit',
@@ -884,6 +886,8 @@ const uz: Dict = {
     scan: 'Tarmoqni skanerlash',
     scanning: 'Skanerlanmoqda…',
     scanNote: 'Skanerlash lokal tarmog‘ingizdagi (/24) har bir manzilga bitta kichik paket yuboradi, shunda qurilmalar javob beradi. Hech narsa tarmog‘ingizdan tashqariga chiqmaydi.',
+    fewHint: 'O‘z-o‘zidan faqat shu kompyuter bog‘langan qurilmalar ko‘rinadi — odatda faqat router. Telefon, televizor va boshqalarni topish uchun tarmoqni skanerlang.',
+    scanNone: 'Boshqa qurilma javob bermadi. Telefonlar ekrani o‘chiq paytda ko‘pincha jim turadi; keyinroq yana urinib ko‘ring.',
     router: 'Router',
     routerNote: 'Internetga chiqish eshigingiz.',
     randomMac: 'Shaxsiy MAC',
@@ -1188,7 +1192,7 @@ const uz: Dict = {
     apps: 'Ilovalar',
     adapters: 'Adapterlar',
     noApps: 'Ilovalar bo‘yicha tarix trafik kuzatuvi (Wireshark) yoqilganda yoziladi.',
-    empty: 'Bu davr uchun hali ma’lumot yo‘q.'
+    empty: 'Bu davr uchun hali hech narsa yozilmagan. Tarix Netplain birinchi ishga tushgandan boshlab yoziladi — bir soatdan keyin qarang.'
   },
   cap: {
     title: 'Oylik trafik limiti',
