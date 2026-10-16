@@ -61,6 +61,7 @@ const names: Record<keyof Api, true> = {
   setService: true,
   setUser: true,
   shareState: true,
+  localSites: true,
   shareStart: true,
   shareStop: true,
   shareRequests: true,

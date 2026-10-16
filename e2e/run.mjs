@@ -347,9 +347,23 @@ try {
   })
 
   await step('share page', async () => {
-    await until('Share', clickText, 'Share')
-    await until('the share form', () => document.querySelector('.share-port') !== null)
-    await shot('share')
+    // A site running here is found by itself and offered by its page title.
+    const http = await import('node:http')
+    const site = http.createServer((_q, r) => r.writeHead(200, { 'content-type': 'text/html' }).end('<title>Netplain e2e shop</title>'))
+    await new Promise((r) => site.listen(0, '127.0.0.1', r))
+    try {
+      await until('Share', clickText, 'Share')
+      await until('the steps', () => document.querySelectorAll('.share-steps li').length === 3)
+      await until('the running site', () => {
+        const card = [...document.querySelectorAll('.site-card')].find((c) => c.textContent.includes('Netplain e2e shop'))
+        card?.click()
+        return card?.getAttribute('aria-checked') === 'true'
+      })
+      await until('the share button names it', () => document.querySelector('.share-go .btn.primary')?.textContent.includes('Netplain e2e shop'))
+      await shot('share')
+    } finally {
+      site.close()
+    }
   })
 
   // Opt-in, because it opens a public link: E2E_SHARE=ssh (localhost.run) or E2E_SHARE=cloudflare
@@ -369,21 +383,14 @@ try {
         await inPage(setPort, site.address().port)
         const provider = process.env.E2E_SHARE === 'cloudflare' ? 'Cloudflare' : 'localhost.run'
         await until(provider, clickText, provider)
-        if (provider === 'Cloudflare' && (await inPage(hasText, 'Download cloudflared'))) {
-          await until('download', clickText, 'Download cloudflared')
-          const end = Date.now() + 300_000
-          while (!(await inPage(hasText, 'cloudflared is ready'))) {
-            if (Date.now() > end || (await inPage(() => document.querySelector('.note.danger')?.textContent))) throw new Error(`cloudflared: ${await inPage(() => document.querySelector('.note.danger')?.textContent)}`)
-            await new Promise((r) => setTimeout(r, 1000))
-          }
-        }
+        // Cloudflare's connector is downloaded by the Share button itself the first time.
         await until('the Share button', () => {
           const b = document.querySelector('.share-go .btn.primary')
           if (!b || b.disabled) return false
           b.click()
           return true
         })
-        const url = await until(['the public link', 120_000], () => document.querySelector('.share-link a')?.textContent || document.querySelector('.note.danger')?.textContent.replace(/^/, 'ERROR '))
+        const url = await until(['the public link', 300_000], () => document.querySelector('.share-url')?.textContent || document.querySelector('.note.danger')?.textContent.replace(/^/, 'ERROR '))
         if (url.startsWith('ERROR')) throw new Error(url)
         const login = await inPage(() => [...document.querySelectorAll('.share-login .tag')].map((t) => t.textContent.split(': ')[1]))
         const auth = `Basic ${Buffer.from(login.join(':')).toString('base64')}`

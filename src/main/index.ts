@@ -26,6 +26,7 @@ import { createScanner } from './defender'
 import { checkRelease } from './update'
 import { findCloudflared, installCloudflared } from './cloudflared'
 import { createShare } from './share'
+import { localSites } from './sites'
 import type { ShareOptions } from '../shared/types'
 
 // Separate data folder for tests / portable use.
@@ -326,6 +327,7 @@ const handlers: Api = {
     await security!.get(true)
   },
   shareState: () => share.state(),
+  localSites: async () => localSites((await currentConnections()).listening),
   shareStart: (o) => share.start(o),
   shareStop: () => share.stop(),
   shareRequests: (after) => share.requests(after),
@@ -423,6 +425,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   setService: (a) => typeof a[0] === 'string' && safeService(a[0]) && ['start', 'stop', 'auto', 'manual', 'disabled'].includes(a[1] as string),
   setUser: (a) => typeof a[0] === 'string' && safeUser(a[0]) && (a[1] === 'disable' || a[1] === 'enable' || a[1] === 'unadmin'),
   shareState: none,
+  localSites: none,
   shareStart: (a) => isShare(a[0]),
   shareStop: none,
   shareRequests: (a) => int(a[0]),

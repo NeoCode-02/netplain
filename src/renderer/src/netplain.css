@@ -289,3 +289,17 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .meter span.bad { background: var(--danger); }
 .cap-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: end; }
 .cap-form label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--text-2); min-width: 0; }
+.share-steps { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.share-steps li { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; background: var(--sunken); font-size: 13px; line-height: 1.45; }
+.step-n { flex-shrink: 0; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-weight: 600; font-size: 12px; }
+.site-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.site-card { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.site-card:hover { border-color: var(--accent); }
+.site-card.on { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.share-none { padding: 4px 0; }
+.share-more summary { cursor: pointer; font-weight: 550; }
+.share-more[open] summary { margin-bottom: 14px; }
+.share-url { font-size: 16px; font-weight: 550; overflow-wrap: anywhere; color: var(--accent-text); }
+.share-actions { flex-wrap: wrap; }
+.share-others summary { cursor: pointer; }
+.share-others[open] summary { margin-bottom: 10px; }

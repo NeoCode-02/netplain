@@ -26,6 +26,7 @@ import type {
   Traffic,
   Usage,
   CapState,
+  LocalSite,
   MonitorKind,
   NetworkUse,
   MonitorState,
@@ -135,6 +136,8 @@ export interface Api {
   setUser(name: string, action: 'disable' | 'enable' | 'unadmin'): Promise<void>
   /** The shared local site, if any (changes are also pushed on the share channel). */
   shareState(): Promise<ShareState>
+  /** Web sites running on this computer (listening ports that answer HTTP or HTTPS). */
+  localSites(): Promise<LocalSite[]>
   /** Gives localhost:port a public https:// link. Throws E_NO_CLOUDFLARED; tunnel failures arrive in the state. */
   shareStart(o: ShareOptions): Promise<void>
   shareStop(): void

@@ -1,43 +1,88 @@
 import { useEffect, useState } from 'react'
-import type { ShareOptions, ShareProvider, ShareRequest, ShareRequestDetail, ShareState } from '../../../shared/types'
+import type { LocalSite, ShareProvider, ShareRequest, ShareRequestDetail, ShareState } from '../../../shared/types'
 import { countryName } from '../explain'
 import { bytes } from '../format'
 import { errText, getLang, useT, type Dict } from '../i18n'
 import { Icon } from '../ui'
 
-const copy = (text: string) => void navigator.clipboard.writeText(text)
-
 function Switch({ on, label, onChange, disabled }: { on: boolean; label: string; onChange(on: boolean): void; disabled?: boolean }) {
   return <button className={`switch ${on ? 'on' : ''}`} role="switch" aria-checked={on} aria-label={label} disabled={disabled} onClick={() => onChange(!on)} />
 }
 
-function Form({ t, state, onStart }: { t: Dict; state: ShareState; onStart(o: ShareOptions): Promise<void> }) {
+/** Copy buttons say "Copied" for a moment. */
+function useCopied() {
+  const [what, setWhat] = useState<string | null>(null)
+  const copy = (key: string, text: string) => {
+    void navigator.clipboard.writeText(text)
+    setWhat(key)
+    setTimeout(() => setWhat((w) => (w === key ? null : w)), 1500)
+  }
+  return [what, copy] as const
+}
+
+function Form({ t, state }: { t: Dict; state: ShareState }) {
   const s = t.share
-  const [port, setPort] = useState(state.options ? String(state.options.port) : '')
+  const [sites, setSites] = useState<LocalSite[] | null>(null)
+  const [pick, setPick] = useState<number | null>(state.options?.port ?? null)
+  const [other, setOther] = useState('')
   const [https, setHttps] = useState(state.options?.https ?? false)
   const [password, setPassword] = useState(state.options?.password ?? true)
   const [provider, setProvider] = useState<ShareProvider>(state.options?.provider ?? 'cloudflare')
-  const [ports, setPorts] = useState<[number, string][]>([])
-  const [busy, setBusy] = useState<'cf' | 'start' | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<unknown>(null)
 
-  // Suggestions: programs on this computer waiting for connections.
+  // Sites come and go as they are started and stopped; the first of the user's own is picked.
   useEffect(() => {
-    void window.netplain.connections().then((c) => {
-      const seen = new Map<number, string>()
-      for (const l of c.listening) if (l.proto === 'tcp' && !seen.has(l.localPort)) seen.set(l.localPort, l.title ?? l.app)
-      setPorts([...seen].sort((a, b) => a[0] - b[0]))
-    })
+    const load = () =>
+      window.netplain.localSites().then(
+        (list) => {
+          setSites(list)
+          setPick((p) => p ?? list.find((x) => x.dev)?.port ?? null)
+        },
+        () => setSites([])
+      )
+    void load()
+    const timer = setInterval(load, 4000)
+    return () => clearInterval(timer)
   }, [])
 
-  const n = Number(port)
-  const valid = Number.isInteger(n) && n > 0 && n < 65536
-  const needCf = provider === 'cloudflare' && !state.cloudflared
-  const act = async (what: 'cf' | 'start', f: () => Promise<void>) => {
-    setBusy(what)
+  const mine = sites?.filter((x) => x.dev) ?? []
+  const others = sites?.filter((x) => !x.dev) ?? []
+  const card = (x: LocalSite) => {
+    const on = !other && pick === x.port
+    return (
+      <button
+        key={x.port}
+        role="radio"
+        aria-checked={on}
+        className={`site-card ${on ? 'on' : ''}`}
+        onClick={() => {
+          setPick(x.port)
+          setOther('')
+        }}
+      >
+        <strong className="ellipsis">{x.title ?? x.app}</strong>
+        <span className="mono small muted ellipsis">
+          {x.https ? 'https' : 'http'}://localhost:{x.port}
+        </span>
+        <span className="small faint ellipsis">{x.app}</span>
+      </button>
+    )
+  }
+  const typed = Number(other)
+  const port = other ? (Number.isInteger(typed) && typed > 0 && typed < 65536 ? typed : null) : pick
+  const site = other ? undefined : sites?.find((x) => x.port === port)
+  const start = async () => {
+    if (port === null) return
     setErr(null)
     try {
-      await f()
+      // Cloudflare's connector is fetched on the first share, not as a separate step.
+      if (provider === 'cloudflare' && !state.cloudflared) {
+        setBusy(s.gettingCf)
+        await window.netplain.installCloudflared()
+      }
+      setBusy(s.starting)
+      await window.netplain.shareStart({ port, https: site ? site.https : https, password, provider })
     } catch (e) {
       setErr(e)
     } finally {
@@ -46,85 +91,122 @@ function Form({ t, state, onStart }: { t: Dict; state: ShareState; onStart(o: Sh
   }
 
   return (
-    <div className="panel panel-pad stack">
-      <div className="setting">
-        <div>
-          <span className="strong">{s.port}</span>
-          <p className="small muted">{s.portHint}</p>
-        </div>
-        <input className="input sm mono share-port" inputMode="numeric" list="share-ports" value={port} aria-label={s.port} placeholder="3000" onChange={(e) => setPort(e.target.value.replace(/\D/g, '').slice(0, 5))} />
-        <datalist id="share-ports">
-          {ports.map(([p, app]) => (
-            <option key={p} value={p}>
-              {app}
-            </option>
-          ))}
-        </datalist>
-      </div>
-      <div className="setting">
-        <span>{s.https}</span>
-        <Switch on={https} label={s.https} onChange={setHttps} />
-      </div>
-      <div className="setting">
-        <div>
-          <span className="strong">{s.password}</span>
-          <p className="small muted">{s.passwordWhy}</p>
-        </div>
-        <Switch on={password} label={s.password} onChange={setPassword} />
-      </div>
-      <div className="setting">
-        <div>
-          <span className="strong">{s.provider}</span>
-          <p className="small muted">{provider === 'cloudflare' ? s.cloudflareWhy : s.sshWhy}</p>
-        </div>
-        <div className="seg" role="group" aria-label={s.provider}>
-          {(['cloudflare', 'ssh'] as const).map((p) => (
-            <button key={p} className={provider === p ? 'on' : ''} aria-pressed={provider === p} onClick={() => setProvider(p)}>
-              {s[p]}
-            </button>
-          ))}
-        </div>
-      </div>
-      {provider === 'cloudflare' && (
+    <>
+      <ol className="share-steps">
+        {s.steps.map((step, i) => (
+          <li key={step}>
+            <span className="step-n">{i + 1}</span>
+            {step}
+          </li>
+        ))}
+      </ol>
+      <section className="panel panel-pad stack section">
+        <h3>{s.found}</h3>
+        {sites === null ? (
+          <p className="muted">{s.searching}</p>
+        ) : mine.length === 0 ? (
+          <div className="share-none">
+            <strong>{s.noneFound}</strong>
+            <p className="small muted">{s.noneHow}</p>
+          </div>
+        ) : (
+          <div className="site-list" role="radiogroup" aria-label={s.found}>
+            {mine.map(card)}
+          </div>
+        )}
+        {others.length > 0 && (
+          <details className="share-others">
+            <summary className="small muted">{s.others(others.length)}</summary>
+            <div className="site-list" role="radiogroup" aria-label={s.others(others.length)}>
+              {others.map(card)}
+            </div>
+          </details>
+        )}
         <div className="setting">
-          <p className="small muted">{state.cloudflared ? s.foundCf(state.cloudflared) : s.needCf}</p>
-          {needCf && (
-            <button className="btn sm" disabled={busy !== null} onClick={() => void act('cf', () => window.netplain.installCloudflared())}>
-              <Icon name={busy === 'cf' ? 'refresh' : 'down'} className={busy === 'cf' ? 'spin' : undefined} />
-              {busy === 'cf' ? s.gettingCf : s.getCf}
-            </button>
-          )}
+          <div>
+            <span className="strong">{s.port}</span>
+            <p className="small muted">{s.portHint}</p>
+          </div>
+          <input className="input sm mono share-port" inputMode="numeric" value={other} aria-label={s.port} placeholder="3000" onChange={(e) => setOther(e.target.value.replace(/\D/g, '').slice(0, 5))} />
         </div>
-      )}
-      <div className="row share-go">
+      </section>
+      <details className="panel panel-pad share-more section">
+        <summary>{s.options}</summary>
+        <div className="stack">
+          <div className="setting">
+            <div>
+              <span className="strong">{s.password}</span>
+              <p className="small muted">{s.passwordWhy}</p>
+            </div>
+            <Switch on={password} label={s.password} onChange={setPassword} />
+          </div>
+          <div className="setting">
+            <div>
+              <span className="strong">{s.provider}</span>
+              <p className="small muted">{provider === 'cloudflare' ? s.cloudflareWhy : s.sshWhy}</p>
+            </div>
+            <div className="seg" role="group" aria-label={s.provider}>
+              {(['cloudflare', 'ssh'] as const).map((p) => (
+                <button key={p} className={provider === p ? 'on' : ''} aria-pressed={provider === p} onClick={() => setProvider(p)}>
+                  {s[p]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="setting">
+            <span>{s.https}</span>
+            <Switch on={https} label={s.https} onChange={setHttps} />
+          </div>
+        </div>
+      </details>
+      <div className="row share-go section">
         <p className="small muted">{s.warn}</p>
-        <button className="btn primary" disabled={!valid || needCf || busy !== null} onClick={() => void act('start', () => onStart({ port: n, https, password, provider }))}>
-          <Icon name={busy === 'start' ? 'refresh' : 'share'} className={busy === 'start' ? 'spin' : undefined} />
-          {s.start}
+        <button className="btn primary" disabled={port === null || busy !== null} onClick={() => void start()}>
+          <Icon name={busy ? 'refresh' : 'share'} className={busy ? 'spin' : undefined} />
+          {busy ?? (port === null ? s.start : s.shareSite(site?.title ?? `localhost:${port}`))}
         </button>
       </div>
       {(err !== null || state.error) && <p className="note danger">{errText(t, err ?? state.error)}</p>}
-    </div>
+    </>
   )
 }
 
 function Live({ t, state }: { t: Dict; state: ShareState }) {
   const s = t.share
-  const o = state.options!
+  const [copied, copy] = useCopied()
+  const url = state.url
+  const login = state.login
   return (
     <div className="panel panel-pad stack">
-      {state.url ? (
+      {url ? (
         <>
-          <p className="muted">{s.live(o.port)}</p>
-          <div className="row share-link">
-            <a className="mono" href={state.url} onClick={(e) => (e.preventDefault(), window.netplain.openUrl(state.url!))}>
-              {state.url}
-            </a>
-            <button className="btn sm" onClick={() => copy(state.url!)}>
+          <strong>{s.online}</strong>
+          <a className="mono share-url" href={url} onClick={(e) => (e.preventDefault(), window.netplain.openUrl(url))}>
+            {url}
+          </a>
+          {login && (
+            <div className="row share-login">
+              <span className="tag mono">
+                {s.user}: {login.user}
+              </span>
+              <span className="tag mono">
+                {s.pass}: {login.password}
+              </span>
+            </div>
+          )}
+          <p className="small muted">{login ? s.sendBoth : s.sendLink}</p>
+          <div className="row share-actions">
+            <button className="btn sm primary" onClick={() => copy('all', login ? `${url}\n${s.user}: ${login.user}\n${s.pass}: ${login.password}` : url)}>
               <Icon name="copy" />
-              {s.copy}
+              {copied === 'all' ? s.copied : login ? s.copyAll : s.copy}
             </button>
-            <button className="btn sm" onClick={() => window.netplain.openUrl(state.url!)}>
+            {login && (
+              <button className="btn sm" onClick={() => copy('url', url)}>
+                <Icon name="copy" />
+                {copied === 'url' ? s.copied : s.copy}
+              </button>
+            )}
+            <button className="btn sm" onClick={() => window.netplain.openUrl(url)}>
               <Icon name="external" />
               {s.open}
             </button>
@@ -135,23 +217,10 @@ function Live({ t, state }: { t: Dict; state: ShareState }) {
           <Icon name="refresh" className="spin" /> {state.status === 'reconnecting' ? s.reconnecting : s.starting}
         </p>
       )}
-      {state.login && (
-        <div className="row share-login">
-          <span className="small muted">{s.login}</span>
-          <span className="tag mono">
-            {s.user}: {state.login.user}
-          </span>
-          <span className="tag mono">
-            {s.pass}: {state.login.password}
-          </span>
-          <button className="btn sm quiet" onClick={() => copy(`${state.login!.user}:${state.login!.password}`)}>
-            <Icon name="copy" />
-            {s.copy}
-          </button>
-        </div>
-      )}
       <div className="row share-go">
-        <p className="small muted">{s.warn}</p>
+        <p className="small muted">
+          {state.options && s.live(state.options.port)} {s.warn}
+        </p>
         <button className="btn danger" onClick={() => void window.netplain.shareStop()}>
           {s.stop}
         </button>
@@ -251,8 +320,8 @@ export default function Share() {
           <p>{t.share.lead}</p>
         </div>
       </header>
-      {state && (state.status === 'off' ? <Form t={t} state={state} onStart={(o) => window.netplain.shareStart(o)} /> : <Live t={t} state={state} />)}
-      <Requests t={t} list={list} />
+      {state && (state.status === 'off' ? <Form t={t} state={state} /> : <Live t={t} state={state} />)}
+      {(state?.status !== 'off' || list.length > 0) && <Requests t={t} list={list} />}
     </div>
   )
 }

@@ -494,6 +494,18 @@ export interface ScanState {
   last: { kind: ScanKind; at: number; code: number } | null
 }
 
+/** A web site running on this computer, found by asking its listening ports. */
+export interface LocalSite {
+  port: number
+  https: boolean
+  /** Its page title, when the front page is HTML. */
+  title: string | null
+  /** The program serving it. */
+  app: string
+  /** Served by a development tool (node, python, docker…), so most likely the user's own site. */
+  dev: boolean
+}
+
 /** Who carries a shared local site to the internet: Cloudflare Quick Tunnel or localhost.run over ssh. */
 export type ShareProvider = 'cloudflare' | 'ssh'
 
