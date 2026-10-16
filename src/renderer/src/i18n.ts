@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { AlertKind, OutageCause } from '../../shared/types'
+import { bytes } from './format'
 
 const en = {
   lang: 'English',
@@ -382,6 +383,19 @@ const en = {
     noApps: 'History per app is recorded while traffic watching (Wireshark) is on.',
     empty: 'No data for this period yet.'
   },
+  cap: {
+    title: 'Monthly data limit',
+    why: 'For mobile internet or a phone’s hotspot with a monthly allowance. Netplain warns at 80% and at 100%.',
+    network: 'Network',
+    all: 'All networks',
+    gb: 'Limit, GB',
+    day: 'Starts again on day',
+    save: 'Save',
+    remove: 'Remove limit',
+    saved: 'Saved.',
+    meter: (used: string, limit: string, pct: number, name: string | null) => `${used} of ${limit} used${name ? ` on ${name}` : ''} (${pct}%).`,
+    resets: (date: string) => `Starts again on ${date}.`
+  },
   monitors: {
     title: 'Your sites and servers',
     lead: 'Checked every 1 or 5 minutes. Netplain tells you when one stops answering, comes back, or its certificate is running out.',
@@ -472,7 +486,8 @@ const en = {
       outage: ['Internet drop', 'When the connection was down for a minute or more, with where it broke.'],
       monitorDown: ['Site or server down', 'When a site or server you watch stops answering.'],
       monitorUp: ['Site or server back', 'When it answers again.'],
-      certExpiry: ['Certificate running out', 'When a watched site’s https certificate has 14 days or less left.']
+      certExpiry: ['Certificate running out', 'When a watched site’s https certificate has 14 days or less left.'],
+      dataCap: ['Monthly data limit', 'At 80% and at 100% of the monthly limit set in Settings.']
     } satisfies Record<AlertKind, [string, string]>,
     say: {
       newApp: (app: string, d: string) => [`${app} went online for the first time`, `It connected to ${d}. If you don’t know this program, check where it came from.`],
@@ -492,7 +507,12 @@ const en = {
       certExpiry: (target: string, days: string): [string, string] => [
         Number(days) <= 0 ? `${target}: the certificate expires today` : `${target}: the certificate expires in ${days} days`,
         'Renew it before then, or visitors will see a security warning.'
-      ]
+      ],
+      dataCap: (network: string, d: string): [string, string] => {
+        const [step, used, limit] = d.split('|').map(Number)
+        const on = network ? ` on ${network}` : ''
+        return [step >= 100 ? `The monthly data limit is used up${on}` : `${step}% of the monthly data limit is used${on}`, `${bytes(used)} of ${bytes(limit)}. The count starts again on the day you set.`]
+      }
     } satisfies Record<AlertKind, (app: string, detail: string) => [string, string]>,
     unknownApp: 'Unknown program',
     blocklist: 'Blocklist',
@@ -1094,6 +1114,19 @@ const uz: Dict = {
     noApps: 'Ilovalar bo‘yicha tarix trafik kuzatuvi (Wireshark) yoqilganda yoziladi.',
     empty: 'Bu davr uchun hali ma’lumot yo‘q.'
   },
+  cap: {
+    title: 'Oylik trafik limiti',
+    why: 'Oylik limitli mobil internet yoki telefon hotspoti uchun. Netplain 80% va 100% da ogohlantiradi.',
+    network: 'Tarmoq',
+    all: 'Barcha tarmoqlar',
+    gb: 'Limit, GB',
+    day: 'Qayta boshlanish kuni',
+    save: 'Saqlash',
+    remove: 'Limitni olib tashlash',
+    saved: 'Saqlandi.',
+    meter: (used, limit, pct, name) => `${limit} dan ${used} ishlatildi${name ? ` (${name})` : ''} — ${pct}%.`,
+    resets: (date) => `${date} da qaytadan boshlanadi.`
+  },
   monitors: {
     title: 'Saytlaringiz va serverlaringiz',
     lead: 'Har 1 yoki 5 daqiqada tekshiriladi. Biri javob bermay qolsa, qayta ishlasa yoki sertifikat muddati tugayotgan bo‘lsa, Netplain xabar beradi.',
@@ -1183,7 +1216,8 @@ const uz: Dict = {
       outage: ['Internet uzilishi', 'Ulanish bir daqiqa yoki undan ko‘proq uzilganda, qayerda uzilgani bilan.'],
       monitorDown: ['Sayt yoki server ishlamay qoldi', 'Siz kuzatayotgan sayt yoki server javob bermay qolganda.'],
       monitorUp: ['Sayt yoki server qayta ishladi', 'U yana javob bera boshlaganda.'],
-      certExpiry: ['Sertifikat muddati tugayapti', 'Kuzatilayotgan saytning https sertifikatiga 14 kun yoki undan kam qolganda.']
+      certExpiry: ['Sertifikat muddati tugayapti', 'Kuzatilayotgan saytning https sertifikatiga 14 kun yoki undan kam qolganda.'],
+      dataCap: ['Oylik trafik limiti', 'Sozlamalarda belgilangan oylik limitning 80% va 100% ida.']
     },
     say: {
       newApp: (app, d) => [`${app} birinchi marta internetga chiqdi`, `U ${d} ga ulandi. Bu dasturni tanimasangiz, qayerdan kelganini tekshiring.`],
@@ -1200,7 +1234,12 @@ const uz: Dict = {
       certExpiry: (target, days) => [
         Number(days) <= 0 ? `${target}: sertifikat muddati bugun tugaydi` : `${target}: sertifikat muddati ${days} kunda tugaydi`,
         'Undan oldin yangilang, aks holda tashrif buyuruvchilar xavfsizlik ogohlantirishini ko‘radi.'
-      ]
+      ],
+      dataCap: (network, d) => {
+        const [step, used, limit] = d.split('|').map(Number)
+        const on = network ? ` (${network})` : ''
+        return [step >= 100 ? `Oylik trafik limiti tugadi${on}` : `Oylik trafik limitining ${step}% i ishlatildi${on}`, `${bytes(limit)} dan ${bytes(used)} ishlatildi. Hisob siz belgilagan kuni qaytadan boshlanadi.`]
+      }
     },
     unknownApp: 'Noma’lum dastur',
     blocklist: 'Qora ro‘yxat',

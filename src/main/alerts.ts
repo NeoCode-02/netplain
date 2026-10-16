@@ -95,6 +95,11 @@ export function createAlerts(dir: string, emit: (a: Alert) => void) {
       if (o.end !== null && o.end - o.start >= 60_000) push(rules, 'outage', o.network ?? '', `${o.cause}|${o.end - o.start}`)
     },
 
+    /** The monthly data limit: 80 % or 100 % used (detail: "step|used|limit" in bytes). */
+    dataCap(rules: Rules, step: number, network: string | null, used: number, limit: number) {
+      push(rules, 'dataCap', network ?? '', `${step}|${used}|${limit}`)
+    },
+
     /** A watched site or server went down, came back, or its certificate runs out soon. */
     monitor(rules: Rules, [kind, detail]: MonitorEvent, target: string) {
       push(rules, kind, target, detail)

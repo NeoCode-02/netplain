@@ -13,6 +13,8 @@ const names: Record<keyof Api, true> = {
   showWindow: true,
   uiLang: true,
   uptime: true,
+  dataCap: true,
+  networks: true,
   monitors: true,
   addMonitor: true,
   removeMonitor: true,

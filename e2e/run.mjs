@@ -459,6 +459,28 @@ try {
     }
   })
 
+  await step('monthly data limit', async () => {
+    await until('Settings', clickText, 'Settings')
+    await until('the limit form', () => document.querySelector('.cap-form') !== null)
+    const setField = (i, v) => {
+      const el = document.querySelectorAll('.cap-form input')[i]
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v)
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+      return true
+    }
+    await inPage(setField, 0, '0.5')
+    await inPage(setField, 1, '1')
+    await until('Save', clickText, 'Save')
+    await until('saved', hasText, 'Saved.')
+    await until('History', clickText, 'History')
+    await until('the limit meter', () => document.querySelector('.meter[role=meter]') !== null && /of 500 MB used/.test(document.body.innerText))
+    await shot('history-limit')
+    await until('Settings', clickText, 'Settings')
+    await until('Remove limit', clickText, 'Remove limit')
+    await until('History', clickText, 'History')
+    await until('no meter', () => document.querySelector('.rate-plot, .list-empty') !== null && document.querySelector('.meter[role=meter]') === null)
+  })
+
   await step('running in the background', async () => {
     await until('Settings', clickText, 'Settings')
     await until('the background switches', () => document.querySelectorAll('.switch').length >= 4)

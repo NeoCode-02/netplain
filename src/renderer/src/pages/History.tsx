@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { Usage, UsageRange, UsageRow } from '../../../shared/types'
+import type { CapState, Usage, UsageRange, UsageRow } from '../../../shared/types'
+import CapMeter from '../CapMeter'
 import { bytes } from '../format'
 import { useT } from '../i18n'
 import { AppIcon } from '../ui'
@@ -14,7 +15,7 @@ function Rows({ rows, icons }: { rows: UsageRow[]; icons: boolean }) {
         <div className="list-row mini usage-row" key={r.key}>
           {icons && <AppIcon path={r.path} />}
           <div className="app-main">
-            <div className="ellipsis">{icons ? (t.procs[r.name] ?? r.name) : r.name}</div>
+            <div className="ellipsis">{r.key === '?' ? t.apps.unknown : icons ? (t.procs[r.name] ?? r.name) : r.name}</div>
             <div className="share" aria-hidden>
               <span style={{ width: `${Math.max(1, ((r.rx + r.tx) / max) * 100)}%` }} />
             </div>
@@ -36,9 +37,13 @@ export default function History() {
   const h = t.history
   const [range, setRange] = useState<UsageRange>('day')
   const [u, setU] = useState<Usage | null>(null)
+  const [cap, setCap] = useState<CapState | null>(null)
 
   useEffect(() => {
-    const load = () => window.netplain.usage(range).then(setU, () => {})
+    const load = () => {
+      window.netplain.usage(range).then(setU, () => {})
+      window.netplain.dataCap().then(setCap, () => {})
+    }
     load()
     const timer = setInterval(load, 30_000)
     return () => clearInterval(timer)
@@ -59,9 +64,10 @@ export default function History() {
           ))}
         </div>
       </header>
+      {cap && <CapMeter t={t} c={cap} />}
       {u && (
         <>
-          <section className="panel panel-pad">
+          <section className={`panel panel-pad${cap ? ' section' : ''}`}>
             <div className="section-head">
               <h3>{h.chart}</h3>
             </div>

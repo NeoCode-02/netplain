@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import type { AdapterKind, Snapshot, Traffic, Usage, UsageRange, UsageRow } from '../shared/types'
+import type { Adapter, AdapterKind, NetworkUse, Snapshot, Traffic, Usage, UsageRange, UsageRow } from '../shared/types'
 
 type Pair = [rx: number, tx: number]
 
@@ -17,6 +17,8 @@ interface Day {
   date: string
   adapters: Record<string, Entry>
   apps: Record<string, Entry>
+  /** Internet traffic per network (Wi-Fi name, or adapter for cable/mobile); absent in files from before it. */
+  networks?: Record<string, Entry>
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -27,6 +29,9 @@ export const dayKey = (t: number) => {
 const dayStart = (t: number) => new Date(new Date(t).setHours(0, 0, 0, 0)).getTime()
 const empty = (date: string): Day => ({ date, adapters: {}, apps: {} })
 const hours = (): Pair[] => Array.from({ length: 24 }, () => [0, 0])
+/** The network an adapter is on: its Wi-Fi by name, else the adapter itself (cable, mobile). */
+export const networkOf = (a: Pick<Adapter, 'kind' | 'name' | 'wifi'>) => (a.wifi?.ssid ? { key: `wifi:${a.wifi.ssid}`, name: a.wifi.ssid } : { key: `${a.kind}:${a.name}`, name: a.name })
+
 /** Traffic that leaves this computer; virtual adapters (VMs, WSL) only carry it locally. */
 const INTERNET: AdapterKind[] = ['wifi', 'ethernet', 'cellular', 'bluetooth']
 
@@ -55,12 +60,12 @@ export function createUsage(dir: string, keepDays = 90) {
     dirty = false
   }
 
-  function add(group: 'adapters' | 'apps', key: string, e: Omit<Entry, 'hours'>, rx: number, tx: number, t: number) {
+  function add(group: 'adapters' | 'apps' | 'networks', key: string, e: Omit<Entry, 'hours'>, rx: number, tx: number, t: number) {
     if (dayKey(t) !== day.date) {
       save()
       day = read(dayKey(t)) ?? empty(dayKey(t))
     }
-    const entry = (day[group][key] ??= { ...e, hours: hours() })
+    const entry = ((day[group] ??= {})[key] ??= { ...e, hours: hours() })
     Object.assign(entry, e)
     const h = entry.hours[new Date(t).getHours()]
     h[0] += rx
@@ -74,6 +79,16 @@ export function createUsage(dir: string, keepDays = 90) {
     last.set(key, [rx, tx])
     if (!p || rx < p[0] || tx < p[1]) return null
     return [rx - p[0], tx - p[1]]
+  }
+
+  /** Every day from the day of `from` to the day of `now`; noon steps over daylight-saving jumps. */
+  function span(from: number, now: number): Day[] {
+    const out: Day[] = []
+    for (let t = dayStart(from) + 12 * 3_600_000; dayKey(t) <= dayKey(now); t += 86_400_000) {
+      const date = dayKey(t)
+      out.push(date === day.date ? day : (read(date) ?? empty(date)))
+    }
+    return out
   }
 
   function rows(group: Record<string, Entry>[]): UsageRow[] {
@@ -95,8 +110,26 @@ export function createUsage(dir: string, keepDays = 90) {
     adapters(snap: Snapshot) {
       for (const a of snap.adapters) {
         const d = delta(lastAdapters, a.id, a.rx, a.tx)
-        if (d && (d[0] || d[1])) add('adapters', a.id, { name: a.name, path: null, kind: a.kind }, d[0], d[1], snap.at)
+        if (!d || !(d[0] || d[1])) continue
+        add('adapters', a.id, { name: a.name, path: null, kind: a.kind }, d[0], d[1], snap.at)
+        if (INTERNET.includes(a.kind)) {
+          const n = networkOf(a)
+          add('networks', n.key, { name: n.name, path: null, kind: a.kind }, d[0], d[1], snap.at)
+        }
       }
+    },
+
+    /** Bytes (in + out) on one network, or all networks when `network` is '', from the day of `from` to now. */
+    used(network: string, from: number, now = Date.now()): number {
+      let sum = 0
+      for (const d of span(from, now))
+        for (const [key, e] of Object.entries(d.networks ?? {})) if (!network || key === network) for (const [rx, tx] of e.hours) sum += rx + tx
+      return sum
+    },
+
+    /** Networks used in the last `days` days, most used first (to pick one for a data limit). */
+    networks(now = Date.now(), days = 35): NetworkUse[] {
+      return rows(span(now - days * 86_400_000, now).map((d) => d.networks ?? {})).map((r) => ({ key: r.key, name: r.name, bytes: r.rx + r.tx }))
     },
 
     /** Per-app totals from the traffic watch; they restart with every capture. */

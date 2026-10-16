@@ -25,7 +25,9 @@ import type {
   Snapshot,
   Traffic,
   Usage,
+  CapState,
   MonitorKind,
+  NetworkUse,
   MonitorState,
   Uptime,
   UsageRange
@@ -50,6 +52,10 @@ export interface Api {
   uiLang(lang: 'en' | 'uz'): void
   /** The connection checks: the latest one, the last 24 hours by minute, and every drop. */
   uptime(): Uptime
+  /** The monthly data limit and how much of it is used, or null when none is set. */
+  dataCap(): CapState | null
+  /** Networks used in the last 35 days, most used first. */
+  networks(): NetworkUse[]
   /** The user's watched sites and servers. */
   monitors(): MonitorState[]
   /** Adds one and checks it at once. Throws E_MONITOR_TARGET / E_MONITOR_MAX / E_MONITOR_EXISTS. */

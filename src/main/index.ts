@@ -17,6 +17,7 @@ import { autostart, setAutostart } from './autostart'
 import { createTray } from './tray'
 import { createUptime } from './uptime'
 import { createMonitors } from './monitors'
+import { createCap } from './cap'
 import { createUsage } from './usage'
 import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './tools'
 import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
@@ -121,6 +122,7 @@ const share = createShare({
 // After a scan the threat list and the last-scan dates change.
 const scanner = createScanner(() => void security?.get(true).catch(console.error))
 
+const cap = createCap(dataDir, { cap: () => settings.cap, used: usage.used, tell: (step, name, used, limit) => alerts.dataCap(settings.alerts, step, name, used, limit) })
 const monitors = primary ? createMonitors(dataDir, (e, target) => alerts.monitor(settings.alerts, e, target)) : null
 const uptime = primary ? createUptime({ dir: dataDir, snapshot: () => latest, on: () => settings.uptime, onEnd: (o) => alerts.outage(settings.alerts, o) }) : null
 
@@ -129,6 +131,7 @@ if (primary) {
     usage.save()
     uptime?.save()
     monitors?.save()
+    cap.check()
   }, 60_000)
   // Signals are checked in the background, whichever page is open.
   setInterval(() => currentConnections().then((c) => alerts.connections(c, settings.alerts), console.error), Number(process.env.NETPLAIN_CHECK_MS) || 15_000)
@@ -228,7 +231,10 @@ const handlers: Api = {
     if (settings.blocklist !== before.blocklist) alerts.setOwnBlocklist(settings.blocklist)
     if (settings.autostart !== autostart()) setAutostart(settings.autostart)
     if (before.uptime && !settings.uptime) uptime?.pause()
+    if (JSON.stringify(before.cap) !== JSON.stringify(settings.cap)) cap.check()
   },
+  dataCap: () => cap.state(),
+  networks: () => usage.networks(),
   uptime: () => uptime?.view() ?? { on: false, now: null, points: [], outages: [] },
   monitors: () => monitors?.list() ?? [],
   addMonitor: (kind, target, every) => monitors!.add(kind, target, every),
@@ -369,6 +375,8 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   showWindow: none,
   uiLang: (a) => a[0] === 'en' || a[0] === 'uz',
   uptime: none,
+  dataCap: none,
+  networks: none,
   monitors: none,
   addMonitor: (a) => ['http', 'tcp', 'ping'].includes(a[0] as string) && typeof a[1] === 'string' && a[1].length <= 2048 && (a[2] === 60 || a[2] === 300),
   removeMonitor: (a) => typeof a[0] === 'string' && a[0].length <= 64,

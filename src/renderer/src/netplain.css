@@ -190,8 +190,8 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .alert-title { font-weight: 600; }
 .alert-row.unread { background: color-mix(in srgb, var(--accent) 5%, transparent); }
 .alert-row.unread .alert-title::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 8px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
-.ad-icon.alert-plain, .ad-icon.alert-exposed, .ad-icon.alert-outage, .ad-icon.alert-certExpiry { color: #b45309; background: rgb(245 158 11 / 14%); }
-@media (prefers-color-scheme: dark) { .ad-icon.alert-plain, .ad-icon.alert-exposed, .ad-icon.alert-outage, .ad-icon.alert-certExpiry { color: #fbbf24; } }
+.ad-icon.alert-plain, .ad-icon.alert-exposed, .ad-icon.alert-outage, .ad-icon.alert-certExpiry, .ad-icon.alert-dataCap { color: #b45309; background: rgb(245 158 11 / 14%); }
+@media (prefers-color-scheme: dark) { .ad-icon.alert-plain, .ad-icon.alert-exposed, .ad-icon.alert-outage, .ad-icon.alert-certExpiry, .ad-icon.alert-dataCap { color: #fbbf24; } }
 .ad-icon.alert-blocklist, .ad-icon.alert-monitorDown { color: var(--danger); background: var(--danger-soft); }
 .ad-icon.alert-monitorUp { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
 .setting > div:first-child { min-width: 0; }
@@ -281,3 +281,11 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .mon-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--text-3); }
 .mon-dot.ok { background: var(--ok); }
 .mon-dot.bad { background: var(--danger); }
+
+/* data limit */
+.meter { height: 8px; border-radius: 4px; background: var(--sunken); overflow: hidden; }
+.meter span { display: block; height: 100%; border-radius: 4px; background: var(--down); }
+.meter span.warn { background: var(--fair); }
+.meter span.bad { background: var(--danger); }
+.cap-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: end; }
+.cap-form label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--text-2); min-width: 0; }

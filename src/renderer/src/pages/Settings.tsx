@@ -1,8 +1,88 @@
 import { useEffect, useState } from 'react'
-import type { Settings as Prefs } from '../../../shared/types'
+import type { DataCap, NetworkUse, Settings as Prefs } from '../../../shared/types'
+import { bytes } from '../format'
 import { useGeo } from '../geo'
-import { errText, getLang, LANGS, setLang, useT, type Lang } from '../i18n'
+import { errText, getLang, LANGS, setLang, useT, type Dict, type Lang } from '../i18n'
 import { Icon } from '../ui'
+
+/** The monthly data limit: which network, how many GB, and the day the count starts again. */
+function CapForm({ t, cap, onSave }: { t: Dict; cap: DataCap | null; onSave(c: DataCap | null): void }) {
+  const c = t.cap
+  const [networks, setNetworks] = useState<NetworkUse[]>([])
+  const [network, setNetwork] = useState(cap?.network ?? '')
+  const [gb, setGb] = useState(cap ? String(cap.gb) : '')
+  const [day, setDay] = useState(String(cap?.day ?? 1))
+  const [saved, setSaved] = useState(false)
+  useEffect(() => void window.netplain.networks().then(setNetworks), [])
+
+  const g = Number(gb.replace(',', '.'))
+  const d = Number(day)
+  const valid = g >= 0.001 && g <= 100_000 && Number.isInteger(d) && d >= 1 && d <= 28
+  // A network not used lately is still offered when the limit is set on it.
+  const options = network && !networks.some((n) => n.key === network) ? [...networks, { key: network, name: network.slice(network.indexOf(':') + 1), bytes: 0 }] : networks
+  const edit = (f: (v: string) => void) => (v: string) => {
+    f(v)
+    setSaved(false)
+  }
+
+  return (
+    <section className="section">
+      <div className="section-head">
+        <h3>{c.title}</h3>
+      </div>
+      <div className="panel panel-pad stack">
+        <p className="small muted">{c.why}</p>
+        <div className="cap-form">
+          <label>
+            {c.network}
+            <select className="select sm" value={network} onChange={(e) => edit(setNetwork)(e.target.value)}>
+              <option value="">{c.all}</option>
+              {options.map((n) => (
+                <option key={n.key} value={n.key}>
+                  {n.name}
+                  {n.bytes ? ` · ${bytes(n.bytes)}` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {c.gb}
+            <input className="input sm num" inputMode="decimal" value={gb} placeholder="20" onChange={(e) => edit(setGb)(e.target.value)} />
+          </label>
+          <label>
+            {c.day}
+            <input className="input sm num" inputMode="numeric" value={day} onChange={(e) => edit(setDay)(e.target.value)} />
+          </label>
+        </div>
+        <div className="row">
+          <button
+            className="btn sm primary"
+            disabled={!valid}
+            onClick={() => {
+              onSave({ network, gb: g, day: d })
+              setSaved(true)
+            }}
+          >
+            {c.save}
+          </button>
+          {cap && (
+            <button
+              className="btn sm quiet"
+              onClick={() => {
+                onSave(null)
+                setGb('')
+                setSaved(false)
+              }}
+            >
+              {c.remove}
+            </button>
+          )}
+          {saved && <span className="small muted">{c.saved}</span>}
+        </div>
+      </div>
+    </section>
+  )
+}
 
 type Switch = 'capture' | 'uptime' | 'background' | 'autostart' | 'updates'
 
@@ -79,6 +159,7 @@ export default function Settings() {
           {err !== null && <p className="note danger">{errText(t, err)}</p>}
         </div>
       </section>
+      {prefs && <CapForm t={t} cap={prefs.cap} onSave={(cap) => set({ cap })} />}
       <section className="section">
         <div className="section-head">
           <h3>{s.geo}</h3>

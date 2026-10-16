@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { Connections, Neighbor } from '../../../shared/types'
+import type { CapState, Connections, Neighbor } from '../../../shared/types'
+import { capText } from '../CapMeter'
 import type { Page } from '../App'
 import { company, listJoin, quality, summary } from '../explain'
 import { bits, bytes } from '../format'
@@ -17,6 +18,13 @@ export default function Overview({ go }: { go: (p: Page) => void }) {
   const [conns, setConns] = useState<Connections | null>(null)
   const [devices, setDevices] = useState<Neighbor[] | null>(null)
   const up = useUptime()
+  const [cap, setCap] = useState<CapState | null>(null)
+  useEffect(() => {
+    const load = () => window.netplain.dataCap().then(setCap, () => {})
+    load()
+    const timer = setInterval(load, 60_000)
+    return () => clearInterval(timer)
+  }, [])
   const steady = up?.data.on ? uptimeStory(t, up.data, up.now) : null
 
   useEffect(() => {
@@ -53,6 +61,7 @@ export default function Overview({ go }: { go: (p: Page) => void }) {
     talking > 0 && o.talking(talking, listJoin(orgs.slice(0, 3).map(([n]) => n), lang)),
     devices && devices.length > 0 && o.devices(devices.length),
     exposed > 0 && o.exposed(exposed),
+    cap && `${t.cap.title}: ${capText(t, cap)[0]}`,
     !steady?.down && steady?.day
   ].filter((s): s is string => !!s)
 

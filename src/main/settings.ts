@@ -6,13 +6,14 @@ const THEMES: readonly Settings['theme'][] = ['system', 'light', 'dark']
 const defaults = (): Settings => ({
   theme: 'system',
   capture: true,
-  alerts: { newApp: true, exposed: true, plain: true, blocklist: true, outage: true, monitorDown: true, monitorUp: true, certExpiry: true },
+  alerts: { newApp: true, exposed: true, plain: true, blocklist: true, outage: true, monitorDown: true, monitorUp: true, certExpiry: true, dataCap: true },
   blocklist: '',
   updates: true,
   // Some Linux desktops show no tray icon; a closed window would leave the app unreachable there.
   background: process.platform !== 'linux',
   autostart: false,
-  uptime: true
+  uptime: true,
+  cap: null
 })
 const KINDS = Object.keys(defaults().alerts) as AlertKind[]
 
@@ -28,7 +29,10 @@ const FIELDS: Record<keyof Settings, (v: unknown) => boolean> = {
   updates: bool,
   background: bool,
   autostart: bool,
-  uptime: bool
+  uptime: bool,
+  cap: (v) =>
+    v === null ||
+    (obj(v) && typeof v.network === 'string' && v.network.length <= 300 && typeof v.gb === 'number' && v.gb >= 0.001 && v.gb <= 100_000 && Number.isInteger(v.day) && (v.day as number) >= 1 && (v.day as number) <= 28)
 }
 const KEYS = Object.keys(FIELDS) as (keyof Settings)[]
 
@@ -42,6 +46,7 @@ export function normalize(s: unknown): Settings {
   for (const k of KEYS) if (k !== 'alerts' && FIELDS[k](s[k])) (out as unknown as Record<string, unknown>)[k] = s[k]
   const alerts = obj(s.alerts) ? s.alerts : {}
   for (const k of KINDS) if (bool(alerts[k])) out.alerts[k] = alerts[k] as boolean
+  if (out.cap) out.cap = { network: out.cap.network, gb: out.cap.gb, day: out.cap.day }
   return out
 }
 

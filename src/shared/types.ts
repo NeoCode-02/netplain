@@ -71,6 +71,8 @@ export interface Settings {
   autostart: boolean
   /** Check the router, the internet and DNS every 5 s and log connection drops. */
   uptime: boolean
+  /** Monthly data limit to warn about, or none. */
+  cap: DataCap | null
 }
 
 /** A newer Netplain on GitHub. */
@@ -244,7 +246,35 @@ export interface Usage {
   tx: number
 }
 
-export type AlertKind = 'newApp' | 'exposed' | 'plain' | 'blocklist' | 'outage' | 'monitorDown' | 'monitorUp' | 'certExpiry'
+export type AlertKind = 'newApp' | 'exposed' | 'plain' | 'blocklist' | 'outage' | 'monitorDown' | 'monitorUp' | 'certExpiry' | 'dataCap'
+
+/** A network as History counts it: "wifi:<name>" for Wi-Fi, "<kind>:<adapter>" otherwise. */
+export interface NetworkUse {
+  key: string
+  name: string
+  bytes: number
+}
+
+/** A monthly allowance, e.g. for mobile internet or a phone's hotspot. */
+export interface DataCap {
+  /** A NetworkUse key, or '' for all networks together. */
+  network: string
+  /** Decimal gigabytes, as providers count them. */
+  gb: number
+  /** Day of the month the count starts again (1–28). */
+  day: number
+}
+
+export interface CapState {
+  network: string
+  /** The network's name, null for all networks. */
+  name: string | null
+  used: number
+  limit: number
+  /** This period: from the reset day to the next one. */
+  start: number
+  end: number
+}
 
 /** A site or server the user wants watched: a web address, "host:port", or a host to ping. */
 export type MonitorKind = 'http' | 'tcp' | 'ping'
