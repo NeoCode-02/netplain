@@ -303,3 +303,10 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .share-actions { flex-wrap: wrap; }
 .share-others summary { cursor: pointer; }
 .share-others[open] summary { margin-bottom: 10px; }
+
+/* getting started */
+.setup-list { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; }
+.setup-row { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-top: 1px solid var(--line); }
+.setup-row:first-child { border-top: 0; }
+.setup-mark { flex-shrink: 0; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-size: 12px; font-weight: 600; }
+.setup-row.done .setup-mark { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }

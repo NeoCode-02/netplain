@@ -8,6 +8,7 @@ import { getLang, useT } from '../i18n'
 import { useLive } from '../live'
 import RateChart from '../RateChart'
 import { AppIcon, Icon } from '../ui'
+import Setup from './Setup'
 import { NowTiles, uptimeStory, useUptime } from './Uptime'
 
 export default function Overview({ go }: { go: (p: Page) => void }) {
@@ -82,6 +83,8 @@ export default function Overview({ go }: { go: (p: Page) => void }) {
           <li key={s}>{s}</li>
         ))}
       </ul>
+
+      <Setup go={go} />
 
       <section className="panel panel-pad section">
         <div className="section-head">

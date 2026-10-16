@@ -4,6 +4,7 @@ import { bytes } from '../format'
 import { useGeo } from '../geo'
 import { errText, getLang, LANGS, setLang, useT, type Dict, type Lang } from '../i18n'
 import { Icon } from '../ui'
+import { showSetup } from './Setup'
 
 /** The monthly data limit: which network, how many GB, and the day the count starts again. */
 function CapForm({ t, cap, onSave }: { t: Dict; cap: DataCap | null; onSave(c: DataCap | null): void }) {
@@ -93,6 +94,7 @@ export default function Settings() {
   const [prefs, setPrefs] = useState<Prefs | null>(null)
   const [info, setInfo] = useState({ version: '', platform: '' })
   const [err, setErr] = useState<unknown>(null)
+  const [reopened, setReopened] = useState(false)
 
   useEffect(() => {
     void window.netplain.getSettings().then(setPrefs)
@@ -183,6 +185,18 @@ export default function Settings() {
         <div className="panel panel-pad stack tight">
           <strong>{s.version(info.version)}</strong>
           {toggle('updates', s.updates)}
+          <div className="row">
+            <button
+              className="btn sm"
+              onClick={() => {
+                showSetup()
+                setReopened(true)
+              }}
+            >
+              {t.setup.reopen}
+            </button>
+            {reopened && <span className="small muted">{t.setup.reopened}</span>}
+          </div>
           <p className="muted">{s.privacy}</p>
         </div>
       </section>

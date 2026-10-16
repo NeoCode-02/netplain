@@ -611,6 +611,23 @@ const en = {
       ping: (info: string) => `Network check (ICMP): ${info}`
     }
   },
+  setup: {
+    title: 'Get the most out of Netplain',
+    lead: 'A few one-time steps; each takes one click.',
+    lang: 'Language',
+    geo: ['Location database', 'Shows which company and country every connection goes to. Free, about 9 MB, downloaded once.'],
+    geoGet: 'Download',
+    wireshark: ['Wireshark', 'Lets Netplain see how much each app uses, and every packet. Free; install it once.'],
+    wiresharkGet: 'How to get it',
+    autostart: 'Start at login',
+    autostartWin: 'Start with Windows',
+    autostartWhy: 'History and alerts keep going from the moment you log in.',
+    turnOn: 'Turn on',
+    done: 'Done',
+    hide: 'Hide this list',
+    reopen: 'Show the getting-started list',
+    reopened: 'It is back on the Overview.'
+  },
   overview: {
     title: 'What’s happening now',
     signal: (q: string, pct: number) => `Wi-Fi signal is ${q.toLowerCase()} (${pct}%).`,
@@ -1366,6 +1383,23 @@ const uz: Dict = {
       nearby: 'Yaqindagi qurilmalar bir-birini qidirmoqda',
       ping: (info) => `Tarmoq tekshiruvi (ICMP): ${info}`
     }
+  },
+  setup: {
+    title: 'Netplain’dan to‘liq foydalanish',
+    lead: 'Bir martalik bir necha qadam; har biri bitta bosish.',
+    lang: 'Til',
+    geo: ['Joylashuv bazasi', 'Har bir ulanish qaysi kompaniya va davlatga ketayotganini ko‘rsatadi. Bepul, taxminan 9 MB, bir marta yuklanadi.'],
+    geoGet: 'Yuklab olish',
+    wireshark: ['Wireshark', 'Netplain’ga har bir ilova qancha ishlatayotganini va har bir paketni ko‘rish imkonini beradi. Bepul, bir marta o‘rnatiladi.'],
+    wiresharkGet: 'Qanday o‘rnatiladi',
+    autostart: 'Kompyuterga kirganda ishga tushish',
+    autostartWin: 'Windows bilan birga ishga tushish',
+    autostartWhy: 'Tizimga kirgan paytingizdan boshlab tarix va signallar yozilib turadi.',
+    turnOn: 'Yoqish',
+    done: 'Bajarildi',
+    hide: 'Bu ro‘yxatni yashirish',
+    reopen: '“Boshlash” ro‘yxatini qayta ko‘rsatish',
+    reopened: 'U yana Umumiy sahifada.'
   },
   overview: {
     title: 'Hozir nima bo‘layapti',
