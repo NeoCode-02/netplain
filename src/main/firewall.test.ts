@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { elevate } from './admin'
-import { blockCommand, blockedList, parseBlocked, publicIp, unblockCommand } from './firewall'
+import { run } from './exec'
+import { block, blockCommand, blockedList, parseBlocked, publicIp, unblock, unblockCommand } from './firewall'
 
 describe('firewall', () => {
   it('builds block commands for a program (outbound) and an address (both ways)', () => {
@@ -36,15 +36,22 @@ describe('firewall', () => {
   })
 
   // GitHub's Windows runners are admin without a UAC prompt; never run on a real machine.
-  it.runIf(process.env.CI === 'true' && process.platform === 'win32')('blocks and unblocks for real (CI)', async () => {
+  const ci = process.env.CI === 'true' && process.platform === 'win32'
+
+  it.runIf(ci)('reads a rule netsh made directly (CI)', async () => {
+    const name = 'Netplain: 192.0.2.124'
+    const said = await run('netsh', ['advfirewall', 'firewall', 'add', 'rule', `name=${name}`, 'dir=out', 'action=block', 'remoteip=192.0.2.124', 'enable=yes']).catch((e: Error) => `netsh failed: ${e.message}`)
+    const list = await blockedList()
+    await run('netsh', ['advfirewall', 'firewall', 'delete', 'rule', `name=${name}`]).catch(() => '')
+    expect(list, said).toContainEqual({ name, program: null, ip: '192.0.2.124' })
+  }, 60_000)
+
+  it.runIf(ci)('blocks and unblocks through the admin prompt (CI)', async () => {
     // A path nothing runs from: the rule is real, nothing on the runner loses its connection.
     const program = 'C:\\netplain-test\\nothing.exe'
-    await elevate(blockCommand({ ip: '192.0.2.123' }))
-    await elevate(blockCommand({ program }))
-    const list = await blockedList()
-    expect(list).toContainEqual({ name: 'Netplain: 192.0.2.123', program: null, ip: '192.0.2.123' })
-    expect(list.find((b) => b.program?.toLowerCase() === program.toLowerCase())).toBeTruthy()
-    for (const b of list) await elevate(unblockCommand(b.name))
+    expect(await block({ ip: '192.0.2.123' })).toContainEqual({ name: 'Netplain: 192.0.2.123', program: null, ip: '192.0.2.123' })
+    expect((await block({ program })).find((b) => b.program?.toLowerCase() === program.toLowerCase())).toBeTruthy()
+    for (const b of await blockedList()) await unblock(b.name)
     expect(await blockedList()).toEqual([])
   }, 60_000)
 })

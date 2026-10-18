@@ -287,7 +287,7 @@ try {
 
   // A capture file needs only Wireshark's engine (the e2e file stands in for the native Open dialog).
   await step('capture file report', async () => {
-    const offered = await until('the Open button or the Wireshark hint', () => (document.querySelector('.page-actions, .pk-head .row') ? [...document.querySelectorAll('button')].some((b) => b.textContent === 'Open a file…') ? 'yes' : 'no' : false))
+    const offered = await until('the Open button or the Wireshark hint', () => (document.querySelector('.page-head, .pk-head') ? ([...document.querySelectorAll('button')].some((b) => b.textContent === 'Open a file…') ? 'yes' : 'no') : false))
     if (offered !== 'yes') return
     await until('Open a file…', clickText, 'Open a file…')
     await until('the report', () => /1 login was sent readable/.test(document.body.innerText) && document.body.innerText.includes('HTTP basic auth, user “admin”'))

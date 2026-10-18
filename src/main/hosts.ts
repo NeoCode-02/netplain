@@ -40,7 +40,7 @@ export function applyHosts(text: string, op: HostsOp): string {
 
 export const readHosts = () => fs.readFileSync(HOSTS, 'utf8')
 
-/** Writes the file through the admin prompt, keeping the previous one as hosts.netplain.bak next to it. */
+/** Writes the file through the admin prompt, keeping the previous one as hosts.netplain.bak next to it. Throws E_HOSTS_WRITE. */
 export async function writeHosts(next: string, dir: string): Promise<void> {
   fs.mkdirSync(dir, { recursive: true })
   const tmp = path.join(dir, 'hosts.netplain')
@@ -48,4 +48,6 @@ export async function writeHosts(next: string, dir: string): Promise<void> {
   if (!safeStartup(tmp) || tmp.includes("'")) throw new Error('E_BAD_ARGS')
   const bak = `${HOSTS}.netplain.bak`
   await elevate(process.platform === 'win32' ? `copy /y "${HOSTS}" "${bak}" >nul & copy /y "${tmp}" "${HOSTS}" >nul` : `cp '${HOSTS}' '${bak}' && cp '${tmp}' '${HOSTS}'`)
+  // The elevated exit code can be lost on the way back; the file itself tells (an antivirus may guard it).
+  if (readHosts() !== next) throw new Error('E_HOSTS_WRITE')
 }

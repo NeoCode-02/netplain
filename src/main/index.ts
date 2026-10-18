@@ -27,7 +27,7 @@ import { dnsQuery, RECORD_TYPES } from './dnskit'
 import { whois } from './whois'
 import { exposure } from './exposure'
 import { createLanWatch } from './lanwatch'
-import { blockCommand, blockedList, publicIp as isPublicIp, unblockCommand } from './firewall'
+import { block, blockedList, publicIp as isPublicIp, unblock } from './firewall'
 import { inspectSite } from './webcheck'
 import { createSpeed } from './speed'
 import { wifiScan } from './wifiscan'
@@ -378,17 +378,8 @@ const handlers: Api = {
     }
   },
   blocked: () => windowsOnly(blockedList),
-  block: (target) =>
-    windowsOnly(async () => {
-      await elevate(blockCommand(target))
-      return blockedList()
-    }),
-  unblock: (name) =>
-    windowsOnly(async () => {
-      if (!(await blockedList()).some((b) => b.name === name)) throw new Error('E_BAD_ARGS')
-      await elevate(unblockCommand(name))
-      return blockedList()
-    }),
+  block: (target) => windowsOnly(() => block(target)),
+  unblock: (name) => windowsOnly(() => unblock(name)),
   setStartup: async (id, on) => {
     const e = (await security!.get()).startup.find((x) => x.id === id)
     if (!e) throw new Error('E_BAD_ARGS')

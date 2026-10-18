@@ -1,7 +1,7 @@
 import net from 'node:net'
 import { systemFile } from '../shared/paths'
 import type { Blocked } from '../shared/types'
-import { safeStartup } from './admin'
+import { elevate, safeStartup } from './admin'
 import { isPrivate } from './net'
 import { powershell } from './security'
 
@@ -10,6 +10,8 @@ export const PREFIX = 'Netplain: '
 
 /** Addresses worth blocking: on the internet, not this computer or the home network. */
 export const publicIp = (ip: string) => net.isIP(ip) !== 0 && !isPrivate(ip) && !/^(127\.|0\.|169\.254\.|::1$|fe80:|f[cd][0-9a-f]{2}:)/i.test(ip)
+
+const ruleName = (t: { program: string } | { ip: string }) => PREFIX + ('program' in t ? t.program : t.ip)
 
 /** The elevated command line that blocks a program's internet (outbound) or an address (both ways). */
 export function blockCommand(t: { program: string } | { ip: string }): string {
@@ -56,4 +58,23 @@ $ErrorActionPreference = 'SilentlyContinue'
 }) | ConvertTo-Json -Compress
 `)
   return parseBlocked(out)
+}
+
+// The elevated command's exit code can be lost on the way back, so the firewall itself is asked afterwards.
+
+/** Adds the block through the admin prompt. Throws E_FIREWALL when the rule is not there afterwards. */
+export async function block(t: { program: string } | { ip: string }): Promise<Blocked[]> {
+  await elevate(blockCommand(t))
+  const list = await blockedList()
+  if (!list.some((b) => b.name === ruleName(t))) throw new Error('E_FIREWALL')
+  return list
+}
+
+/** Removes one of Netplain's rules. Throws E_FIREWALL when it is still there afterwards. */
+export async function unblock(name: string): Promise<Blocked[]> {
+  if (!(await blockedList()).some((b) => b.name === name)) throw new Error('E_BAD_ARGS')
+  await elevate(unblockCommand(name))
+  const list = await blockedList()
+  if (list.some((b) => b.name === name)) throw new Error('E_FIREWALL')
+  return list
 }
