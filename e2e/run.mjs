@@ -201,7 +201,7 @@ try {
 
     await step(`connections page (${theme.toLowerCase()})`, async () => {
       await until('Connections', clickText, 'Connections')
-      await until('connection data', () => document.querySelector('.page-head p')?.textContent !== 'Reading connections…' && document.querySelector('.ad-row, .list-empty') !== null)
+      await until('connection data', () => document.querySelector('.page-title p')?.textContent !== 'Reading connections…' && document.querySelector('.ad-row, .list-empty') !== null)
       // Without the location database (fresh data folder) the page offers to download it.
       await until('the location banner', () => document.querySelector('.geo-banner') !== null)
       await inPage(() => document.querySelector('.ad-toggle')?.click())

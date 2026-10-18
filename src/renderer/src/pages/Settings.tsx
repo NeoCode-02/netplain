@@ -3,7 +3,7 @@ import type { DataCap, NetworkUse, Settings as Prefs } from '../../../shared/typ
 import { bytes } from '../format'
 import { useGeo } from '../geo'
 import { errText, getLang, LANGS, setLang, useT, type Dict, type Lang } from '../i18n'
-import { Icon } from '../ui'
+import { Icon, Page } from '../ui'
 import { showSetup } from './Setup'
 
 /** The monthly data limit: which network, how many GB, and the day the count starts again. */
@@ -123,10 +123,7 @@ export default function Settings() {
   )
 
   return (
-    <div className="page">
-      <header className="page-head">
-        <h2>{s.title}</h2>
-      </header>
+    <Page title={s.title}>
       <div className="panel panel-pad stack">
         <div className="setting">
           <span>{s.theme}</span>
@@ -200,6 +197,6 @@ export default function Settings() {
           <p className="muted">{s.privacy}</p>
         </div>
       </section>
-    </div>
+    </Page>
   )
 }

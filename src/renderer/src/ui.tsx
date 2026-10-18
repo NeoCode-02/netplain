@@ -68,6 +68,36 @@ export function Mark({ size = 22 }: { size?: number }) {
   )
 }
 
+/** The frame every page shares: the title with its actions on one line, a short note, then the tabs. */
+export function Page({ title, note, actions, tabs, children }: { title: string; note?: ReactNode; actions?: ReactNode; tabs?: ReactNode; children?: ReactNode }) {
+  return (
+    <div className="page">
+      <header className="page-head">
+        <div className="page-title">
+          <h2>{title}</h2>
+          {note && <p>{note}</p>}
+        </div>
+        {actions && <div className="row page-actions">{actions}</div>}
+      </header>
+      {tabs}
+      {children}
+    </div>
+  )
+}
+
+/** A page's tabs (or a range that switches the whole page). */
+export function Tabs<T extends string>({ value, options, text, label, onChange }: { value: T; options: readonly T[]; text(v: NoInfer<T>): string; label?: string; onChange(v: NoInfer<T>): void }) {
+  return (
+    <div className="seg page-tabs" role="tablist" aria-label={label}>
+      {options.map((v) => (
+        <button key={v} role="tab" aria-selected={value === v} className={value === v ? 'on' : ''} onClick={() => onChange(v)}>
+          {text(v)}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function Empty({ icon, title, body, children }: { icon: IconName; title: string; body?: string; children?: ReactNode }) {
   return (
     <div className="empty">

@@ -3,7 +3,7 @@ import type { CapState, Usage, UsageRange, UsageRow } from '../../../shared/type
 import CapMeter from '../CapMeter'
 import { bytes } from '../format'
 import { useT } from '../i18n'
-import { AppIcon } from '../ui'
+import { AppIcon, Page, Tabs } from '../ui'
 import UsageChart from '../UsageChart'
 
 function Rows({ rows, icons }: { rows: UsageRow[]; icons: boolean }) {
@@ -50,20 +50,7 @@ export default function History() {
   }, [range])
 
   return (
-    <div className="page wide">
-      <header className="page-head">
-        <div>
-          <h2>{h.title}</h2>
-          <p>{h.lead}</p>
-        </div>
-        <div className="seg" role="group">
-          {(['day', 'week', 'month'] as const).map((r) => (
-            <button key={r} className={range === r ? 'on' : ''} aria-pressed={range === r} onClick={() => setRange(r)}>
-              {h.ranges[r]}
-            </button>
-          ))}
-        </div>
-      </header>
+    <Page title={h.title} note={h.lead} tabs={<Tabs value={range} options={['day', 'week', 'month'] as const} text={(r) => h.ranges[r]} onChange={setRange} />}>
       {cap && <CapMeter t={t} c={cap} />}
       {u && (
         <>
@@ -89,6 +76,6 @@ export default function History() {
           </div>
         </>
       )}
-    </div>
+    </Page>
   )
 }

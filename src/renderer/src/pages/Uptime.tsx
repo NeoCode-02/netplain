@@ -3,7 +3,7 @@ import type { Outage, Uptime as Data } from '../../../shared/types'
 import { daySummary } from '../explain'
 import { getLang, useT, type Dict } from '../i18n'
 import QualityChart from '../QualityChart'
-import { Empty, Icon } from '../ui'
+import { Empty, Icon, Page } from '../ui'
 import Monitors from './Monitors'
 
 /** The connection checks, refreshed every 5 s while shown, with the time they were read. */
@@ -93,13 +93,7 @@ export default function Uptime() {
   const { status, day, down } = uptimeStory(t, data, now)
 
   return (
-    <div className="page wide">
-      <header className="page-head">
-        <div>
-          <h2>{u.title}</h2>
-          <p>{u.lead}</p>
-        </div>
-      </header>
+    <Page title={u.title} note={u.lead}>
       {!data.on ? (
         <Empty icon="pulse" title={u.offTitle} body={u.offBody}>
           <button className="btn primary" onClick={() => void turnOn()}>
@@ -136,6 +130,6 @@ export default function Uptime() {
           </div>
         )}
       </section>
-    </div>
+    </Page>
   )
 }

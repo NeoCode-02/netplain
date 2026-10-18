@@ -3,7 +3,7 @@ import type { LocalSite, ShareProvider, ShareRequest, ShareRequestDetail, ShareS
 import { countryName } from '../explain'
 import { bytes } from '../format'
 import { errText, getLang, useT, type Dict } from '../i18n'
-import { Icon } from '../ui'
+import { Icon, Page } from '../ui'
 
 function Switch({ on, label, onChange, disabled }: { on: boolean; label: string; onChange(on: boolean): void; disabled?: boolean }) {
   return <button className={`switch ${on ? 'on' : ''}`} role="switch" aria-checked={on} aria-label={label} disabled={disabled} onClick={() => onChange(!on)} />
@@ -313,15 +313,9 @@ export default function Share() {
   }, [])
 
   return (
-    <div className="page">
-      <header className="page-head">
-        <div>
-          <h2>{t.share.title}</h2>
-          <p>{t.share.lead}</p>
-        </div>
-      </header>
+    <Page title={t.share.title} note={t.share.lead}>
       {state && (state.status === 'off' ? <Form t={t} state={state} /> : <Live t={t} state={state} />)}
       {(state?.status !== 'off' || list.length > 0) && <Requests t={t} list={list} />}
-    </div>
+    </Page>
   )
 }

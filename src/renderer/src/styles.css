@@ -128,11 +128,14 @@ p { margin: 0; text-wrap: pretty; }
 .content { flex: 1; min-height: 0; overflow: auto; position: relative; }
 .content.fixed { overflow: hidden; }
 
-.page { max-width: 760px; margin: 0 auto; padding: 40px 32px 72px; }
-.page.wide { max-width: 980px; }
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
-.page-head h2 { font-size: 22px; letter-spacing: -0.025em; }
-.page-head p { margin-top: 6px; color: var(--text-2); max-width: 60ch; }
+/* Every page: one width, one header line (title left, actions right), tabs under it. */
+.page { max-width: 1040px; margin: 0 auto; padding: 20px 32px 64px; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.page-head h2, .pk-head h2 { font-size: 22px; letter-spacing: -0.025em; }
+.page-title { min-width: 0; }
+.page-title p { margin-top: 4px; color: var(--text-2); max-width: 70ch; }
+.page-actions { flex-shrink: 0; }
+.page-tabs { margin-bottom: 20px; }
 .section { margin-top: 36px; }
 .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .section-head h3 { font-size: 15px; }

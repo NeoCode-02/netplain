@@ -4,7 +4,7 @@ import { company, countryName } from '../explain'
 import { bits, bytes } from '../format'
 import { errText, getLang, useT, type Dict } from '../i18n'
 import { useLive } from '../live'
-import { AppIcon, Empty, Icon } from '../ui'
+import { AppIcon, Empty, Icon, Page } from '../ui'
 
 const OS = /Windows/.test(navigator.userAgent) ? 'Win' : /Mac/.test(navigator.userAgent) ? 'Mac' : 'Linux'
 
@@ -131,16 +131,12 @@ export default function Apps() {
   const since = tr?.since ? new Date(tr.since).toLocaleTimeString(getLang(), { hour: '2-digit', minute: '2-digit' }) : null
 
   return (
-    <div className="page wide">
-      <header className="page-head">
-        <div>
-          <h2>{a.title}</h2>
-          <p>
-            {since ? a.lead(since) : tr?.state === 'starting' ? a.starting : watching ? a.waiting : ''}
-            {top && ` ${a.top(top.title ?? top.app, bytes(top.rx + top.tx))}`}
-          </p>
-        </div>
-        {tr && tr.rx + tr.tx > 0 && (
+    <Page
+      title={a.title}
+      note={`${since ? a.lead(since) : tr?.state === 'starting' ? a.starting : watching ? a.waiting : ''}${top ? ` ${a.top(top.title ?? top.app, bytes(top.rx + top.tx))}` : ''}`}
+      actions={
+        tr &&
+        tr.rx + tr.tx > 0 && (
           <div className="app-total num">
             <span className="faint small">{a.total}</span>
             <span>
@@ -150,8 +146,9 @@ export default function Apps() {
               <i className="key up" /> {bytes(tr.tx)}
             </span>
           </div>
-        )}
-      </header>
+        )
+      }
+    >
       {tr?.state === 'error' && <p className="note danger">{a.error}</p>}
       {tr && !watching && <Blocked tr={tr} t={t} />}
       {watching && tr.apps.length > 0 && (
@@ -161,6 +158,6 @@ export default function Apps() {
           ))}
         </div>
       )}
-    </div>
+    </Page>
   )
 }

@@ -5,7 +5,7 @@ import { addr, bits } from '../format'
 import { useT } from '../i18n'
 import { useLive, type Point } from '../live'
 import RateChart from '../RateChart'
-import { Fact, Icon, KIND_ICON } from '../ui'
+import { Fact, Icon, KIND_ICON, Page } from '../ui'
 
 function Facts({ a }: { a: Adapter }) {
   const t = useT()
@@ -129,20 +129,14 @@ function AdapterRow({ a, points, internetId }: { a: Adapter; points: Point[]; in
 export default function Network() {
   const t = useT()
   const { snap, hist } = useLive()
-  if (!snap) return <div className="page wide muted">{t.network.loading}</div>
+  if (!snap) return <Page title={t.network.title} note={t.network.loading} />
   const internet = snap.adapters.find((a) => a.id === snap.defaultId)
   const rest = snap.adapters.filter((a) => a !== internet)
   const on = rest.filter((a) => a.up)
   const off = rest.filter((a) => !a.up)
   const row = (a: Adapter) => <AdapterRow key={a.id} a={a} points={hist.get(a.id) ?? []} internetId={snap.defaultId} />
   return (
-    <div className="page wide">
-      <header className="page-head">
-        <div>
-          <h2>{t.network.title}</h2>
-          <p>{summary(t, snap.adapters, snap.defaultId)}</p>
-        </div>
-      </header>
+    <Page title={t.network.title} note={summary(t, snap.adapters, snap.defaultId)}>
       {internet && <InternetCard a={internet} points={hist.get(internet.id) ?? []} />}
       {on.length > 0 && (
         <section className="section">
@@ -161,6 +155,6 @@ export default function Network() {
           <div className="list">{off.map(row)}</div>
         </details>
       )}
-    </div>
+    </Page>
   )
 }

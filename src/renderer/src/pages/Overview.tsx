@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react'
 import type { CapState, Connections, Neighbor } from '../../../shared/types'
 import { capText } from '../CapMeter'
-import type { Page } from '../App'
+import type { Page as PageId } from '../App'
 import { company, listJoin, quality, summary } from '../explain'
 import { bits, bytes } from '../format'
 import { getLang, useT } from '../i18n'
 import { useLive } from '../live'
 import RateChart from '../RateChart'
-import { AppIcon, Icon } from '../ui'
+import { AppIcon, Icon, Page } from '../ui'
 import Setup from './Setup'
 import { NowTiles, uptimeStory, useUptime } from './Uptime'
 
-export default function Overview({ go }: { go: (p: Page) => void }) {
+export default function Overview({ go }: { go: (p: PageId) => void }) {
   const t = useT()
   const o = t.overview
   const lang = getLang()
@@ -66,7 +66,7 @@ export default function Overview({ go }: { go: (p: Page) => void }) {
     !steady?.down && steady?.day
   ].filter((s): s is string => !!s)
 
-  const more = (p: Page) => (
+  const more = (p: PageId) => (
     <button className="btn quiet sm" onClick={() => go(p)}>
       {o.more}
       <Icon name="chevron" size={14} />
@@ -74,10 +74,7 @@ export default function Overview({ go }: { go: (p: Page) => void }) {
   )
 
   return (
-    <div className="page wide">
-      <header className="page-head">
-        <h2>{o.title}</h2>
-      </header>
+    <Page title={o.title}>
       <ul className="story">
         {story.map((s) => (
           <li key={s}>{s}</li>
@@ -136,6 +133,6 @@ export default function Overview({ go }: { go: (p: Page) => void }) {
           ))}
         </section>
       </div>
-    </div>
+    </Page>
   )
 }

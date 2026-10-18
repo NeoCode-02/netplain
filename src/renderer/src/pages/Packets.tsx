@@ -4,7 +4,7 @@ import { describePacket, layerKey, PRESETS } from '../explain'
 import { bytes } from '../format'
 import { errText, useT, type Dict } from '../i18n'
 import { useLive } from '../live'
-import { Icon } from '../ui'
+import { Icon, Page } from '../ui'
 import { Blocked } from './Apps'
 
 const ROW = 30
@@ -141,12 +141,9 @@ export default function Packets() {
 
   if (traffic && !on && traffic.state !== 'starting')
     return (
-      <div className="page wide">
-        <header className="page-head">
-          <h2>{k.title}</h2>
-        </header>
+      <Page title={k.title}>
         <Blocked tr={traffic} t={t} />
-      </div>
+      </Page>
     )
 
   const first = Math.max(0, Math.floor(view.top / ROW) - 10)

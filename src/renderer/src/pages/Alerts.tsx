@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { AlertKind, BlocklistInfo, Settings } from '../../../shared/types'
 import { errText, getLang, useT } from '../i18n'
 import { alertText, setAlerts, useLive } from '../live'
-import { Empty, Icon, type IconName } from '../ui'
+import { Empty, Icon, Page, type IconName } from '../ui'
 
 const ICON: Record<AlertKind, IconName> = { newApp: 'globe', exposed: 'link', plain: 'alert', blocklist: 'shield', outage: 'pulse', monitorDown: 'pulse', monitorUp: 'pulse', certExpiry: 'shield', dataCap: 'chart' }
 const KINDS = Object.keys(ICON) as AlertKind[]
@@ -46,14 +46,12 @@ export default function Alerts() {
   const when = (ms: number) => new Date(ms).toLocaleString(lang, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
   return (
-    <div className="page wide">
-      <header className="page-head">
-        <div>
-          <h2>{a.title}</h2>
-          <p>{a.lead}</p>
-        </div>
-        {alerts.length > 0 && (
-          <div className="row">
+    <Page
+      title={a.title}
+      note={a.lead}
+      actions={
+        alerts.length > 0 && (
+          <>
             <button
               className="btn sm"
               onClick={async () => {
@@ -72,9 +70,10 @@ export default function Alerts() {
             >
               {a.clear}
             </button>
-          </div>
-        )}
-      </header>
+          </>
+        )
+      }
+    >
 
       {alerts.length === 0 ? (
         <Empty icon="shield" title={a.none} />
@@ -166,6 +165,6 @@ export default function Alerts() {
           {err !== null && <p className="note danger">{errText(t, err)}</p>}
         </div>
       </section>
-    </div>
+    </Page>
   )
 }

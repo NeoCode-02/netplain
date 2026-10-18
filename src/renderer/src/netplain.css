@@ -6,7 +6,6 @@
 .banner { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 8px 24px; border-bottom: 1px solid var(--line); background: var(--danger-soft); color: var(--danger); font-size: 13px; font-weight: 550; }
 .banner.info { background: var(--accent-soft); color: var(--accent-text); }
 .banner .grow { flex: 1; }
-.page { padding-top: 12px; }
 .foot-note { margin-top: 28px; max-width: 72ch; line-height: 1.5; }
 .spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -141,7 +140,6 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .packets.with-detail { grid-template-columns: minmax(0, 1fr) minmax(340px, 36%); }
 .pk-main { display: flex; flex-direction: column; gap: 10px; min-height: 0; padding: 12px 24px 14px; }
 .pk-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; }
-.pk-head h2 { font-size: 22px; letter-spacing: -0.025em; }
 .pk-head p { margin-top: 4px; }
 .pk-tools { flex-wrap: wrap; margin: 0; }
 .pk-filter { flex: 1; min-width: 260px; }
@@ -233,7 +231,6 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .ad-icon.level-ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
 .ad-icon.level-warn { color: #b45309; background: rgb(245 158 11 / 14%); }
 .ad-icon.level-bad { color: var(--danger); background: var(--danger-soft); }
-.section-tabs { margin-bottom: 18px; }
 @media (prefers-color-scheme: dark) { .verdict.warn .verdict-mark, .ad-icon.level-warn { color: #fbbf24; } }
 .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
 .kpi { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-sm), var(--highlight); min-width: 0; }

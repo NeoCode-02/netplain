@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useT } from '../i18n'
 import { GO } from '../live'
+import { Page, Tabs } from '../ui'
 import Diagnose from './tools/Diagnose'
 import Dns from './tools/Dns'
 import Scan from './tools/Scan'
@@ -29,20 +30,7 @@ export default function Tools() {
   const initial = start?.tab === tab ? start.value : undefined
 
   return (
-    <div className="page wide">
-      <header className="page-head">
-        <div>
-          <h2>{k.title}</h2>
-          <p>{k.lead}</p>
-        </div>
-      </header>
-      <div className="seg section-tabs" role="tablist">
-        {TABS.map((x) => (
-          <button key={x} role="tab" aria-selected={tab === x} className={tab === x ? 'on' : ''} onClick={() => setTab(x)}>
-            {k.tabs[x]}
-          </button>
-        ))}
-      </div>
+    <Page title={k.title} note={k.lead} tabs={<Tabs value={tab} options={TABS} text={(x) => k.tabs[x]} onChange={setTab} />}>
       {tab === 'diagnose' && <Diagnose />}
       {tab === 'speed' && <Speed />}
       {tab === 'wifi' && <Wifi />}
@@ -51,6 +39,6 @@ export default function Tools() {
       {tab === 'whois' && <Whois initial={initial} />}
       {tab === 'web' && <Web />}
       {tab === 'subnet' && <Subnet />}
-    </div>
+    </Page>
   )
 }

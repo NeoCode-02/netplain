@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Finding, ScanKind, ScanState, SecService, Security as Data, SecurityTab } from '../../../shared/types'
 import { behavioural, threatParts } from '../explain'
 import { errText, getLang, useT, type Dict } from '../i18n'
-import { Empty, Icon, type IconName } from '../ui'
+import { Empty, Icon, Page, Tabs, type IconName } from '../ui'
 
 const WINDOWS = /Windows/.test(navigator.userAgent)
 const MARK: Record<Finding['level'], IconName> = { bad: 'alert', warn: 'alert', info: 'dot', ok: 'shield' }
@@ -504,35 +504,26 @@ export default function Security() {
 
   if (!WINDOWS)
     return (
-      <div className="page wide">
+      <Page title={s.title}>
         <Empty icon="shield" title={s.title} body={s.windowsOnly} />
-      </div>
+      </Page>
     )
 
   return (
-    <div className="page wide">
-      <header className="page-head">
-        <div>
-          <h2>{s.title}</h2>
-          <p>{s.lead}</p>
-        </div>
-        <div className="row">
+    <Page
+      title={s.title}
+      note={s.lead}
+      actions={
+        <>
           {sec && <span className="small faint">{s.checkedAt(new Date(sec.at).toLocaleTimeString(getLang(), { hour: '2-digit', minute: '2-digit' }))}</span>}
           <button className="btn sm" onClick={() => load(true)} disabled={busy || !sec}>
             <Icon name="refresh" className={busy ? 'spin' : undefined} />
             {s.recheck}
           </button>
-        </div>
-      </header>
-      {TABS.length > 1 && (
-        <div className="seg section-tabs" role="tablist">
-          {TABS.map((x) => (
-            <button key={x} role="tab" aria-selected={tab === x} className={tab === x ? 'on' : ''} onClick={() => setTab(x)}>
-              {s.tabs[x]}
-            </button>
-          ))}
-        </div>
-      )}
+        </>
+      }
+      tabs={TABS.length > 1 && <Tabs value={tab} options={TABS} text={(x) => s.tabs[x]} onChange={setTab} />}
+    >
       {err !== null && <p className="note danger">{errText(t, err)}</p>}
       {!sec && err === null && <p className="muted">{s.reading}</p>}
       {sec && tab === 'status' && <Status sec={sec} t={t} onTab={setTab} onFixed={() => load(true)} />}
@@ -540,6 +531,6 @@ export default function Security() {
       {sec && tab === 'users' && <Users sec={sec} t={t} onChanged={() => load(true)} />}
       {sec && tab === 'services' && <Services sec={sec} t={t} onChanged={() => load(true)} />}
       {sec && tab === 'startup' && <Startup sec={sec} t={t} onChanged={() => load(true)} onTab={setTab} />}
-    </div>
+    </Page>
   )
 }

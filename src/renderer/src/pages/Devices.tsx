@@ -3,7 +3,7 @@ import type { Adapter, Neighbor } from '../../../shared/types'
 import { adapterOf, randomMac } from '../explain'
 import { errText, useT } from '../i18n'
 import { useLive } from '../live'
-import { Empty, Icon } from '../ui'
+import { Empty, Icon, Page } from '../ui'
 import { openTool } from './Tools'
 
 const ipNum = (ip: string) => ip.split('.').reduce((n, p) => n * 256 + Number(p), 0)
@@ -86,19 +86,18 @@ export default function Devices() {
   const few = !!list && list.length > 0 && list.length <= 2 && !busy
 
   return (
-    <div className="page wide">
-      <header className="page-head">
-        <div>
-          <h2>{d.title}</h2>
-          <p>{d.lead}</p>
-        </div>
-        {!(few && !scanned) && (
+    <Page
+      title={d.title}
+      note={d.lead}
+      actions={
+        !(few && !scanned) && (
           <button className="btn primary" onClick={scan} disabled={busy}>
             <Icon name="refresh" className={busy ? 'spin' : undefined} />
             {busy ? d.scanning : d.scan}
           </button>
-        )}
-      </header>
+        )
+      }
+    >
       {err !== null && <p className="note danger">{errText(t, err)}</p>}
       {woke && <p className="note">{d.woke(woke)}</p>}
       {noVendors && <p className="note">{d.noVendors}</p>}
@@ -130,6 +129,6 @@ export default function Devices() {
         </section>
       ))}
       <p className="small faint foot-note">{d.scanNote}</p>
-    </div>
+    </Page>
   )
 }

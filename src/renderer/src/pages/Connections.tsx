@@ -3,7 +3,7 @@ import type { Conn, Connections as Data } from '../../../shared/types'
 import { addressKind, company, countryName, listJoin, service } from '../explain'
 import { useGeo } from '../geo'
 import { errText, getLang, useT, type Dict } from '../i18n'
-import { AppIcon, Icon } from '../ui'
+import { AppIcon, Icon, Page } from '../ui'
 import { openTool } from './Tools'
 
 type Filter = 'internet' | 'local' | 'all'
@@ -182,13 +182,7 @@ export default function Connections() {
   )
 
   return (
-    <div className="page wide">
-      <header className="page-head">
-        <div>
-          <h2>{c.title}</h2>
-          <p>{!data ? c.loading : apps ? `${c.summary(apps, places)}${top.length ? ` ${c.mostly(listJoin(top, lang))}` : ''}` : c.none}</p>
-        </div>
-      </header>
+    <Page title={c.title} note={!data ? c.loading : apps ? `${c.summary(apps, places)}${top.length ? ` ${c.mostly(listJoin(top, lang))}` : ''}` : c.none}>
 
       {geo.info && !geo.info.ready && (
         <div className="note row geo-banner">
@@ -250,6 +244,6 @@ export default function Connections() {
           </>
         )}
       </p>
-    </div>
+    </Page>
   )
 }
