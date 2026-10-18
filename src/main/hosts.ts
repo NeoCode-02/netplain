@@ -4,7 +4,7 @@ import path from 'node:path'
 import type { HostsEntry, HostsOp } from '../shared/types'
 import { elevate, safeStartup } from './admin'
 
-export const HOSTS = process.platform === 'win32' ? path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'drivers', 'etc', 'hosts') : '/etc/hosts'
+const HOSTS = process.platform === 'win32' ? path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'drivers', 'etc', 'hosts') : '/etc/hosts'
 /** Entries switched off here become comments with this mark, so they can be switched on again. */
 const OFF = '#netplain-off '
 const NAME = /^(?=.{1,253}$)[a-z0-9_]([a-z0-9_-]{0,62}[a-z0-9_])?(\.[a-z0-9_]([a-z0-9_-]{0,62}[a-z0-9_])?)*$/i

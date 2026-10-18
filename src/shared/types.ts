@@ -584,13 +584,16 @@ export interface ScanHit {
   banner: string | null
 }
 
+/** Company and country of an address, from the location database (nulls without it). */
+export type GeoLookup = (ip: string) => { country: string | null; org: string | null }
+
 export interface PublicIp {
   ip: string
   org: string | null
   country: string | null
 }
 
-export type StepState = 'ok' | 'fail' | 'skip'
+type StepState = 'ok' | 'fail' | 'skip'
 
 /** "Why is there no internet?": one link of the chain from this computer to the internet. */
 export interface DiagnoseStep {
@@ -662,7 +665,7 @@ export interface SecThreat {
   status: number | null
 }
 
-export type FindingLevel = 'ok' | 'info' | 'warn' | 'bad'
+type FindingLevel = 'ok' | 'info' | 'warn' | 'bad'
 export type SecurityTab = 'status' | 'exposure' | 'antivirus' | 'users' | 'services' | 'startup' | 'blocked'
 
 /** One check of the "was I hacked?" list; its text lives in the renderer's dictionary under `key`. */

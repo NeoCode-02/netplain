@@ -4,13 +4,14 @@ import { getLang, useT } from '../../i18n'
 import { useLive } from '../../live'
 import { contains, subnet } from '../../subnet'
 import { Fact } from '../../ui'
+import { internetOf } from '../../../../shared/model'
 
 /** Subnet calculator, answered as you type; starts with this computer's own network. */
 export default function Subnet() {
   const t = useT()
   const k = t.tools.subnet
   const { snap } = useLive()
-  const mine = snap?.adapters.find((a) => a.id === snap.defaultId)?.ipv4[0] ?? ''
+  const mine = internetOf(snap)?.ipv4[0] ?? ''
   const [typed, setTyped] = useState<string | null>(null)
   const [probe, setProbe] = useState('')
   const value = typed ?? mine

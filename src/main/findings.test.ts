@@ -57,7 +57,7 @@ describe('findings', () => {
     hosts: ['127.0.0.1 kubernetes.docker.internal', '192.168.0.101 host.docker.internal'],
     updated: '2026-10-10'
   }
-  const ctx: Context = { now: new Date('2026-10-14T12:00:00').getTime(), dns: ['192.168.0.1'], online: [], signers: new Map(), geo: () => ({ org: 'Uzbektelekom' }), self: 'C:\\Users\\alice\\AppData\\Local\\Programs\\Netplain\\Netplain.exe' }
+  const ctx: Context = { now: new Date('2026-10-14T12:00:00').getTime(), dns: ['192.168.0.1'], online: [], signers: new Map(), geo: () => ({ org: 'Uzbektelekom', country: null }), self: 'C:\\Users\\alice\\AppData\\Local\\Programs\\Netplain\\Netplain.exe' }
   const keys = (s: Omit<Security, 'findings'>, c: Partial<Context> = {}) => findings(s, { ...ctx, ...c }).map((f) => `${f.level}:${f.key}`)
 
   it('says only good things about a healthy computer', () => {

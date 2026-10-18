@@ -1,8 +1,8 @@
-import { systemFile } from '../../../../shared/paths'
+import { systemFile } from '../../../../shared/model'
 import type { Dict } from '../../i18n'
+import { WINDOWS } from '../../live'
 import { TwoStep } from '../../ui'
 
-const WINDOWS = /Windows/.test(navigator.userAgent)
 /** The system's own programs are neither blocked nor stopped (the main process refuses them too). */
 export const ours = (path: string | null): path is string => !!path && !systemFile(path)
 /** Firewall blocks are Windows only for now. */

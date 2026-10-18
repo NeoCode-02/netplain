@@ -3,7 +3,7 @@ import { createSecurity } from './security'
 
 // Reads this computer's real settings (no admin rights needed); Windows only.
 it.skipIf(process.platform !== 'win32')('reads the Windows security picture', async () => {
-  const s = await createSecurity({ online: async () => [], dns: () => [], geo: () => ({ org: null }) }).get()
+  const s = await createSecurity({ online: async () => [], dns: () => [], geo: () => ({ org: null, country: null }) }).get()
   expect(s.users.some((u) => u.me)).toBe(true)
   expect(s.services.length).toBeGreaterThan(50)
   // Signature answers depend on the machine (GitHub's Windows runners verify none of them), so CI only reports them.

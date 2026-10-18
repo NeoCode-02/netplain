@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Exposure as ExposureData, Security as Data, SecurityTab } from '../../../shared/types'
 import { useAction, useRun } from '../hooks'
 import { getLang, useT, type Dict } from '../i18n'
+import { WINDOWS } from '../live'
 import { reportHtml } from '../report'
 import { ErrNote, Icon, Page, Tabs } from '../ui'
 import Antivirus from './security/Antivirus'
@@ -12,7 +13,6 @@ import Startup from './security/Startup'
 import Status from './security/Status'
 import Users from './security/Users'
 
-const WINDOWS = /Windows/.test(navigator.userAgent)
 // Only the view from the internet works outside Windows.
 const TABS: SecurityTab[] = WINDOWS ? ['status', 'exposure', 'antivirus', 'users', 'services', 'startup', 'blocked'] : ['exposure']
 

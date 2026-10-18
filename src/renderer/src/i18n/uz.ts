@@ -1,5 +1,5 @@
 import type { OutageCause } from '../../../shared/types'
-import { bytes } from '../format'
+import { bytes } from '../../../shared/format'
 import type { Dict } from './en'
 
 export const uz: Dict = {

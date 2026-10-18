@@ -24,6 +24,7 @@ import type {
   ScanHit,
   ScanKind,
   ScanState,
+  ServiceAction,
   Security,
   Settings,
   ShareOptions,
@@ -36,6 +37,7 @@ import type {
   Snapshot,
   Traffic,
   Usage,
+  UserAction,
   CapState,
   LocalSite,
   MonitorKind,
@@ -180,9 +182,9 @@ export interface Api {
   /** Turns a startup entry on or off (Task Manager's reversible switch; UAC for machine-wide entries). */
   setStartup(id: string, on: boolean): Promise<void>
   /** Starts/stops a service or sets how it starts (UAC). */
-  setService(name: string, action: 'start' | 'stop' | 'auto' | 'manual' | 'disabled'): Promise<void>
+  setService(name: string, action: ServiceAction): Promise<void>
   /** Turns an account off/on or takes its admin rights (UAC). Throws E_SELF / E_LAST_ADMIN to prevent a lock-out. */
-  setUser(name: string, action: 'disable' | 'enable' | 'unadmin'): Promise<void>
+  setUser(name: string, action: UserAction): Promise<void>
   /** The shared local site, if any (changes are also pushed on the share channel). */
   shareState(): Promise<ShareState>
   /** Web sites running on this computer (listening ports that answer HTTP or HTTPS). */

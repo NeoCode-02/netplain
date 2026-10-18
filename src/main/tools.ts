@@ -2,9 +2,8 @@ import { execFile } from 'node:child_process'
 import dgram from 'node:dgram'
 import dns from 'node:dns/promises'
 import net from 'node:net'
-import type { DiagnoseStep, Hop, LookupResult, PingResult, PortState, PublicIp, ScanHit, Snapshot } from '../shared/types'
+import type { DiagnoseStep, GeoLookup, Hop, LookupResult, PingResult, PortState, PublicIp, ScanHit, Snapshot } from '../shared/types'
 
-type Geo = (ip: string) => { country: string | null; org: string | null }
 
 /** Host names and IPs only: never something a command could read as an option ("-n"). */
 export const isHost = (v: unknown): v is string => typeof v === 'string' && v.length <= 253 && /^[A-Za-z0-9_][A-Za-z0-9._:-]*$/.test(v)
@@ -65,7 +64,7 @@ export async function ping(host: string, count = 4): Promise<PingResult> {
   return { host, ...r }
 }
 
-export async function trace(host: string, geo: Geo): Promise<Hop[]> {
+export async function trace(host: string, geo: GeoLookup): Promise<Hop[]> {
   const text =
     process.platform === 'win32'
       ? await out('tracert', ['-d', '-h', '15', '-w', '600', host], 90_000)
@@ -74,7 +73,7 @@ export async function trace(host: string, geo: Geo): Promise<Hop[]> {
   return parseTrace(text).map((h) => ({ ...h, ...(h.ip ? geo(h.ip) : { org: null, country: null }) }))
 }
 
-export async function lookup(name: string, geo: Geo): Promise<LookupResult> {
+export async function lookup(name: string, geo: GeoLookup): Promise<LookupResult> {
   const t0 = Date.now()
   if (net.isIP(name)) {
     const names = await dns.reverse(name).catch(() => [])
@@ -179,7 +178,7 @@ export async function scanPorts(host: string, ports: number[], width = 200, time
 }
 
 /** Asks ipify (the only service contacted) for the address the internet sees; company and country come from the local database. */
-export async function publicIp(geo: Geo): Promise<PublicIp> {
+export async function publicIp(geo: GeoLookup): Promise<PublicIp> {
   const res = await fetch('https://api.ipify.org', { signal: AbortSignal.timeout(8000) }).catch(() => null)
   const ip = res?.ok ? (await res.text()).trim() : ''
   if (!net.isIP(ip)) throw new Error('E_PUBLIC_IP')

@@ -55,7 +55,7 @@ export default function Hosts() {
               {list.map((e) => {
                 const key = `${e.line}`
                 return (
-                  <div className={`list-row ${e.on ? '' : 'muted'}`} key={key}>
+                  <div className={`list-row ${e.on ? '' : 'muted-row'}`} key={key}>
                     <span className="mono hosts-ip">{e.ip}</span>
                     <div className="app-main">
                       <div className="mono ellipsis">{e.names.join(' ')}</div>

@@ -7,7 +7,7 @@ import t32 from '../../resources/tray-32.png?asset'
 import m22 from '../../resources/trayTemplate-22.png?asset'
 import m44 from '../../resources/trayTemplate-44.png?asset'
 
-export type UiLang = 'en' | 'uz'
+type UiLang = 'en' | 'uz'
 
 const TEXT = {
   en: {

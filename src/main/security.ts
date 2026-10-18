@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
-import type { SecService, SecStartup, SecThreat, Security, Signer } from '../shared/types'
+import type { GeoLookup, SecService, SecStartup, SecThreat, Security, Signer } from '../shared/types'
 import { list } from './exec'
 import { exeOf, findings, isMicrosoft, suspicious } from './findings'
 
@@ -102,7 +102,7 @@ interface Deps {
   /** Programs talking to the internet right now. */
   online: () => Promise<{ app: string; path: string | null }[]>
   dns: () => string[]
-  geo: (ip: string) => { org: string | null }
+  geo: GeoLookup
 }
 
 /** Reads the security picture of this computer (Windows), with signatures cached per file version. */

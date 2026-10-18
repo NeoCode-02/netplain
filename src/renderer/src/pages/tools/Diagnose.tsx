@@ -6,6 +6,7 @@ import { useLive } from '../../live'
 import { ErrNote, Icon } from '../../ui'
 import { Ask, Tool } from './kit'
 import { useRun } from '../../hooks'
+import { internetOf } from '../../../../shared/model'
 
 /** "Is the internet working?", the classic terminal commands as buttons, and quick fixes. */
 export default function Diagnose() {
@@ -13,7 +14,7 @@ export default function Diagnose() {
   const k = t.tools
   const lang = getLang()
   const { snap } = useLive()
-  const internet = snap?.adapters.find((a) => a.id === snap.defaultId) ?? null
+  const internet = internetOf(snap) ?? null
   const diag = useRun<DiagnoseStep[]>()
   const ping = useRun<PingResult>()
   const trace = useRun<Hop[]>()

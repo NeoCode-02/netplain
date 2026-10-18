@@ -9,7 +9,7 @@ const DAY = 86_400_000
 const BREAK = 150_000
 
 /** 1, 2 or 5 × 10ⁿ ms, at least 20 ms, so the axis has clean numbers. */
-export function niceMs(v: number): number {
+function niceMs(v: number): number {
   const m = Math.max(v, 20)
   const p = 10 ** Math.floor(Math.log10(m))
   return ([1, 2, 5, 10].find((f) => f * p >= m) ?? 10) * p

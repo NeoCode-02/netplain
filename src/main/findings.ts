@@ -1,4 +1,4 @@
-import type { Finding, Security, Signer } from '../shared/types'
+import type { Finding, GeoLookup, Security, Signer } from '../shared/types'
 
 /**
  * The program file a command line starts: `"C:\a b\x.exe" -flag`, `C:\x.exe /y`, `""C:\x.exe"" -z`,
@@ -20,7 +20,7 @@ export function exeOf(command: string, env: Record<string, string | undefined> =
 export const userWritable = (path: string) => /\\(AppData|Temp|Downloads|Users\\Public)\\/i.test(path)
 
 /** Store apps are signed as a whole package (AppxSignature), so their files carry no signature of their own. */
-export const packaged = (path: string | null) => !!path && /\\(WindowsApps|SystemApps)\\/i.test(path)
+const packaged = (path: string | null) => !!path && /\\(WindowsApps|SystemApps)\\/i.test(path)
 
 export const suspicious = (exe: string | null, s: Signer | null) => !!exe && !!s && s.status !== 'valid' && userWritable(exe) && !packaged(exe)
 const unsigned = (s: Signer | null, exe: string | null = null) => !!s && s.status !== 'valid' && !packaged(exe)
@@ -37,7 +37,7 @@ export interface Context {
   /** Programs talking to the internet: name and file. */
   online: { app: string; path: string | null }[]
   signers: Map<string, Signer>
-  geo: (ip: string) => { org: string | null }
+  geo: GeoLookup
   /** Netplain's own program: unsigned builds start at login and go online too, and are not a finding. */
   self: string
 }

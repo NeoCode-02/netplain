@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DetailNode, PacketDetail, PacketRow, PcapReport } from '../../../shared/types'
 import { describePacket, layerKey, PRESETS } from '../explain'
-import { bytes } from '../format'
+import { bytes } from '../../../shared/format'
 import { useAction } from '../hooks'
 import { useT, type Dict } from '../i18n'
 import { useLive } from '../live'

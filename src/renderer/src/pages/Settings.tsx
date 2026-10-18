@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { DataCap, NetworkUse, Settings as Prefs } from '../../../shared/types'
-import { bytes } from '../format'
+import { bytes } from '../../../shared/format'
 import { useGeo } from '../geo'
 import { getLang, LANGS, setLang, useT, type Dict, type Lang } from '../i18n'
 import { ErrNote, Icon, Page } from '../ui'

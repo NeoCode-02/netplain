@@ -1,9 +1,8 @@
 import dgram from 'node:dgram'
-import type { Exposure, InternetDb, NatKind, PortMap, Upnp } from '../shared/types'
+import type { Exposure, GeoLookup, InternetDb, NatKind, PortMap, Upnp } from '../shared/types'
 import { isPrivate } from './net'
 import { publicIp } from './tools'
 
-type Geo = Parameters<typeof publicIp>[0]
 const HOUR = 3_600_000
 const list = (v: unknown, ok: (x: unknown) => boolean) => (Array.isArray(v) ? v.filter(ok) : [])
 const isStr = (x: unknown) => typeof x === 'string' && x.length < 300
@@ -46,7 +45,7 @@ export function locationOf(reply: string): string | null {
 }
 
 /** Asks the network for an internet gateway (SSDP M-SEARCH) from the given local address. */
-export function findGateway(local: string, wait = 2500): Promise<string | null> {
+function findGateway(local: string, wait = 2500): Promise<string | null> {
   return new Promise((resolve) => {
     const s = dgram.createSocket('udp4')
     let done = false
@@ -141,7 +140,7 @@ export function natOf(seen: string, wan: string | null): NatKind {
 }
 
 /** The network as the internet sees it. `local` is the internet adapter's address (for the UPnP search). */
-export async function exposure(geo: Geo, local: string | null): Promise<Exposure> {
+export async function exposure(geo: GeoLookup, local: string | null): Promise<Exposure> {
   const [pub, upnp] = await Promise.all([
     publicIp(geo),
     local ? findGateway(local).then((loc) => (loc ? readGateway(loc).catch(() => null) : null)) : Promise.resolve(null)

@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import type { AppTraffic, Traffic } from '../../../shared/types'
-import { company, countryName } from '../explain'
-import { bits, bytes } from '../format'
+import { where } from '../explain'
+import { bits, bytes } from '../../../shared/format'
 import { useAction } from '../hooks'
 import { getLang, useT, type Dict } from '../i18n'
-import { useLive } from '../live'
+import { PLATFORM, useLive } from '../live'
 import { AppIcon, Empty, ErrNote, Icon, Page } from '../ui'
 import { BlockApp, blockable } from './security/block'
 
-const OS = /Windows/.test(navigator.userAgent) ? 'Win' : /Mac/.test(navigator.userAgent) ? 'Mac' : 'Linux'
+const OS = ({ win32: 'Win', darwin: 'Mac', linux: 'Linux' } as const)[PLATFORM]
 
 function AppRow({ a, max, t }: { a: AppTraffic; max: number; t: Dict }) {
   const [open, setOpen] = useState(false)
@@ -56,7 +56,7 @@ function AppRow({ a, max, t }: { a: AppTraffic; max: number; t: Dict }) {
                   <div className="ellipsis">{p.name}</div>
                   {p.name !== p.ip && <div className="mono faint">{p.ip}</div>}
                 </td>
-                <td className="ellipsis">{[p.org && company(p.org), p.country && countryName(p.country, lang)].filter(Boolean).join(' · ') || <span className="faint">—</span>}</td>
+                <td className="ellipsis">{where(p, lang) || <span className="faint">—</span>}</td>
                 <td className="r num">{bytes(p.rx)}</td>
                 <td className="r num">{bytes(p.tx)}</td>
               </tr>

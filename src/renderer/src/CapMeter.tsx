@@ -1,8 +1,8 @@
 import type { CapState } from '../../shared/types'
-import { bytes } from './format'
+import { bytes } from '../../shared/format'
 import { getLang, type Dict } from './i18n'
 
-export const capPct = (c: CapState) => Math.round((c.used / c.limit) * 100)
+const capPct = (c: CapState) => Math.round((c.used / c.limit) * 100)
 
 /** "12 GB of 50 GB used on Phone (24%)", and when the count starts again. */
 export function capText(t: Dict, c: CapState): [string, string] {

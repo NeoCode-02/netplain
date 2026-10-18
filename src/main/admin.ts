@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import type { Adapter, SecStartup, SecUser } from '../shared/types'
+import type { Adapter, SecStartup, SecUser, ServiceAction, UserAction } from '../shared/types'
 import { run } from './exec'
 
 /** Adapter names that are safe inside a quoted command line (no quotes, no shell operators). */
@@ -59,8 +59,6 @@ export async function restartAdapter(a: Adapter): Promise<void> {
   else await elevate(`nmcli device disconnect ${a.id}; nmcli device connect ${a.id}`)
 }
 
-export type UserAction = 'disable' | 'enable' | 'unadmin'
-
 /** Windows user names cannot hold " / \ [ ] : ; | = , + * ? < >; this is stricter still. */
 export const safeUser = (name: string) => /^[\w .-]{1,64}$/.test(name)
 
@@ -83,8 +81,6 @@ export function userGuard(users: SecUser[], name: string, action: UserAction): s
   if ((action === 'unadmin' || action === 'disable') && u.admin && u.enabled && admins.length <= 1) return 'E_LAST_ADMIN'
   return null
 }
-
-export type ServiceAction = 'start' | 'stop' | 'auto' | 'manual' | 'disabled'
 
 /** Service names: letters, digits and a few marks; no quotes or shell operators. */
 export const safeService = (name: string) => /^[\w .@$#()-]{1,256}$/.test(name)

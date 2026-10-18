@@ -1,4 +1,4 @@
-import { systemFile } from '../shared/paths'
+import { systemFile } from '../shared/model'
 import type { Conn } from '../shared/types'
 import { elevate } from './admin'
 

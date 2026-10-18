@@ -2,6 +2,7 @@ import net from 'node:net'
 import type { Adapter, Neighbor } from '../shared/types'
 import { networkOf } from './usage'
 import { readJson, writeJson } from './store'
+import { addr } from '../shared/format'
 
 export type LanKind = 'newDevice' | 'arpSpoof' | 'netChange'
 
@@ -34,7 +35,7 @@ export function createLanWatch(file: string, tell: (kind: LanKind, app: string, 
       if (!a.gateway) return
       // ponytail: networks are told apart by name and router address; two cabled networks with the same router address look like one.
       const key = `${networkOf(a).key}|${a.gateway}`
-      const mine = list.filter((d) => a.ipv4.some((c) => c.split('/')[0] === d.via))
+      const mine = list.filter((d) => a.ipv4.some((c) => addr(c) === d.via))
       const dns = a.dns.filter((d) => net.isIPv4(d)).sort()
       const n = (st.nets[key] ??= { first: now, swept: false, macs: [], gatewayMac: null, dns })
       const learning = now - n.first < LEARN || (scan && !n.swept)

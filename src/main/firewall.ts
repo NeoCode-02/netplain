@@ -1,5 +1,5 @@
 import net from 'node:net'
-import { systemFile } from '../shared/paths'
+import { systemFile } from '../shared/model'
 import type { Blocked } from '../shared/types'
 import { elevate, safeStartup } from './admin'
 import { isPrivate } from './net'

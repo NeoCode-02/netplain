@@ -4,6 +4,7 @@ import { COMMON_PORTS, parsePorts, RISKY, service } from '../../explain'
 import { getLang, useT } from '../../i18n'
 import { useLive } from '../../live'
 import { ErrNote } from '../../ui'
+import { internetOf } from '../../../../shared/model'
 
 type Sets = 'common' | 'low' | 'all' | 'custom'
 const SETS: Sets[] = ['common', 'low', 'all', 'custom']
@@ -18,7 +19,7 @@ export default function Scan({ initial }: { initial?: string }) {
   const t = useT()
   const k = t.tools.scan
   const { snap } = useLive()
-  const router = snap?.adapters.find((a) => a.id === snap.defaultId)?.gateway ?? ''
+  const router = internetOf(snap)?.gateway ?? ''
   const [typed, setTyped] = useState(initial ?? null)
   const host = (typed ?? router).trim()
   const [set, setSet] = useState<Sets>('common')

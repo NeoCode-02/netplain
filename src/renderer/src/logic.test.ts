@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Adapter, PacketRow, Snapshot, WifiNet } from '../../shared/types'
 import { addressKind, authKey, bandKey, behavioural, COMMON_PORTS, daySummary, describePacket, layerKey, parsePorts, PRESETS, quality, randomMac, RISKY, service, summary, threatParts, what } from './explain'
-import { bits, bytes } from './format'
+import { bits, bytes } from '../../shared/format'
 import { errText, LANGS } from './i18n'
 import { advance, KEEP } from './live'
 import { niceMax } from './RateChart'

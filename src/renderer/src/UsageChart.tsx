@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { UsagePoint, UsageRange } from '../../shared/types'
-import { bytes } from './format'
+import { bytes } from '../../shared/format'
 import { getLang, useT } from './i18n'
 import { niceMax } from './RateChart'
 

@@ -2,12 +2,13 @@ import { execFile, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import type { CaptureState, Packet, PacketBatch, PacketDetail, Proc, Snapshot, Traffic } from '../shared/types'
+import type { CaptureState, GeoLookup, Packet, PacketBatch, PacketDetail, Proc, Snapshot, Traffic } from '../shared/types'
 import { createCapture, filterError, parseDetail } from './capture'
 import type { Collector } from './collectors/common'
 import { run } from './exec'
 import { createTraffic, summarize, type Prev } from './flows'
 import { findTshark } from './tshark'
+import { addr } from '../shared/format'
 
 interface Deps {
   collector: Collector
@@ -16,7 +17,7 @@ interface Deps {
   freshProcesses: () => Promise<Proc[]>
   /** IP → name from the OS DNS cache, for flows that started before the capture saw their lookup. */
   hosts: () => Promise<Map<string, string>>
-  geo: (ip: string) => { country: string | null; org: string | null }
+  geo: GeoLookup
   publish: (t: Traffic) => void
   /** Folder for capture files; emptied when the app starts. */
   dir: string
@@ -126,7 +127,7 @@ export function createTrafficWatch(deps: Deps, enabled: boolean) {
 
   /** Called with every adapter snapshot: (re)starts the capture when the internet adapter changes. */
   function follow(snap: Snapshot) {
-    traffic.setLocal(snap.adapters.flatMap((a) => [...a.ipv4, ...a.ipv6].map((c) => c.split('/')[0])))
+    traffic.setLocal(snap.adapters.flatMap((a) => [...a.ipv4, ...a.ipv6].map(addr)))
     const want = enabled && capture ? snap.defaultId : null
     if (want === adapterId) return
     adapterId = want

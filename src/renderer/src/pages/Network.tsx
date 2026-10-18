@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import type { Adapter } from '../../../shared/types'
 import { addressKind, authKey, bandKey, quality, role, what } from '../explain'
-import { addr, bits } from '../format'
+import { addr, bits } from '../../../shared/format'
 import { useT } from '../i18n'
 import { useLive, type Point } from '../live'
 import RateChart from '../RateChart'
 import { Fact, Icon, KIND_ICON, Page } from '../ui'
+import { internetOf } from '../../../shared/model'
 
 function Facts({ a }: { a: Adapter }) {
   const t = useT()
@@ -131,7 +132,7 @@ export default function Network() {
   const t = useT()
   const { snap, hist } = useLive()
   if (!snap) return <Page title={t.network.title} note={t.network.loading} />
-  const internet = snap.adapters.find((a) => a.id === snap.defaultId)
+  const internet = internetOf(snap)
   const rest = snap.adapters.filter((a) => a !== internet)
   const on = rest.filter((a) => a.up)
   const off = rest.filter((a) => !a.up)

@@ -13,7 +13,7 @@ import Whois from './tools/Whois'
 import Wifi from './tools/Wifi'
 
 const TABS = ['diagnose', 'speed', 'wifi', 'scan', 'dns', 'whois', 'web', 'subnet', 'hosts'] as const
-export type ToolTab = (typeof TABS)[number]
+type ToolTab = (typeof TABS)[number]
 
 let pending: { tab: ToolTab; value: string } | null = null
 /** Opens a tool from another page, already filled in (a device's address, a connection's IP). */

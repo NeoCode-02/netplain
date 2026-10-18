@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
-import { bits } from './format'
+import { bits } from '../../shared/format'
 import { useT } from './i18n'
 import { KEEP, type Point } from './live'
 

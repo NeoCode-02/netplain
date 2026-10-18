@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CapState, Settings, Usage, UsageRange, UsageRow } from '../../../shared/types'
 import CapMeter from '../CapMeter'
-import { bytes } from '../format'
+import { bytes } from '../../../shared/format'
 import { useT } from '../i18n'
 import { AppIcon, Page, Tabs } from '../ui'
 import UsageChart from '../UsageChart'

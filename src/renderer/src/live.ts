@@ -86,6 +86,10 @@ export function useLive(): State {
 }
 
 /** Title and explanation of an alert in the current language. */
+/** The platform the app runs on, as Node names it; the window can tell from its user agent. */
+export const PLATFORM: 'win32' | 'darwin' | 'linux' = /Windows/.test(navigator.userAgent) ? 'win32' : /Mac/.test(navigator.userAgent) ? 'darwin' : 'linux'
+export const WINDOWS = PLATFORM === 'win32'
+
 export function alertText(a: Alert): [string, string] {
   const t = LANGS[getLang()]
   return t.alerts.say[a.kind](a.app === '?' ? t.alerts.unknownApp : a.app, a.detail)

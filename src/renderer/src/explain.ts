@@ -1,6 +1,6 @@
 import type { Adapter, Neighbor, Outage, PacketRow, QualityPoint } from '../../shared/types'
 import type { Dict } from './i18n'
-import { addr } from './format'
+import { addr } from '../../shared/format'
 
 export type What = keyof Dict['what']
 
@@ -29,7 +29,7 @@ export function what(a: Adapter): What {
   return a.kind === 'loopback' ? 'other' : a.kind
 }
 
-export type Role = keyof Dict['network']['role']
+type Role = keyof Dict['network']['role']
 export const role = (a: Adapter, internetId: string | null): Role => (a.id === internetId ? 'internet' : a.up ? 'local' : 'down')
 
 export function quality(signal: number): keyof Dict['network']['quality'] {
@@ -138,7 +138,7 @@ const PORTS: Record<string, string> = {
 export const service = (proto: string, port: number | null) => (port === null ? null : (PORTS[`${proto}:${port}`] ?? null))
 
 /** Services that send their content as readable text. */
-export const PLAIN = new Set(['http', 'httpAlt', 'dns', 'ftp', 'telnet', 'mailPlain'])
+const PLAIN = new Set(['http', 'httpAlt', 'dns', 'ftp', 'telnet', 'mailPlain'])
 
 /** Services that should not be reachable from the internet: remote control, file sharing, databases, unencrypted logins. */
 export const RISKY = new Set(['telnet', 'ftp', 'smb', 'rpc', 'rdp', 'vnc', 'adb', 'docker', 'winrm', 'db', 'routerAdmin', 'mqtt', 'camera'])

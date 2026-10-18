@@ -1,5 +1,5 @@
 import type { PcapReport } from '../../../shared/types'
-import { bytes } from '../format'
+import { bytes } from '../../../shared/format'
 import { getLang, type Dict } from '../i18n'
 import { Fact } from '../ui'
 import { where } from '../explain'

@@ -26,7 +26,7 @@ export interface Result {
 /** Stored with what the next check needs: failures in a row, when they began, the last certificate warning. */
 export type Stored = MonitorState & { fails: number; failAt: number | null; certWarned: number | null }
 
-export type MonitorEvent = ['monitorDown' | 'monitorUp' | 'certExpiry', string]
+type MonitorEvent = ['monitorDown' | 'monitorUp' | 'certExpiry', string]
 
 /** "host:port" (an IPv6 host in brackets) → its parts, or null. */
 export function hostPort(s: string): { host: string; port: number } | null {

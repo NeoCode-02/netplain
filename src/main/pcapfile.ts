@@ -1,9 +1,8 @@
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 import readline from 'node:readline'
-import type { PcapReport } from '../shared/types'
+import type { GeoLookup, PcapReport } from '../shared/types'
 
-type Geo = (ip: string) => { country: string | null; org: string | null }
 
 export const FIELDS = [
   'frame.time_epoch',
@@ -66,7 +65,7 @@ export function createSummary() {
       }
     },
 
-    report(file: string, credentials: PcapReport['credentials'], geo: Geo): PcapReport {
+    report(file: string, credentials: PcapReport['credentials'], geo: GeoLookup): PcapReport {
       return {
         file,
         packets,
@@ -119,7 +118,7 @@ function tshark(file: string, args: string[], line: (l: string) => void): Promis
 }
 
 /** Reads a capture file once for the summary and once for credentials. Throws E_PCAP|reason. */
-export async function analyzePcap(exe: string, file: string, geo: Geo): Promise<PcapReport> {
+export async function analyzePcap(exe: string, file: string, geo: GeoLookup): Promise<PcapReport> {
   const sum = createSummary()
   let creds = ''
   // ponytail: two full reads; a multi-GB file takes minutes. One pass with -z alongside -T fields if that matters.

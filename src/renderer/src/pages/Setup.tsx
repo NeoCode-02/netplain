@@ -3,7 +3,7 @@ import type { Settings } from '../../../shared/types'
 import type { Page } from '../App'
 import { useGeo } from '../geo'
 import { getLang, LANGS, setLang, useT, type Lang } from '../i18n'
-import { useLive } from '../live'
+import { useLive, WINDOWS } from '../live'
 import { Icon } from '../ui'
 
 const KEY = 'netplain.setupHidden'
@@ -45,12 +45,10 @@ export default function Setup({ go }: { go: (p: Page) => void }) {
   const geo = useGeo()
   const { traffic } = useLive()
   const [prefs, setPrefs] = useState<Settings | null>(null)
-  const [platform, setPlatform] = useState('')
   const [hidden, setHidden] = useState(wasHidden)
 
   useEffect(() => {
     void window.netplain.getSettings().then(setPrefs)
-    void window.netplain.appInfo().then((i) => setPlatform(i.platform))
   }, [])
 
   const geoDone = !!geo.info?.ready
@@ -108,7 +106,7 @@ export default function Setup({ go }: { go: (p: Page) => void }) {
             </button>
           )}
         </Row>
-        <Row n={4} done={autostart} title={platform === 'win32' ? s.autostartWin : s.autostart} why={s.autostartWhy}>
+        <Row n={4} done={autostart} title={WINDOWS ? s.autostartWin : s.autostart} why={s.autostartWhy}>
           {autostart ? (
             done
           ) : (

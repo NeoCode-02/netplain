@@ -1,5 +1,5 @@
 import type { AlertKind, OutageCause, RecordType, SecHeader, SpeedPhase, WifiSecurity } from '../../../shared/types'
-import { bytes } from '../format'
+import { bytes } from '../../../shared/format'
 
 export const en = {
   lang: 'English',

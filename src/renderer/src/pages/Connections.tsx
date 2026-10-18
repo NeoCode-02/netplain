@@ -1,20 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Conn, Connections as Data } from '../../../shared/types'
-import { addressKind, company, countryName, listJoin, service } from '../explain'
+import { addressKind, company, countryName, listJoin, service, where } from '../explain'
 import { useGeo } from '../geo'
 import { getLang, useT, type Dict } from '../i18n'
+import { WINDOWS } from '../live'
 import { AppIcon, ErrNote, Icon, Page, TwoStep } from '../ui'
 import { openTool } from './Tools'
 import { BlockApp, blockable, ours } from './security/block'
 
 type Filter = 'internet' | 'local' | 'all'
 
-const WINDOWS = /Windows/.test(navigator.userAgent)
-
 /** Grouping key: the same in every language. */
 const label = (c: Conn) => c.title ?? c.app
 const shown = (c: Conn, t: Dict) => c.title ?? t.procs[c.app] ?? c.app
-const where = (c: Conn, lang: string) => [c.org && company(c.org), c.country && countryName(c.country, lang)].filter(Boolean).join(' · ')
 
 function Service({ t, c, port }: { t: Dict; c: Conn; port: number | null }) {
   const key = service(c.proto, port)
@@ -245,7 +243,7 @@ export default function Connections() {
       </section>
 
       <p className="small faint foot-note">
-        {/Windows/.test(navigator.userAgent) ? c.limits : `${c.limitsUnix} ${c.limits}`}
+        {WINDOWS ? c.limits : `${c.limitsUnix} ${c.limits}`}
         {geo.info?.ready && (
           <>
             {' '}

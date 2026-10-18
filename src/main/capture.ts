@@ -54,7 +54,7 @@ export function parseLine(line: string): Packet | null {
 }
 
 /** tshark's interface name for an adapter id: Windows uses the NPF device path, others the interface name. */
-export const ifaceFor = (adapterId: string) => (process.platform === 'win32' ? `\\Device\\NPF_${adapterId}` : adapterId)
+const ifaceFor = (adapterId: string) => (process.platform === 'win32' ? `\\Device\\NPF_${adapterId}` : adapterId)
 
 export function classify(stderr: string): CaptureState {
   return /permission|denied|not permitted|access/i.test(stderr) ? 'denied' : 'error'

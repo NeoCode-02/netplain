@@ -39,6 +39,8 @@ import { findCloudflared, installCloudflared } from './cloudflared'
 import { createShare } from './share'
 import { localSites } from './sites'
 import type { ShareOptions } from '../shared/types'
+import { addr } from '../shared/format'
+import { internetOf } from '../shared/model'
 
 const settingsFile = path.join(app.getPath('userData'), 'settings.json')
 let settings = loadSettings(settingsFile)
@@ -113,7 +115,7 @@ const security =
   process.platform === 'win32'
     ? createSecurity({
         online: async () => (await currentConnections()).conns.filter((c) => c.scope === 'internet').map((c) => ({ app: c.title ?? c.app, path: c.path })),
-        dns: () => latest?.adapters.find((a) => a.id === latest?.defaultId)?.dns ?? [],
+        dns: () => internetOf(latest)?.dns ?? [],
         geo: geo.lookup
       })
     : null
@@ -149,11 +151,11 @@ setTimeout(() => security?.get().catch(console.error), 15_000)
 const stopWatch = collector.watch(
       async (adapters) => {
         const ip = await internetIp()
-        const internet = ip ? adapters.find((a) => a.ipv4.some((c) => c.split('/')[0] === ip)) : undefined
+        const internet = ip ? adapters.find((a) => a.ipv4.some((c) => addr(c) === ip)) : undefined
         const prev = latest
         latest = { at: Date.now(), adapters: adapters.filter((a) => a.kind !== 'loopback'), defaultId: internet?.id ?? null }
         // The tray tooltip: speed of the adapter the internet goes through.
-        const now = latest.adapters.find((a) => a.id === latest?.defaultId)
+        const now = internetOf(latest)
         const was = prev?.adapters.find((a) => a.id === now?.id)
         const dt = prev ? (latest.at - prev.at) / 1000 : 0
         if (now && was && dt > 0) tray?.rate((Math.max(0, now.rx - was.rx) * 8) / dt, (Math.max(0, now.tx - was.tx) * 8) / dt)
@@ -175,7 +177,7 @@ async function devices() {
 
 /** The home network's devices, router, DNS and the system proxy against what they were; `list` comes from the user's scan. */
 async function watchLan(list?: Neighbor[]) {
-  const a = latest?.adapters.find((x) => x.id === latest?.defaultId)
+  const a = internetOf(latest)
   if (a) lan.check(a, list ?? (await devices()), !!list)
   lan.proxy(await session.defaultSession.resolveProxy('https://example.com/'))
 }

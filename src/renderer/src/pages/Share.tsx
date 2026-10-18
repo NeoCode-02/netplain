@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { LocalSite, ShareProvider, ShareRequest, ShareRequestDetail, ShareState } from '../../../shared/types'
 import { countryName } from '../explain'
-import { bytes } from '../format'
+import { bytes } from '../../../shared/format'
 import { useAction } from '../hooks'
 import { getLang, useT, type Dict } from '../i18n'
 import { ErrNote, Icon, Page } from '../ui'

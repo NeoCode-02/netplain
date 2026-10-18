@@ -3,13 +3,14 @@ import type { CapState, Connections } from '../../../shared/types'
 import { capText } from '../CapMeter'
 import type { Page as PageId } from '../App'
 import { company, quality, summary } from '../explain'
-import { bytes } from '../format'
+import { bytes } from '../../../shared/format'
 import { useT } from '../i18n'
 import { useLive } from '../live'
 import RateChart from '../RateChart'
 import { AppIcon, Icon, Page } from '../ui'
 import Setup from './Setup'
 import { NowTiles, uptimeStory, useUptime } from './Uptime'
+import { internetOf } from '../../../shared/model'
 
 export default function Overview({ go }: { go: (p: PageId) => void }) {
   const t = useT()
@@ -33,7 +34,7 @@ export default function Overview({ go }: { go: (p: PageId) => void }) {
     return () => clearInterval(timer)
   }, [])
 
-  const internet = snap?.adapters.find((a) => a.id === snap.defaultId)
+  const internet = internetOf(snap)
   const points = internet ? (hist.get(internet.id) ?? []) : []
   const watching = traffic?.state === 'on'
   const apps = (traffic?.apps ?? []).filter((a) => a.key !== '?')

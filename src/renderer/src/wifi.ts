@@ -2,7 +2,7 @@ import type { WifiNet } from '../../shared/types'
 
 type Band = '2.4' | '5'
 /** Channels worth moving to: the three that never overlap on 2.4 GHz, and the 5 GHz ones without radar rules. */
-export const CANDIDATES: Record<Band, number[]> = { '2.4': [1, 6, 11], '5': [36, 40, 44, 48, 149, 153, 157, 161] }
+const CANDIDATES: Record<Band, number[]> = { '2.4': [1, 6, 11], '5': [36, 40, 44, 48, 149, 153, 157, 161] }
 
 /**
  * How crowded a channel is: every network counts by its signal (0–1). On 2.4 GHz neighbours up to
