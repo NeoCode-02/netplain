@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { Adapter, AdapterKind, NetworkUse, Snapshot, Traffic, Usage, UsageRange, UsageRow } from '../shared/types'
+import { readJson, writeJson } from './store'
 
 type Pair = [rx: number, tx: number]
 
@@ -37,13 +38,7 @@ const INTERNET: AdapterKind[] = ['wifi', 'ethernet', 'cellular', 'bluetooth']
 
 export function createUsage(dir: string, keepDays = 90) {
   const file = (date: string) => path.join(dir, `${date}.json`)
-  const read = (date: string): Day | null => {
-    try {
-      return JSON.parse(fs.readFileSync(file(date), 'utf8')) as Day
-    } catch {
-      return null
-    }
-  }
+  const read = (date: string) => readJson<Day | null>(file(date), null)
 
   let day = read(dayKey(Date.now())) ?? empty(dayKey(Date.now()))
   let dirty = false
@@ -53,10 +48,7 @@ export function createUsage(dir: string, keepDays = 90) {
 
   function save() {
     if (!dirty) return
-    fs.mkdirSync(dir, { recursive: true })
-    const f = file(day.date)
-    fs.writeFileSync(`${f}.tmp`, JSON.stringify(day))
-    fs.renameSync(`${f}.tmp`, f)
+    writeJson(file(day.date), day)
     dirty = false
   }
 

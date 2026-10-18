@@ -85,18 +85,33 @@ export async function lookup(name: string, geo: Geo): Promise<LookupResult> {
   return { name, addresses: found.map((a) => ({ ip: a.address, ...geo(a.address) })), names: [], ms: Date.now() - t0 }
 }
 
-/** TCP connect: refused = closed (something answered), no answer in time = filtered (a firewall drops it). */
-export function checkPort(host: string, port: number, timeout = 3000): Promise<PortState> {
+/**
+ * One TCP handshake: ms until it was accepted or failed, and why it failed (the error code, or E_TIMEOUT
+ * when nothing answered in time). An accepted connection is closed with a reset: 4 packets instead of 7.
+ */
+export function connect(host: string, port: number, timeout: number): Promise<{ ms: number; code: string | null }> {
   return new Promise((resolve) => {
+    const t0 = performance.now()
     const s = net.connect({ host, port })
-    const done = (state: PortState) => {
-      s.destroy()
-      resolve(state)
+    let timer: NodeJS.Timeout | undefined
+    const done = (code: string | null) => {
+      if (!timer) return
+      clearTimeout(timer)
+      timer = undefined
+      if (code === null) s.resetAndDestroy()
+      else s.destroy()
+      resolve({ ms: Math.max(1, Math.round(performance.now() - t0)), code })
     }
-    s.setTimeout(timeout, () => done('filtered'))
-    s.once('connect', () => done('open'))
-    s.once('error', (e: NodeJS.ErrnoException) => done(e.code === 'ECONNREFUSED' ? 'closed' : 'filtered'))
+    timer = setTimeout(() => done('E_TIMEOUT'), timeout)
+    s.once('connect', () => done(null))
+    s.once('error', (e: NodeJS.ErrnoException) => done(e.code ?? 'E_NETWORK'))
   })
+}
+
+/** Refused = closed (something answered), no answer in time = filtered (a firewall drops it). */
+export async function checkPort(host: string, port: number, timeout = 3000): Promise<PortState> {
+  const { code } = await connect(host, port, timeout)
+  return code === null ? 'open' : code === 'ECONNREFUSED' ? 'closed' : 'filtered'
 }
 
 /** What an open port said: the HTTP `Server` header or status line, "TLS", or its first line of text. */

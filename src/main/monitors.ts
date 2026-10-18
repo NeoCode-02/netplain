@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import fs from 'node:fs'
 import http from 'node:http'
 import https from 'node:https'
 import net from 'node:net'
 import path from 'node:path'
 import type { TLSSocket } from 'node:tls'
 import type { MonitorKind, MonitorState } from '../shared/types'
-import { isHost } from './tools'
+import { connect, isHost } from './tools'
 import { pingOnce } from './uptime'
+import { readJson, writeJson } from './store'
 
 const MAX = 50
 const DAY = 86_400_000
@@ -78,19 +78,9 @@ export function httpCheck(url: string, timeout = 10_000): Promise<Result> {
 }
 
 /** A TCP handshake, with why it failed (refused, no such name, no answer). */
-export function tcpCheck(host: string, port: number, timeout = 5000): Promise<Result> {
-  return new Promise((resolve) => {
-    const t0 = performance.now()
-    const s = net.connect({ host, port })
-    const done = (ms: number | null, error: string | null) => {
-      clearTimeout(timer)
-      s.destroy()
-      resolve({ ms, status: null, certDays: null, error })
-    }
-    const timer = setTimeout(() => done(null, 'E_TIMEOUT'), timeout)
-    s.once('connect', () => done(Math.max(1, Math.round(performance.now() - t0)), null))
-    s.once('error', (e: NodeJS.ErrnoException) => done(null, e.code ?? 'E_NETWORK'))
-  })
+export async function tcpCheck(host: string, port: number, timeout = 5000): Promise<Result> {
+  const { ms, code } = await connect(host, port, timeout)
+  return { ms: code === null ? ms : null, status: null, certDays: null, error: code }
 }
 
 async function run(kind: MonitorKind, target: string): Promise<Result> {
@@ -139,20 +129,13 @@ export function apply(m: Stored, r: Result, now: number): MonitorEvent[] {
 /** The user's sites and servers, each checked every 1 or 5 minutes. */
 export function createMonitors(dir: string, tell: (e: MonitorEvent, target: string) => void) {
   const file = path.join(dir, 'monitors.json')
-  let list: Stored[] = []
-  try {
-    list = JSON.parse(fs.readFileSync(file, 'utf8')) as Stored[]
-  } catch {
-    // none yet
-  }
+  let list = readJson<Stored[]>(file, [])
   let dirty = false
   const running = new Set<string>()
 
   const save = () => {
     if (!dirty) return
-    fs.mkdirSync(dir, { recursive: true })
-    fs.writeFileSync(`${file}.tmp`, JSON.stringify(list))
-    fs.renameSync(`${file}.tmp`, file)
+    writeJson(file, list)
     dirty = false
   }
 

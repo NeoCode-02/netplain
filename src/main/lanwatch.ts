@@ -1,8 +1,7 @@
-import fs from 'node:fs'
 import net from 'node:net'
-import path from 'node:path'
 import type { Adapter, Neighbor } from '../shared/types'
 import { networkOf } from './usage'
+import { readJson, writeJson } from './store'
 
 export type LanKind = 'newDevice' | 'arpSpoof' | 'netChange'
 
@@ -26,17 +25,8 @@ interface Net {
 export const LEARN = 24 * 3_600_000
 
 export function createLanWatch(file: string, tell: (kind: LanKind, app: string, detail: string) => void) {
-  let st: { nets: Record<string, Net>; proxy: string | null } = { nets: {}, proxy: null }
-  try {
-    st = JSON.parse(fs.readFileSync(file, 'utf8'))
-  } catch {
-    // first run
-  }
-  const save = () => {
-    fs.mkdirSync(path.dirname(file), { recursive: true })
-    fs.writeFileSync(`${file}.tmp`, JSON.stringify(st))
-    fs.renameSync(`${file}.tmp`, file)
-  }
+  const st = readJson<{ nets: Record<string, Net>; proxy: string | null }>(file, { nets: {}, proxy: null })
+  const save = () => writeJson(file, st)
 
   return {
     /** The internet adapter's neighbours; `scan` when they come from the user's scan. */

@@ -1,10 +1,11 @@
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import dns from 'node:dns/promises'
-import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import type { Outage, OutageCause, QualityPoint, Snapshot, Uptime } from '../shared/types'
+import { readJson, writeJson } from './store'
+import { connect } from './tools'
 
 /** Every 15 s while all is well (one TCP handshake, ~200 bytes: under 40 MB a month); every 5 s once a check fails. */
 const SLOW = 15_000
@@ -58,25 +59,10 @@ export function pingOnce(host: string): Promise<number | null> {
   )
 }
 
-/** ms until a TCP connection is accepted (or refused, when `refused` counts as an answer); null on no answer. */
-export function knock(host: string, port: number, timeout: number, refused = false): Promise<number | null> {
-  return new Promise((resolve) => {
-    const t0 = performance.now()
-    const s = net.connect({ host, port })
-    const done = (v: number | null) => {
-      clearTimeout(timer)
-      s.destroy()
-      resolve(v === null ? null : Math.max(1, Math.round(v)))
-    }
-    const timer = setTimeout(() => done(null), timeout)
-    // Closed with a reset: 4 packets in all, instead of 7 with a polite goodbye.
-    s.once('connect', () => {
-      const ms = performance.now() - t0
-      s.resetAndDestroy()
-      done(ms)
-    })
-    s.once('error', (e: NodeJS.ErrnoException) => done(refused && e.code === 'ECONNREFUSED' ? performance.now() - t0 : null))
-  })
+/** ms until a TCP connection is accepted; null when it is not. */
+export async function knock(host: string, port: number, timeout: number): Promise<number | null> {
+  const { ms, code } = await connect(host, port, timeout)
+  return code === null ? ms : null
 }
 
 /**
@@ -86,15 +72,8 @@ export function knock(host: string, port: number, timeout: number, refused = fal
 export function createLog(dir: string, onEnd: (o: Outage) => void) {
   const outFile = path.join(dir, 'outages.json')
   const ptsFile = path.join(dir, 'quality.json')
-  const read = <T>(f: string, empty: T): T => {
-    try {
-      return JSON.parse(fs.readFileSync(f, 'utf8')) as T
-    } catch {
-      return empty
-    }
-  }
-  let outages = read<Outage[]>(outFile, [])
-  let points = read<QualityPoint[]>(ptsFile, [])
+  let outages = readJson<Outage[]>(outFile, [])
+  let points = readJson<QualityPoint[]>(ptsFile, [])
   // An outage still open in the file was cut short by a crash; it ended when the app stopped.
   for (const o of outages) if (o.end === null) o.end = points.at(-1)?.at ?? o.start
   let open: Outage | null = null
@@ -103,11 +82,8 @@ export function createLog(dir: string, onEnd: (o: Outage) => void) {
   let minute = { at: 0, n: 0, fails: 0, inet: [0, 0], router: [0, 0] }
 
   const save = () => {
-    fs.mkdirSync(dir, { recursive: true })
-    for (const [f, v] of [[outFile, outages], [ptsFile, points]] as const) {
-      fs.writeFileSync(`${f}.tmp`, JSON.stringify(v))
-      fs.renameSync(`${f}.tmp`, f)
-    }
+    writeJson(outFile, outages)
+    writeJson(ptsFile, points)
   }
   const flush = () => {
     if (!minute.n) return

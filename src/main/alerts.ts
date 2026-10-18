@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { Alert, AlertKind, BlocklistInfo, Connections, Outage } from '../shared/types'
 import { createBlocklist } from './blocklist'
+import { readJson, writeJson } from './store'
 import type { LanKind } from './lanwatch'
 import type { MonitorEvent } from './monitors'
 import { dayKey } from './usage'
@@ -14,20 +15,6 @@ const BENIGN_HTTP = /ocsp|crl|pki|ctldl\.windowsupdate|windowsupdate\.com|msftco
 
 type Rules = Record<AlertKind, boolean>
 
-function readJson<T>(file: string): T | null {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8')) as T
-  } catch {
-    return null
-  }
-}
-
-function writeJson(file: string, v: unknown) {
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(`${file}.tmp`, JSON.stringify(v))
-  fs.renameSync(`${file}.tmp`, file)
-}
-
 /**
  * Security signals. The first check only records what is already there (the baseline), so a new
  * install does not start with a pile of alerts about programs that were always there.
@@ -36,8 +23,8 @@ export function createAlerts(dir: string, emit: (a: Alert) => void) {
   const file = path.join(dir, 'alerts.json')
   const seenFile = path.join(dir, 'seen.json')
   const fireholFile = path.join(dir, 'firehol_level1.netset')
-  let list = readJson<Alert[]>(file) ?? []
-  const seen = readJson<{ baseline: boolean; apps: string[]; ports: string[] }>(seenFile) ?? { baseline: false, apps: [], ports: [] }
+  let list = readJson<Alert[]>(file, [])
+  const seen = readJson<{ baseline: boolean; apps: string[]; ports: string[] }>(seenFile, { baseline: false, apps: [], ports: [] })
   const apps = new Set(seen.apps)
   const ports = new Set(seen.ports)
   /** Plain-text and blocklist alerts are raised once per app and target per day. */

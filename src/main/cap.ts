@@ -1,6 +1,6 @@
-import fs from 'node:fs'
 import path from 'node:path'
 import type { CapState, DataCap } from '../shared/types'
+import { readJson, writeJson } from './store'
 
 /** Warnings at these shares of the limit, each once per period. */
 const STEPS = [80, 100]
@@ -26,12 +26,7 @@ interface Deps {
 
 export function createCap(dir: string, d: Deps) {
   const file = path.join(dir, 'cap.json')
-  let told: { key: string; steps: number[] } = { key: '', steps: [] }
-  try {
-    told = JSON.parse(fs.readFileSync(file, 'utf8'))
-  } catch {
-    // nothing told yet
-  }
+  let told = readJson<{ key: string; steps: number[] }>(file, { key: '', steps: [] })
 
   function state(now = Date.now()): CapState | null {
     const c = d.cap()
@@ -51,8 +46,7 @@ export function createCap(dir: string, d: Deps) {
       const steps = crossed((s.used / s.limit) * 100, told.steps)
       if (!steps.length) return
       told.steps.push(...steps)
-      fs.mkdirSync(dir, { recursive: true })
-      fs.writeFileSync(file, JSON.stringify(told))
+      writeJson(file, told)
       d.tell(Math.max(...steps), s.name, s.used, s.limit)
     }
   }

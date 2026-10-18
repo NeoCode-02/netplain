@@ -1,9 +1,9 @@
 import dns from 'node:dns/promises'
-import fs from 'node:fs'
 import https from 'node:https'
 import path from 'node:path'
 import type { SpeedPhase, SpeedResult } from '../shared/types'
 import { knock } from './uptime'
+import { readJson, writeJson } from './store'
 
 const HOST = 'speed.cloudflare.com'
 const STREAMS = 4
@@ -62,12 +62,8 @@ export function createSpeed(dir: string) {
   let busy = false
 
   const history = (): SpeedResult[] => {
-    try {
-      const list = JSON.parse(fs.readFileSync(file, 'utf8'))
-      return Array.isArray(list) ? list : []
-    } catch {
-      return []
-    }
+    const list = readJson<unknown>(file, [])
+    return Array.isArray(list) ? list : []
   }
 
   const loaded = async (ip: string, direction: 'down' | 'up', r: SpeedResult) => {
@@ -126,8 +122,7 @@ export function createSpeed(dir: string) {
         if (p === 'down') [run.down, run.loadedDown] = [r.rate, r.latency]
         else {
           ;[run.up, run.loadedUp] = [r.rate, r.latency]
-          fs.mkdirSync(dir, { recursive: true })
-          fs.writeFileSync(file, JSON.stringify([...history(), run].slice(-KEEP)))
+          writeJson(file, [...history(), run].slice(-KEEP))
         }
         return { ...run }
       } finally {

@@ -1,6 +1,5 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import type { AlertKind, Settings } from '../shared/types'
+import { readJson, writeJson } from './store'
 
 const THEMES: readonly Settings['theme'][] = ['system', 'light', 'dark']
 const defaults = (): Settings => ({
@@ -50,16 +49,7 @@ export function normalize(s: unknown): Settings {
   return out
 }
 
-export function loadSettings(file: string): Settings {
-  try {
-    return normalize(JSON.parse(fs.readFileSync(file, 'utf8')))
-  } catch {
-    return defaults()
-  }
-}
+export const loadSettings = (file: string): Settings => normalize(readJson(file, null))
 
-export function saveSettings(file: string, s: Settings) {
-  fs.mkdirSync(path.dirname(file), { recursive: true })
-  fs.writeFileSync(`${file}.tmp`, JSON.stringify(s, null, 2))
-  fs.renameSync(`${file}.tmp`, file)
-}
+/** Indented: people read and edit this file. */
+export const saveSettings = (file: string, s: Settings) => writeJson(file, s, 2)
