@@ -6,7 +6,7 @@ import { useAction } from '../hooks'
 import { getLang, useT, type Dict } from '../i18n'
 import { useLive } from '../live'
 import { AppIcon, Empty, ErrNote, Icon, Page } from '../ui'
-import { BlockApp, blockable } from './TwoStep'
+import { BlockApp, blockable } from './security/block'
 
 const OS = /Windows/.test(navigator.userAgent) ? 'Win' : /Mac/.test(navigator.userAgent) ? 'Mac' : 'Linux'
 
@@ -69,7 +69,7 @@ function AppRow({ a, max, t }: { a: AppTraffic; max: number; t: Dict }) {
 }
 
 /** What to show instead of the list while traffic can't be watched. */
-export function Blocked({ tr, t }: { tr: Traffic; t: Dict }) {
+export function NoCapture({ tr, t }: { tr: Traffic; t: Dict }) {
   const a = t.apps
   const { busy, err, run } = useAction()
   const [allowed, setAllowed] = useState(false)
@@ -144,7 +144,7 @@ export default function Apps() {
       }
     >
       {tr?.state === 'error' && <p className="note danger">{a.error}</p>}
-      {tr && !watching && <Blocked tr={tr} t={t} />}
+      {tr && !watching && <NoCapture tr={tr} t={t} />}
       {watching && tr.apps.length > 0 && (
         <div className="list">
           {tr.apps.map((x) => (

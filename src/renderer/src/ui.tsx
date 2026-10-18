@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { AdapterKind } from '../../shared/types'
+import { useAction } from './hooks'
 import { errText, useT } from './i18n'
 
 const PATHS = {
@@ -145,4 +146,37 @@ export function AppIcon({ path }: { path: string | null }) {
 export function ErrNote({ e }: { e: unknown }) {
   const t = useT()
   return e === null || e === undefined ? null : <p className="note danger">{errText(t, e)}</p>
+}
+
+/** An action in two clicks: the first asks, the second does it (through the admin prompt when needed). */
+export function TwoStep({ label, title, sure, done, run }: { label: string; title: string; sure: string; done: string; run(): Promise<unknown> }) {
+  const t = useT()
+  const [armed, setArmed] = useState(false)
+  const [ok, setOk] = useState(false)
+  const act = useAction()
+  // An unanswered question goes away by itself.
+  useEffect(() => {
+    if (!armed) return
+    const timer = setTimeout(() => setArmed(false), 4000)
+    return () => clearTimeout(timer)
+  }, [armed])
+  if (ok) return <span className="tag ok">{done}</span>
+  const click = () => {
+    if (!armed) return setArmed(true)
+    setArmed(false)
+    void act.run('go', async () => {
+      await run()
+      setOk(true)
+    })
+  }
+  const asking = armed || act.busy !== null
+  return (
+    <span className="row block-button">
+      <button className={`btn sm ${asking ? 'danger' : 'quiet'}`} title={title} disabled={act.busy !== null} onClick={click}>
+        {act.busy && <Icon name="refresh" className="spin" />}
+        {asking ? sure : label}
+      </button>
+      {act.err !== null && <small className="danger-text">{errText(t, act.err)}</small>}
+    </span>
+  )
 }

@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import type { SecService, SecStartup, SecThreat, Security, Signer } from '../shared/types'
 import { list } from './exec'
-import { exeOf, findings } from './findings'
+import { exeOf, findings, isMicrosoft, suspicious } from './findings'
 
 /**
  * Everything the security page reads, in one PowerShell run (~4 s, no admin rights needed).
@@ -146,7 +146,7 @@ export function createSecurity(deps: Deps) {
     const admins = new Set(list(raw.admins).map((a) => a.sid))
     const latest = new Map<string, { at: string; status: number; resources: string[] }>()
     for (const d of list(raw.detections)) if (!latest.has(d.id) || d.at > latest.get(d.id)!.at) latest.set(d.id, { at: d.at, status: d.status, resources: list(d.resources).filter(Boolean) })
-    const services = list(raw.services).map((x) => ({ ...x, exe: exeOf(x.path), signer: null as Signer | null }))
+    const services: SecService[] = list(raw.services).map((x) => ({ ...x, exe: exeOf(x.path), signer: null, microsoft: false }))
     const startup: SecStartup[] = [
       ...list(raw.startup).map((x) => ({
         id: `${x.key === 'StartupFolder' ? 'folder' : 'run'}|${x.hive}|${x.approved}|${x.name}`,
@@ -157,16 +157,19 @@ export function createSecurity(deps: Deps) {
         command: x.command,
         enabled: x.enabled,
         exe: exeOf(x.command),
-        signer: null
+        signer: null,
+        suspicious: false
       })),
       ...list(raw.tasks).map((x) => {
         const command = list(x.exec)[0] ?? ''
-        return { id: `task||${x.path}|`, kind: 'task' as const, hive: '', approved: '', name: x.path, command, enabled: x.state !== 'Disabled', exe: exeOf(command), signer: null }
+        return { id: `task||${x.path}|`, kind: 'task' as const, hive: '', approved: '', name: x.path, command, enabled: x.state !== 'Disabled', exe: exeOf(command), signer: null, suspicious: false }
       })
     ]
     const online = await deps.online().catch(() => [])
     const signers = await sign([...services.map((x) => x.exe), ...startup.map((x) => x.exe), ...online.map((o) => o.path)])
-    for (const x of [...services, ...startup]) x.signer = x.exe ? (signers.get(x.exe) ?? null) : null
+    const signer = (exe: string | null) => (exe ? (signers.get(exe) ?? null) : null)
+    for (const x of services) x.microsoft = isMicrosoft((x.signer = signer(x.exe)))
+    for (const x of startup) x.suspicious = suspicious(x.exe, (x.signer = signer(x.exe)))
     const sec: Omit<Security, 'findings'> = {
       at: Date.now(),
       defender: raw.defender ? { av: raw.defender.av, rt: raw.defender.rt, sigAge: raw.defender.sigAge, quickAge: raw.defender.quickAge, fullAge: raw.defender.fullAge, tamper: raw.defender.tamper } : null,

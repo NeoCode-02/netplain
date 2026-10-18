@@ -626,7 +626,14 @@ export interface SecService {
   path: string
   exe: string | null
   signer: Signer | null
+  /** Signed by Microsoft: part of Windows or its own apps. */
+  microsoft: boolean
 }
+
+/** What the Services tab can do to a service: run it, or how it starts. */
+export type ServiceAction = 'start' | 'stop' | 'auto' | 'manual' | 'disabled'
+/** What the Users tab can do to an account. */
+export type UserAction = 'disable' | 'enable' | 'unadmin'
 
 export interface SecStartup {
   /** Stable id for actions: kind|hive|key|name (or the task path). */
@@ -640,6 +647,8 @@ export interface SecStartup {
   enabled: boolean
   exe: string | null
   signer: Signer | null
+  /** Unsigned and starting from a folder any program can write to. */
+  suspicious: boolean
 }
 
 export interface SecThreat {

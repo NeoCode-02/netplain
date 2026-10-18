@@ -3,9 +3,9 @@ import type { Conn, Connections as Data } from '../../../shared/types'
 import { addressKind, company, countryName, listJoin, service } from '../explain'
 import { useGeo } from '../geo'
 import { getLang, useT, type Dict } from '../i18n'
-import { AppIcon, ErrNote, Icon, Page } from '../ui'
+import { AppIcon, ErrNote, Icon, Page, TwoStep } from '../ui'
 import { openTool } from './Tools'
-import { BlockApp, blockable, ours, TwoStep } from './TwoStep'
+import { BlockApp, blockable, ours } from './security/block'
 
 type Filter = 'internet' | 'local' | 'all'
 
@@ -110,7 +110,7 @@ function AppGroup({ g, t, lang }: { g: Group; t: Dict; lang: string }) {
                 </td>
                 <td>{t.connections.states[c.state] ?? c.state}</td>
                 {WINDOWS && (
-                  <td className="conn-block">{c.remoteIp && addressKind(c.remoteIp) === 'public' && <TwoStep t={t} label={t.connections.blockIp} title={t.connections.blockIpNote} sure={t.connections.sure} done={t.connections.done} run={() => window.netplain.block({ ip: c.remoteIp! })} />}</td>
+                  <td className="conn-block">{c.remoteIp && addressKind(c.remoteIp) === 'public' && <TwoStep label={t.connections.blockIp} title={t.connections.blockIpNote} sure={t.connections.sure} done={t.connections.done} run={() => window.netplain.block({ ip: c.remoteIp! })} />}</td>
                 )}
               </tr>
             ))}
@@ -188,7 +188,7 @@ export default function Connections() {
       <span className={`tag ${x.scope === 'loopback' ? '' : 'warn'}`} title={x.scope === 'loopback' ? undefined : c.exposedNote}>
         {x.scope === 'loopback' ? c.localOnly : c.exposed}
       </span>
-      {x.pid !== null && ours(x.path) && <TwoStep t={t} label={c.stop} title={c.stopNote} sure={c.stopSure} done={c.stopped} run={() => window.netplain.stopProcess(x.pid!)} />}
+      {x.pid !== null && ours(x.path) && <TwoStep label={c.stop} title={c.stopNote} sure={c.stopSure} done={c.stopped} run={() => window.netplain.stopProcess(x.pid!)} />}
     </div>
   )
 

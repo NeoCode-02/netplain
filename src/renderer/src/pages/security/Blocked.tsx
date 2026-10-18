@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import type { Blocked as Rule } from '../../../shared/types'
-import { useAction } from '../hooks'
-import { type Dict } from '../i18n'
-import { AppIcon, Empty, ErrNote, Icon } from '../ui'
+import type { Blocked as Rule } from '../../../../shared/types'
+import { useAction } from '../../hooks'
+import { type Dict } from '../../i18n'
+import { AppIcon, Empty, ErrNote, Icon } from '../../ui'
 
 const file = (p: string) => p.split('\\').pop() ?? p
 

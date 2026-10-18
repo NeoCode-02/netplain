@@ -22,9 +22,9 @@ export const userWritable = (path: string) => /\\(AppData|Temp|Downloads|Users\\
 /** Store apps are signed as a whole package (AppxSignature), so their files carry no signature of their own. */
 export const packaged = (path: string | null) => !!path && /\\(WindowsApps|SystemApps)\\/i.test(path)
 
-const suspicious = (exe: string | null, s: Signer | null) => !!exe && !!s && s.status !== 'valid' && userWritable(exe) && !packaged(exe)
+export const suspicious = (exe: string | null, s: Signer | null) => !!exe && !!s && s.status !== 'valid' && userWritable(exe) && !packaged(exe)
 const unsigned = (s: Signer | null, exe: string | null = null) => !!s && s.status !== 'valid' && !packaged(exe)
-const isMicrosoft = (s: Signer | null) => s?.status === 'valid' && /microsoft/i.test(s.publisher ?? '')
+export const isMicrosoft = (s: Signer | null) => s?.status === 'valid' && /microsoft/i.test(s.publisher ?? '')
 
 /** Resolvers people choose on purpose; the router's own address is private and fine too. */
 const KNOWN_DNS = /^(1\.1\.1\.1|1\.0\.0\.1|8\.8\.8\.8|8\.8\.4\.4|9\.9\.9\.9|149\.112\.112\.112|208\.67\.22[02]\.22[02]|94\.140\.1[45]\.1[45]|2606:4700:4700::1(00)?1|2001:4860:4860::88(88|44))$/

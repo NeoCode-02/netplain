@@ -6,7 +6,7 @@ import { useAction } from '../hooks'
 import { useT, type Dict } from '../i18n'
 import { useLive } from '../live'
 import { ErrNote, Icon, Page } from '../ui'
-import { Blocked } from './Apps'
+import { NoCapture } from './Apps'
 import PcapView from './PcapView'
 
 const ROW = 30
@@ -166,7 +166,7 @@ export default function Packets() {
     return (
       <Page title={k.title} actions={openButton}>
         {errNote}
-        <Blocked tr={traffic} t={t} />
+        <NoCapture tr={traffic} t={t} />
       </Page>
     )
 
