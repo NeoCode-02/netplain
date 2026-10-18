@@ -413,6 +413,43 @@ export interface DnsReport {
   mail: MailPolicy | null
 }
 
+/** What Shodan's InternetDB saw open on an address the last time it looked. */
+export interface InternetDb {
+  ports: number[]
+  vulns: string[]
+  tags: string[]
+  hostnames: string[]
+}
+
+/** A port the router opened because a program on the network asked it to (UPnP). */
+export interface PortMap {
+  external: number
+  protocol: string
+  client: string
+  internal: number
+  description: string
+  enabled: boolean
+  /** Seconds left; 0 means until removed. */
+  lease: number
+}
+
+export interface Upnp {
+  router: string | null
+  externalIp: string | null
+  maps: PortMap[]
+}
+
+/** direct: the router holds the public address; cgnat: the provider shares it; double: two routers in a row. */
+export type NatKind = 'direct' | 'cgnat' | 'double' | 'unknown'
+
+/** The network as the internet sees it; upnp is null when the router does not answer UPnP. */
+export interface Exposure extends PublicIp {
+  at: number
+  db: InternetDb | null
+  upnp: Upnp | null
+  nat: NatKind
+}
+
 /** Registration data of a domain or an IP block (RDAP). Dates are YYYY-MM-DD. */
 export interface Whois {
   kind: 'ip' | 'domain'
@@ -581,7 +618,7 @@ export interface SecThreat {
 }
 
 export type FindingLevel = 'ok' | 'info' | 'warn' | 'bad'
-export type SecurityTab = 'status' | 'antivirus' | 'users' | 'services' | 'startup'
+export type SecurityTab = 'status' | 'exposure' | 'antivirus' | 'users' | 'services' | 'startup'
 
 /** One check of the "was I hacked?" list; its text lives in the renderer's dictionary under `key`. */
 export interface Finding {

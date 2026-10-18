@@ -335,6 +335,17 @@ try {
     }
   })
 
+  await step('seen from the internet', async () => {
+    await until('From the internet tab', clickText, 'From the internet')
+    await until('the check button', hasText, 'Shodan’s InternetDB')
+    // Sends this network's public address to Shodan's InternetDB, so only when asked for.
+    if (process.env.E2E_EXPOSURE) {
+      await until('Check', clickText, 'Check')
+      await until(['the result', 30_000], () => document.body.innerText.includes('Ports your router opened') || document.querySelector('.note.danger') !== null)
+      await shot('security-exposure')
+    }
+  })
+
   await step('tools page', async () => {
     await until('Tools', clickText, 'Tools')
     await until('Check', clickText, 'Check')

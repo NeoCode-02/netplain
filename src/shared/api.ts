@@ -4,6 +4,7 @@ import type {
   Connections,
   DiagnoseStep,
   DnsReport,
+  Exposure,
   Finding,
   GeoInfo,
   Hop,
@@ -134,6 +135,8 @@ export interface Api {
   wifiScan(): Promise<WifiNet[]>
   /** Wake-on-LAN packet to a MAC, on every local network. Throws E_WAKE. */
   wake(mac: string): Promise<void>
+  /** Public address (ipify), what Shodan's InternetDB saw open on it, and the router's UPnP openings. Throws E_PUBLIC_IP / E_INTERNETDB. */
+  exposure(): Promise<Exposure>
   /** Asks api.ipify.org for the address the internet sees. Throws E_PUBLIC_IP. */
   publicIp(): Promise<PublicIp>
   /** Checks adapter → address → router → DNS → internet. */

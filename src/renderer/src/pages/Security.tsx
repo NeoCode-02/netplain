@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Finding, ScanKind, ScanState, SecService, Security as Data, SecurityTab } from '../../../shared/types'
 import { behavioural, threatParts } from '../explain'
 import { errText, getLang, useT, type Dict } from '../i18n'
-import { Empty, Icon, Page, Tabs, type IconName } from '../ui'
+import { Icon, Page, Tabs, type IconName } from '../ui'
+import Exposure from './Exposure'
 
 const WINDOWS = /Windows/.test(navigator.userAgent)
 const MARK: Record<Finding['level'], IconName> = { bad: 'alert', warn: 'alert', info: 'dot', ok: 'shield' }
-const TABS: SecurityTab[] = ['status', 'antivirus', 'users', 'services', 'startup']
+// Only the view from the internet works outside Windows.
+const TABS: SecurityTab[] = WINDOWS ? ['status', 'exposure', 'antivirus', 'users', 'services', 'startup'] : ['exposure']
 
 function Status({ sec, t, onTab, onFixed }: { sec: Data; t: Dict; onTab(tab: SecurityTab): void; onFixed(): void }) {
   const s = t.security
@@ -484,7 +486,7 @@ function Users({ sec, t, onChanged }: { sec: Data; t: Dict; onChanged(): void })
 export default function Security() {
   const t = useT()
   const s = t.security
-  const [tab, setTab] = useState<SecurityTab>('status')
+  const [tab, setTab] = useState<SecurityTab>(TABS[0])
   const [sec, setSec] = useState<Data | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<unknown>(null)
@@ -502,30 +504,28 @@ export default function Security() {
     if (WINDOWS) window.netplain.security(false).then(setSec, setErr)
   }, [])
 
-  if (!WINDOWS)
-    return (
-      <Page title={s.title}>
-        <Empty icon="shield" title={s.title} body={s.windowsOnly} />
-      </Page>
-    )
-
   return (
     <Page
       title={s.title}
       note={s.lead}
       actions={
-        <>
-          {sec && <span className="small faint">{s.checkedAt(new Date(sec.at).toLocaleTimeString(getLang(), { hour: '2-digit', minute: '2-digit' }))}</span>}
-          <button className="btn sm" onClick={() => load(true)} disabled={busy || !sec}>
-            <Icon name="refresh" className={busy ? 'spin' : undefined} />
-            {s.recheck}
-          </button>
-        </>
+        WINDOWS &&
+        tab !== 'exposure' && (
+          <>
+            {sec && <span className="small faint">{s.checkedAt(new Date(sec.at).toLocaleTimeString(getLang(), { hour: '2-digit', minute: '2-digit' }))}</span>}
+            <button className="btn sm" onClick={() => load(true)} disabled={busy || !sec}>
+              <Icon name="refresh" className={busy ? 'spin' : undefined} />
+              {s.recheck}
+            </button>
+          </>
+        )
       }
       tabs={TABS.length > 1 && <Tabs value={tab} options={TABS} text={(x) => s.tabs[x]} onChange={setTab} />}
     >
-      {err !== null && <p className="note danger">{errText(t, err)}</p>}
-      {!sec && err === null && <p className="muted">{s.reading}</p>}
+      {!WINDOWS && <p className="note">{s.windowsOnly}</p>}
+      {tab === 'exposure' && <Exposure t={t} />}
+      {err !== null && tab !== 'exposure' && <p className="note danger">{errText(t, err)}</p>}
+      {WINDOWS && !sec && err === null && tab !== 'exposure' && <p className="muted">{s.reading}</p>}
       {sec && tab === 'status' && <Status sec={sec} t={t} onTab={setTab} onFixed={() => load(true)} />}
       {sec && tab === 'antivirus' && <Antivirus sec={sec} t={t} onChanged={() => load(true)} />}
       {sec && tab === 'users' && <Users sec={sec} t={t} onChanged={() => load(true)} />}
