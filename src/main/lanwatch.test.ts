@@ -47,6 +47,14 @@ describe('lan watch', () => {
     expect(told).toEqual([['arpSpoof', '', '192.168.1.1|02:00:5e:00:00:01|02:00:5e:00:00:02|192.168.1.20']])
   })
 
+  it('raises it too when the router card holds another address from the start, once', () => {
+    const { w, told } = setup()
+    const twinned = [{ ...ROUTER, mac: TV.mac }, TV]
+    w.check(wifi, twinned, false, 0)
+    w.check(wifi, twinned, false, 1000)
+    expect(told).toEqual([['arpSpoof', '', '192.168.1.1||02:00:5e:00:00:02|192.168.1.20']])
+  })
+
   it('tells when DNS servers or the proxy change, and remembers across restarts', () => {
     const { w, told, file } = setup()
     w.check(wifi, [ROUTER], false, 0)

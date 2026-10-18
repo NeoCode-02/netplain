@@ -157,3 +157,13 @@ describe('wifi channels', () => {
     ])
   })
 })
+
+describe('router takeover alert', () => {
+  it('names a changed card, or a card shared from the start', () => {
+    for (const t of [LANGS.en, LANGS.uz]) {
+      expect(t.alerts.say.arpSpoof('', '192.168.1.1|02:00:5e:00:00:01|02:00:5e:00:00:02|192.168.1.20')[1]).toContain('02:00:5e:00:00:01')
+      expect(t.alerts.say.arpSpoof('', '192.168.1.1||02:00:5e:00:00:02|192.168.1.20')[1]).toContain('192.168.1.20')
+    }
+    expect(LANGS.en.alerts.say.arpSpoof('', '192.168.1.1||02:00:5e:00:00:02|192.168.1.20')[0]).toBe('Another device answers for your router')
+  })
+})

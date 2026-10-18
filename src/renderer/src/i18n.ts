@@ -785,10 +785,15 @@ const en = {
       },
       arpSpoof: (_: string, d: string): [string, string] => {
         const [ip, was, now, twin] = d.split('|')
-        return [
-          'Your router’s address now leads to another device',
-          `${ip} was ${was}, now ${now}${twin ? `, the card of ${twin}` : ''}. If you did not replace the router, someone on this network may be reading your traffic: disconnect and look at the Devices page.`
-        ]
+        return was
+          ? [
+              'Your router’s address now leads to another device',
+              `${ip} was ${was}, now ${now}${twin ? `, the card of ${twin}` : ''}. If you did not replace the router, someone on this network may be reading your traffic: disconnect and look at the Devices page.`
+            ]
+          : [
+              'Another device answers for your router',
+              `The router ${ip} and ${twin} share one network card (${now}). Unless your router has two addresses, someone on this network may be reading your traffic: disconnect and look at the Devices page.`
+            ]
       },
       netChange: (_: string, d: string): [string, string] => {
         const [what, was, now] = d.split('|')
@@ -1858,10 +1863,15 @@ const uz: Dict = {
       },
       arpSpoof: (_, d) => {
         const [ip, was, now, twin] = d.split('|')
-        return [
-          'Router manzili endi boshqa qurilmaga olib boryapti',
-          `${ip} avval ${was} edi, endi ${now}${twin ? `, ya’ni ${twin} ning kartasi` : ''}. Routerni almashtirmagan bo‘lsangiz, shu tarmoqdagi kimdir trafikingizni o‘qiyotgan bo‘lishi mumkin: tarmoqdan uzilib, Qurilmalar sahifasini ko‘ring.`
-        ]
+        return was
+          ? [
+              'Router manzili endi boshqa qurilmaga olib boryapti',
+              `${ip} avval ${was} edi, endi ${now}${twin ? `, ya’ni ${twin} ning kartasi` : ''}. Routerni almashtirmagan bo‘lsangiz, shu tarmoqdagi kimdir trafikingizni o‘qiyotgan bo‘lishi mumkin: tarmoqdan uzilib, Qurilmalar sahifasini ko‘ring.`
+            ]
+          : [
+              'Router nomidan boshqa qurilma javob beryapti',
+              `Router ${ip} va ${twin} bitta tarmoq kartasiga ega (${now}). Routeringizning ikki manzili bo‘lmasa, shu tarmoqdagi kimdir trafikingizni o‘qiyotgan bo‘lishi mumkin: tarmoqdan uzilib, Qurilmalar sahifasini ko‘ring.`
+            ]
       },
       netChange: (_, d) => {
         const [what, was, now] = d.split('|')

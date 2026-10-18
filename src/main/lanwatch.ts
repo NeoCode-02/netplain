@@ -14,6 +14,8 @@ interface Net {
   macs: string[]
   gatewayMac: string | null
   dns: string[]
+  /** Router card and other address pairs already told about. */
+  twins?: string[]
 }
 
 /**
@@ -49,11 +51,13 @@ export function createLanWatch(file: string, tell: (kind: LanKind, app: string, 
       if (scan) n.swept = true
 
       const gw = mine.find((d) => d.ip === a.gateway)
-      if (gw && n.gatewayMac && gw.mac !== n.gatewayMac) {
-        // The address of the router now leads to another card: someone may be in the middle.
-        const twin = mine.find((d) => d.mac === gw.mac && d.ip !== gw.ip)
-        tell('arpSpoof', '', [gw.ip, n.gatewayMac, gw.mac, twin?.ip ?? ''].join('|'))
-      }
+      // A card answering for the router as well as for another address of its own.
+      const twin = gw && mine.find((d) => d.mac === gw.mac && d.ip !== gw.ip)
+      const moved = !!gw && !!n.gatewayMac && gw.mac !== n.gatewayMac
+      // Told once per card and address pair, also when it was like this from the first look.
+      const pair = twin ? `${gw.mac}|${twin.ip}` : null
+      if (gw && (moved || (pair && !n.twins?.includes(pair)))) tell('arpSpoof', '', [gw.ip, moved ? n.gatewayMac : '', gw.mac, twin?.ip ?? ''].join('|'))
+      if (pair && !n.twins?.includes(pair)) (n.twins ??= []).push(pair)
       if (gw) n.gatewayMac = gw.mac
       for (const d of mine) {
         if (n.macs.includes(d.mac)) continue
