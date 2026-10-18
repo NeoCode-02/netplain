@@ -1,7 +1,7 @@
 {
   "name": "netplain",
   "productName": "Netplain",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "private": true,
   "description": "See what your computer does on the network, in plain language: adapters, Wi-Fi, apps, connections, devices and packets.",
   "license": "MIT",
