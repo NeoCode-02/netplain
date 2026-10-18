@@ -336,3 +336,4 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .chan-count, .chan-n { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; min-height: 14px; }
 .chan.mine .chan-n, .chan.best .chan-n { color: var(--text); font-weight: 600; }
 .wifi-meter { width: 90px; flex-shrink: 0; }
+.tile-foot { margin-top: 10px; }

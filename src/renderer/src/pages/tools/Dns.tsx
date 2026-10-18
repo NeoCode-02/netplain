@@ -20,7 +20,6 @@ export default function Dns() {
   return (
     <>
       <section className="panel panel-pad tool">
-        <h3>{k.title}</h3>
         <p className="small muted">{k.lead}</p>
         <Ask placeholder={k.placeholder} label={k.run} busy={q.busy} onRun={(name) => void q.run(() => window.netplain.dnsQuery(name, type))} />
         <div className="row tool-form">

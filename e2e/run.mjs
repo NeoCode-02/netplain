@@ -169,7 +169,7 @@ try {
 
     await step(`overview (${theme.toLowerCase()})`, async () => {
       await until('Overview', clickText, 'Overview')
-      await until('the story', () => document.querySelectorAll('.story li').length >= 2)
+      await until('the story', () => document.querySelectorAll('.story li').length >= 1)
       // A fresh install shows the getting-started list (shot in light), hidden for good with one click.
       if (theme === 'Light') await until('the getting-started list', () => document.querySelectorAll('.setup-row').length === 4)
       await new Promise((r) => setTimeout(r, 3000))

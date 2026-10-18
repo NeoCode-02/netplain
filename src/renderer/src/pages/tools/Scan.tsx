@@ -61,7 +61,6 @@ export default function Scan({ initial }: { initial?: string }) {
   return (
     <>
       <section className="panel panel-pad tool">
-        <h3>{k.title}</h3>
         <p className="small muted">{k.lead}</p>
         <form
           className="row tool-form"

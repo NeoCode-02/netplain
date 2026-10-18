@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Adapter } from '../../../shared/types'
-import { addressKind, authKey, bandKey, quality, role, summary, what } from '../explain'
+import { addressKind, authKey, bandKey, quality, role, what } from '../explain'
 import { addr, bits } from '../format'
 import { useT } from '../i18n'
 import { useLive, type Point } from '../live'
@@ -136,7 +136,7 @@ export default function Network() {
   const off = rest.filter((a) => !a.up)
   const row = (a: Adapter) => <AdapterRow key={a.id} a={a} points={hist.get(a.id) ?? []} internetId={snap.defaultId} />
   return (
-    <Page title={t.network.title} note={summary(t, snap.adapters, snap.defaultId)}>
+    <Page title={t.network.title}>
       {internet && <InternetCard a={internet} points={hist.get(internet.id) ?? []} />}
       {on.length > 0 && (
         <section className="section">

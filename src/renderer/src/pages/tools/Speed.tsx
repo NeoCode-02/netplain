@@ -51,10 +51,7 @@ export default function Speed() {
     <>
       <section className="panel panel-pad tool">
         <div className="section-head">
-          <div>
-            <h3>{k.title}</h3>
-            <p>{k.lead}</p>
-          </div>
+          <p className="small muted">{k.lead}</p>
           <button className="btn primary" onClick={() => void start()} disabled={phase !== null}>
             {phase && <Icon name="refresh" className="spin" />}
             {phase ? k.phases[phase] : k.run}

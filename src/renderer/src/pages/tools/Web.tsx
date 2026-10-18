@@ -19,7 +19,6 @@ export default function Web() {
   return (
     <>
       <section className="panel panel-pad tool">
-        <h3>{k.title}</h3>
         <p className="small muted">{k.lead}</p>
         <Ask placeholder={k.placeholder} label={k.run} busy={q.busy} onRun={(v) => void q.run(() => window.netplain.inspectSite(v))} />
         <ErrNote t={t} e={q.err} />

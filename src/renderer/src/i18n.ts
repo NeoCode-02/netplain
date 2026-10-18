@@ -103,7 +103,7 @@ const en = {
   },
   devices: {
     title: 'Devices',
-    lead: 'Devices on your local networks that this computer has talked to recently.',
+    lead: 'Devices this computer has seen on your local networks.',
     scan: 'Scan network',
     scanning: 'Scanning…',
     scanNote: 'Scanning sends one tiny packet to every address of your local network (/24) so that devices answer. Nothing leaves your network.',
@@ -130,7 +130,7 @@ const en = {
   },
   share: {
     title: 'Share a site',
-    lead: 'Show a site that runs on this computer to anyone, anywhere: Netplain gives it a secure https:// link. Like ngrok, without an account or a terminal.',
+    lead: 'An https:// link to a site on this computer that anyone can open — like ngrok, with no account.',
     steps: [
       'Start your site on this computer, for example with “npm run dev”.',
       'Pick it below — Netplain finds running sites by itself.',
@@ -213,7 +213,7 @@ const en = {
   },
   security: {
     title: 'Security',
-    lead: 'The signs people look for when they ask “was my computer hacked?” — in one place, explained.',
+    lead: 'The usual signs of a break-in, checked and explained.',
     windowsOnly: 'The security section works on Windows for now.',
     tabs: { status: 'Status', antivirus: 'Antivirus', users: 'Users', services: 'Services', startup: 'Startup' },
     reading: 'Reading Windows security settings… the first time takes about ten seconds.',
@@ -227,7 +227,7 @@ const en = {
     fix: { firewallOn: 'Turn the firewall on', openDefender: 'Open Windows Security' },
     fixed: 'Done. Checking again…',
     startup: {
-      lead: 'Programs that start by themselves when Windows starts or you sign in. The switch is the one Task Manager uses, so it can always be undone.',
+      lead: 'Programs that start with Windows. The switch is Task Manager’s own, so it can always be undone.',
       kinds: { run: 'Registry (Run)', folder: 'Startup folder', task: 'Scheduled task' },
       scope: { HKCU: 'Only you', HKLM: 'Every user' } as Record<string, string>,
       suspicious: 'Unsigned, starts from a personal folder',
@@ -357,11 +357,9 @@ const en = {
   },
   tools: {
     title: 'Tools',
-    lead: 'What you would type in a terminal, as buttons — with the answer explained.',
     tabs: { diagnose: 'Diagnose', speed: 'Speed', wifi: 'Wi-Fi', scan: 'Port scan', dns: 'DNS', whois: 'Whois', web: 'Website', subnet: 'Subnet' },
     wifi: {
-      title: 'Wi-Fi around you',
-      lead: 'Networks nearby, how crowded each channel is, and whether a quieter one would make your Wi-Fi faster. Nothing is sent anywhere.',
+      lead: 'Networks nearby, how crowded each channel is, and whether a quieter one would help.',
       scan: 'Scan again',
       scanning: 'Scanning…',
       count: (n: number) => (n === 1 ? '1 network nearby.' : `${n} networks nearby.`),
@@ -380,8 +378,7 @@ const en = {
       security: { open: 'Open', wep: 'WEP', wpa: 'WPA', wpa2: 'WPA2', wpa3: 'WPA3', enterprise: 'Enterprise', other: 'Other' } as Record<WifiSecurity, string>
     },
     speedTest: {
-      title: 'Internet speed',
-      lead: 'Download, upload and delay, measured against Cloudflare’s nearest server in about 20 seconds. It moves a lot of data: on a metered connection, think twice.',
+      lead: 'Against Cloudflare’s nearest server, about 20 seconds. Uses 100 MB or more.',
       run: 'Start test',
       phases: { latency: 'Measuring delay…', down: 'Measuring download…', up: 'Measuring upload…' } as Record<SpeedPhase, string>,
       down: 'Download',
@@ -400,8 +397,7 @@ const en = {
       when: 'When'
     },
     web: {
-      title: 'Website check',
-      lead: 'How a browser reaches a site: where it redirects, whether its certificate is trusted, and which protective headers it sends.',
+      lead: 'Redirects, the certificate and protective headers, as a browser sees them.',
       placeholder: 'example.com or https://example.com/page',
       run: 'Check',
       trusted: 'The connection is encrypted and the certificate is trusted.',
@@ -444,8 +440,7 @@ const en = {
       server: (s: string) => `The server calls itself “${s}”.`
     },
     whois: {
-      title: 'Who owns it (whois)',
-      lead: 'Who holds a domain or an IP address, since when, and where to report abuse — straight from the registry.',
+      lead: 'Who holds a domain or an IP block, and where to report abuse — from the registry.',
       placeholder: 'example.com or 8.8.8.8',
       run: 'Look up',
       open: 'Who owns this address?',
@@ -470,8 +465,7 @@ const en = {
       source: 'From the registry in charge, through rdap.org.'
     },
     dns: {
-      title: 'DNS records',
-      lead: 'What a name points to, asked from your own DNS server and from Cloudflare, Google and Quad9 at once. An IP is looked up backwards (PTR).',
+      lead: 'Asked from your DNS, Cloudflare, Google and Quad9 at once. An IP is looked up backwards.',
       placeholder: 'example.com or 1.1.1.1',
       run: 'Look up',
       type: 'Record type',
@@ -500,8 +494,7 @@ const en = {
       dmarc: { reject: 'Fake mail is refused', quarantine: 'Fake mail goes to spam', none: 'Fake mail is only reported, still delivered', missing: 'Missing: receivers get no instructions' }
     },
     scan: {
-      title: 'Port scanner',
-      lead: 'Which services a device offers: open ports, what answers on each, and which ones are risky. It starts with your router.',
+      lead: 'Open ports of a device, what answers on each, and which are risky.',
       which: 'Ports to try',
       sets: {
         common: (n: string) => `Common (${n})`,
@@ -523,8 +516,7 @@ const en = {
       riskyNote: 'Fine inside your home or office network; reachable from the internet it invites break-ins.'
     },
     subnet: {
-      title: 'Subnet calculator',
-      lead: 'An address with its prefix (/24) or mask (255.255.255.0); IPv6 works too. It starts with your own network.',
+      lead: 'An address with its prefix (/24) or mask (255.255.255.0); IPv6 works too.',
       invalid: 'Write it as 192.168.1.10/24, 192.168.1.10 255.255.255.0 or 2001:db8::/64.',
       network: 'Network',
       range: 'Usable addresses',
@@ -579,7 +571,7 @@ const en = {
       filtered: 'No answer: a firewall drops it, or the computer is unreachable.'
     },
     publicIp: 'Your public IP',
-    publicIpLead: 'The address websites see. Asks api.ipify.org once.',
+    publicIpLead: 'The address websites see (asks api.ipify.org).',
     publicIpRun: 'Find out',
     fixes: 'Fixes',
     fixesLead: 'Some need administrator rights; the system asks with its own window.',
@@ -592,7 +584,7 @@ const en = {
   },
   history: {
     title: 'History',
-    lead: 'How much data this computer used. The record stays on this computer for 90 days.',
+    lead: 'Data this computer used; kept here for 90 days.',
     ranges: { day: 'Today', week: '7 days', month: '30 days' },
     total: 'Total',
     chart: 'Through the internet (Wi-Fi, Ethernet, mobile)',
@@ -617,7 +609,7 @@ const en = {
   },
   monitors: {
     title: 'Your sites and servers',
-    lead: 'Checked every 1 or 5 minutes. Netplain tells you when one stops answering, comes back, or its certificate is running out.',
+    lead: 'Checked every 1 or 5 minutes; you hear when one goes down, comes back, or its certificate runs out.',
     kinds: { http: 'Website', tcp: 'Server port', ping: 'Ping' },
     placeholder: { http: 'https://example.com', tcp: 'example.com:22', ping: 'example.com' },
     every: { 60: 'Every minute', 300: 'Every 5 minutes' },
@@ -654,7 +646,7 @@ const en = {
   },
   uptime: {
     title: 'Is the internet steady?',
-    lead: 'Netplain checks the router, the internet and name lookups every 15 seconds (every 5 while something is wrong) and logs every drop with where it broke.',
+    lead: 'Router, internet and name lookups, checked every 15 seconds; every drop is logged with where it broke.',
     offTitle: 'Connection checks are off',
     offBody: 'Turn them on to log every drop and see how steady the connection is.',
     turnOn: 'Turn on',
@@ -692,7 +684,7 @@ const en = {
   },
   alerts: {
     title: 'Alerts',
-    lead: 'Security signs and connection drops Netplain keeps an eye on. Each one says what it means and what to do.',
+    lead: 'What Netplain noticed, what it means and what to do.',
     none: 'No alerts so far. All quiet.',
     markRead: 'Mark all as read',
     clear: 'Clear',
@@ -749,7 +741,7 @@ const en = {
   },
   packets: {
     title: 'Packets',
-    lead: 'Every packet on the internet adapter, newest at the bottom. Click one to see what is inside.',
+    lead: 'Every packet on the internet adapter; click one to look inside.',
     presets: { all: 'All', sites: 'Sites', dns: 'Name lookups', plain: 'Unencrypted', local: 'Local network' },
     anyApp: 'All apps',
     filter: 'Wireshark filter, e.g. tcp.port == 443',
@@ -820,11 +812,7 @@ const en = {
   overview: {
     title: 'What’s happening now',
     signal: (q: string, pct: number) => `Wi-Fi signal is ${q.toLowerCase()} (${pct}%).`,
-    speed: (down: string, up: string) => `Right now ${down} is coming in and ${up} going out.`,
-    topApp: (name: string, amount: string, place: string | null) => `${name} used the most data: ${amount}${place ? `, mostly with ${place}` : ''}.`,
     noCapture: 'To see how much each app uses, install Wireshark — the Apps page shows how.',
-    talking: (apps: number, orgs: string) => `${apps === 1 ? '1 app is' : `${apps} apps are`} talking to the internet${orgs ? `, mostly with ${orgs}` : ''}.`,
-    devices: (n: number) => (n === 1 ? '1 device is visible on your local network.' : `${n} devices are visible on your local network.`),
     exposed: (n: number) => (n === 1 ? '1 program waits for connections from other devices on the network.' : `${n} programs wait for connections from other devices on the network.`),
     traffic: 'Internet traffic',
     topApps: 'Busiest apps',
@@ -1086,7 +1074,7 @@ const uz: Dict = {
   },
   devices: {
     title: 'Qurilmalar',
-    lead: 'Lokal tarmoqlardagi, kompyuteringiz yaqinda gaplashgan qurilmalar.',
+    lead: 'Kompyuteringiz lokal tarmoqlarda ko‘rgan qurilmalar.',
     scan: 'Tarmoqni skanerlash',
     scanning: 'Skanerlanmoqda…',
     scanNote: 'Skanerlash lokal tarmog‘ingizdagi (/24) har bir manzilga bitta kichik paket yuboradi, shunda qurilmalar javob beradi. Hech narsa tarmog‘ingizdan tashqariga chiqmaydi.',
@@ -1113,7 +1101,7 @@ const uz: Dict = {
   },
   share: {
     title: 'Saytni ulashish',
-    lead: 'Shu kompyuterda ishlayotgan saytni istalgan joydagi odamga ko‘rsating: Netplain unga xavfsiz https:// havola beradi. ngrok kabi, lekin akkaunt va terminalsiz.',
+    lead: 'Shu kompyuterdagi saytga istalgan odam ocha oladigan https:// havola — ngrok kabi, akkauntsiz.',
     steps: [
       'Saytingizni shu kompyuterda ishga tushiring, masalan “npm run dev” bilan.',
       'Uni pastdan tanlang — Netplain ishlayotgan saytlarni o‘zi topadi.',
@@ -1196,7 +1184,7 @@ const uz: Dict = {
   },
   security: {
     title: 'Xavfsizlik',
-    lead: '“Kompyuterim buzilganmi?” deb so‘raganda qaraladigan belgilar — bir joyda, tushuntirilgan holda.',
+    lead: 'Buzib kirishning odatiy belgilari — tekshirilgan va tushuntirilgan.',
     windowsOnly: 'Xavfsizlik bo‘limi hozircha Windows’da ishlaydi.',
     tabs: { status: 'Holat', antivirus: 'Antivirus', users: 'Foydalanuvchilar', services: 'Xizmatlar', startup: 'Avtoyuklanish' },
     reading: 'Windows xavfsizlik sozlamalari o‘qilmoqda… birinchi marta taxminan o‘n soniya oladi.',
@@ -1210,7 +1198,7 @@ const uz: Dict = {
     fix: { firewallOn: 'Firewall’ni yoqish', openDefender: 'Windows Security’ni ochish' },
     fixed: 'Bajarildi. Qayta tekshirilmoqda…',
     startup: {
-      lead: 'Windows ishga tushganda yoki tizimga kirganingizda o‘zi ishga tushadigan dasturlar. Kalit Task Manager ishlatadigan kalitning o‘zi, shuning uchun har doim qaytarish mumkin.',
+      lead: 'Windows bilan birga ishga tushadigan dasturlar. Kalit Task Manager’ning o‘ziniki, har doim qaytarsa bo‘ladi.',
       kinds: { run: 'Registr (Run)', folder: 'Startup papkasi', task: 'Rejalashtirilgan vazifa' },
       scope: { HKCU: 'Faqat siz', HKLM: 'Barcha foydalanuvchilar' },
       suspicious: 'Imzosiz, shaxsiy papkadan ishga tushadi',
@@ -1340,11 +1328,9 @@ const uz: Dict = {
   },
   tools: {
     title: 'Asboblar',
-    lead: 'Terminalda yoziladigan buyruqlar — tugma ko‘rinishida, javobi tushuntirilgan holda.',
     tabs: { diagnose: 'Tashxis', speed: 'Tezlik', wifi: 'Wi-Fi', scan: 'Port skaner', dns: 'DNS', whois: 'Whois', web: 'Veb-sayt', subnet: 'Subnet' },
     wifi: {
-      title: 'Atrofdagi Wi-Fi',
-      lead: 'Yaqindagi tarmoqlar, har bir kanal qanchalik band va tinchroq kanal Wi-Fi’ingizni tezlashtiradimi. Hech narsa hech qayerga yuborilmaydi.',
+      lead: 'Yaqindagi tarmoqlar, kanallar qanchalik band va tinchrog‘i yordam beradimi.',
       scan: 'Qayta skanerlash',
       scanning: 'Skanerlanmoqda…',
       count: (n) => `Yaqinda ${n} ta tarmoq bor.`,
@@ -1363,8 +1349,7 @@ const uz: Dict = {
       security: { open: 'Ochiq', wep: 'WEP', wpa: 'WPA', wpa2: 'WPA2', wpa3: 'WPA3', enterprise: 'Korporativ', other: 'Boshqa' }
     },
     speedTest: {
-      title: 'Internet tezligi',
-      lead: 'Yuklab olish, yuklash va kechikish — Cloudflare’ning eng yaqin serveriga nisbatan, taxminan 20 soniyada o‘lchanadi. Ko‘p ma’lumot sarflaydi: limitli internetda o‘ylab ko‘ring.',
+      lead: 'Cloudflare’ning eng yaqin serveriga nisbatan, ~20 soniya. 100 MB va undan ko‘p sarflaydi.',
       run: 'Testni boshlash',
       phases: { latency: 'Kechikish o‘lchanmoqda…', down: 'Yuklab olish o‘lchanmoqda…', up: 'Yuklash o‘lchanmoqda…' },
       down: 'Yuklab olish',
@@ -1383,8 +1368,7 @@ const uz: Dict = {
       when: 'Qachon'
     },
     web: {
-      title: 'Veb-saytni tekshirish',
-      lead: 'Brauzer saytga qanday yetadi: qayerga yo‘naltiradi, sertifikatiga ishonsa bo‘ladimi va qaysi himoya sarlavhalarini yuboradi.',
+      lead: 'Yo‘naltirishlar, sertifikat va himoya sarlavhalari — brauzer ko‘rganidek.',
       placeholder: 'example.com yoki https://example.com/sahifa',
       run: 'Tekshirish',
       trusted: 'Ulanish shifrlangan va sertifikatga ishonsa bo‘ladi.',
@@ -1427,8 +1411,7 @@ const uz: Dict = {
       server: (s) => `Server o‘zini “${s}” deb ataydi.`
     },
     whois: {
-      title: 'Kimniki (whois)',
-      lead: 'Domen yoki IP manzil kimga tegishli, qachondan beri va suiiste’mol haqida qayerga yozish kerak — to‘g‘ridan-to‘g‘ri reyestrdan.',
+      lead: 'Domen yoki IP blok kimniki va shikoyatni qayerga yozish kerak — reyestrdan.',
       placeholder: 'example.com yoki 8.8.8.8',
       run: 'Qidirish',
       open: 'Bu manzil kimniki?',
@@ -1453,8 +1436,7 @@ const uz: Dict = {
       source: 'Mas’ul reyestrdan, rdap.org orqali.'
     },
     dns: {
-      title: 'DNS yozuvlari',
-      lead: 'Nom nimaga olib boradi — sizning DNS serveringizdan va Cloudflare, Google, Quad9’dan birdaniga so‘raladi. IP teskari tomonga qidiriladi (PTR).',
+      lead: 'Sizning DNS, Cloudflare, Google va Quad9’dan birdaniga so‘raladi. IP teskari qidiriladi.',
       placeholder: 'example.com yoki 1.1.1.1',
       run: 'Qidirish',
       type: 'Yozuv turi',
@@ -1483,8 +1465,7 @@ const uz: Dict = {
       dmarc: { reject: 'Soxta xat rad etiladi', quarantine: 'Soxta xat spamga tushadi', none: 'Soxta xat faqat hisobotga yoziladi, baribir yetkaziladi', missing: 'Yo‘q: qabul qiluvchilarga ko‘rsatma berilmagan' }
     },
     scan: {
-      title: 'Port skaner',
-      lead: 'Qurilma qanday xizmatlar taklif qiladi: ochiq portlar, har birida nima javob beradi va qaysilari xavfli. Routeringizdan boshlanadi.',
+      lead: 'Qurilmaning ochiq portlari, har birida nima javob beradi va qaysilari xavfli.',
       which: 'Tekshiriladigan portlar',
       sets: {
         common: (n) => `Asosiylar (${n})`,
@@ -1506,8 +1487,7 @@ const uz: Dict = {
       riskyNote: 'Uy yoki ofis tarmog‘ida normal; internetdan ochiq bo‘lsa, buzib kirishga yo‘l ochadi.'
     },
     subnet: {
-      title: 'Subnet kalkulyatori',
-      lead: 'Manzil va uning prefiksi (/24) yoki maskasi (255.255.255.0); IPv6 ham ishlaydi. Sizning tarmog‘ingizdan boshlanadi.',
+      lead: 'Manzil va prefiksi (/24) yoki maskasi (255.255.255.0); IPv6 ham ishlaydi.',
       invalid: 'Bunday yozing: 192.168.1.10/24, 192.168.1.10 255.255.255.0 yoki 2001:db8::/64.',
       network: 'Tarmoq',
       range: 'Ishlatsa bo‘ladigan manzillar',
@@ -1562,7 +1542,7 @@ const uz: Dict = {
       filtered: 'Javob yo‘q: xavfsizlik devori to‘sadi yoki kompyuterga yetib bo‘lmaydi.'
     },
     publicIp: 'Ommaviy IP manzilingiz',
-    publicIpLead: 'Saytlar ko‘radigan manzil. api.ipify.org’dan bir marta so‘raladi.',
+    publicIpLead: 'Saytlar ko‘radigan manzil (api.ipify.org’dan so‘raladi).',
     publicIpRun: 'Bilish',
     fixes: 'Tuzatish',
     fixesLead: 'Ba’zilari administrator huquqini talab qiladi; tizim o‘z oynasi bilan so‘raydi.',
@@ -1575,7 +1555,7 @@ const uz: Dict = {
   },
   history: {
     title: 'Tarix',
-    lead: 'Kompyuteringiz qancha ma’lumot ishlatgani. Hisob shu kompyuterda saqlanadi, 90 kun turadi.',
+    lead: 'Kompyuteringiz ishlatgan ma’lumot; shu yerda 90 kun saqlanadi.',
     ranges: { day: 'Bugun', week: '7 kun', month: '30 kun' },
     total: 'Jami',
     chart: 'Internet orqali (Wi-Fi, Ethernet, mobil)',
@@ -1600,7 +1580,7 @@ const uz: Dict = {
   },
   monitors: {
     title: 'Saytlaringiz va serverlaringiz',
-    lead: 'Har 1 yoki 5 daqiqada tekshiriladi. Biri javob bermay qolsa, qayta ishlasa yoki sertifikat muddati tugayotgan bo‘lsa, Netplain xabar beradi.',
+    lead: 'Har 1 yoki 5 daqiqada tekshiriladi; biri tushsa, qaytsa yoki sertifikati tugayotgan bo‘lsa, xabar beriladi.',
     kinds: { http: 'Sayt', tcp: 'Server porti', ping: 'Ping' },
     placeholder: { http: 'https://example.com', tcp: 'example.com:22', ping: 'example.com' },
     every: { 60: 'Har daqiqada', 300: 'Har 5 daqiqada' },
@@ -1637,7 +1617,7 @@ const uz: Dict = {
   },
   uptime: {
     title: 'Internet barqarormi?',
-    lead: 'Netplain har 15 soniyada (nimadir ishlamay qolsa, har 5 soniyada) router, internet va nomlarni aniqlashni tekshiradi va har bir uzilishni qayerda uzilgani bilan yozib boradi.',
+    lead: 'Router, internet va nom qidirish har 15 soniyada tekshiriladi; har uzilish qayerda uzilgani bilan yoziladi.',
     offTitle: 'Ulanish tekshiruvi o‘chiq',
     offBody: 'Har bir uzilishni yozib borish va ulanish qanchalik barqarorligini ko‘rish uchun yoqing.',
     turnOn: 'Yoqish',
@@ -1674,7 +1654,7 @@ const uz: Dict = {
   },
   alerts: {
     title: 'Signallar',
-    lead: 'Netplain kuzatib boradigan xavfsizlik belgilari va internet uzilishlari. Har biri nimani anglatishi va nima qilish kerakligi yozilgan.',
+    lead: 'Netplain nimani sezdi, bu nimani anglatadi va nima qilish kerak.',
     none: 'Hozircha signal yo‘q. Hammasi tinch.',
     markRead: 'Hammasini o‘qildi deb belgilash',
     clear: 'Tozalash',
@@ -1728,7 +1708,7 @@ const uz: Dict = {
   },
   packets: {
     title: 'Paketlar',
-    lead: 'Internet adapteridagi har bir paket, eng yangisi pastda. Ichida nima borligini ko‘rish uchun birortasini bosing.',
+    lead: 'Internet adapteridagi har bir paket; ichini ko‘rish uchun bosing.',
     presets: { all: 'Hammasi', sites: 'Saytlar', dns: 'Nom so‘rovlari', plain: 'Shifrlanmagan', local: 'Lokal tarmoq' },
     anyApp: 'Barcha ilovalar',
     filter: 'Wireshark filtri, masalan: tcp.port == 443',
@@ -1799,11 +1779,7 @@ const uz: Dict = {
   overview: {
     title: 'Hozir nima bo‘layapti',
     signal: (q, pct) => `Wi-Fi signali ${q.toLowerCase()} (${pct}%).`,
-    speed: (down, up) => `Hozir ${down} yuklab olinmoqda va ${up} yuborilmoqda.`,
-    topApp: (name, amount, place) => `Eng ko‘p ma’lumotni ${name} ishlatdi: ${amount}${place ? `, asosan ${place} bilan` : ''}.`,
     noCapture: 'Har bir ilova qancha ishlatayotganini ko‘rish uchun Wireshark’ni o‘rnating — “Ilovalar” sahifasida yo‘l-yo‘riq bor.',
-    talking: (apps, orgs) => `${apps} ta ilova internet bilan gaplashmoqda${orgs ? `; ko‘pchiligi ${orgs} bilan` : ''}.`,
-    devices: (n) => `Lokal tarmoqda ${n} ta qurilma ko‘rinmoqda.`,
     exposed: (n) => `${n} ta dastur tarmoqdagi boshqa qurilmalardan ulanish kutmoqda.`,
     traffic: 'Internet trafigi',
     topApps: 'Eng faol ilovalar',

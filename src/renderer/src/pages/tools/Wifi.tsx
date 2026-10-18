@@ -28,10 +28,7 @@ export default function Wifi() {
     <>
       <section className="panel panel-pad tool">
         <div className="section-head">
-          <div>
-            <h3>{k.title}</h3>
-            <p>{k.lead}</p>
-          </div>
+          <p className="small muted">{k.lead}</p>
           <button className="btn" onClick={() => void run(() => window.netplain.wifiScan())} disabled={q.busy}>
             <Icon name="refresh" className={q.busy ? 'spin' : undefined} />
             {q.busy ? k.scanning : k.scan}

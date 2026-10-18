@@ -30,7 +30,7 @@ export default function Tools() {
   const initial = start?.tab === tab ? start.value : undefined
 
   return (
-    <Page title={k.title} note={k.lead} tabs={<Tabs value={tab} options={TABS} text={(x) => k.tabs[x]} onChange={setTab} />}>
+    <Page title={k.title} tabs={<Tabs value={tab} options={TABS} text={(x) => k.tabs[x]} onChange={setTab} />}>
       {tab === 'diagnose' && <Diagnose />}
       {tab === 'speed' && <Speed />}
       {tab === 'wifi' && <Wifi />}

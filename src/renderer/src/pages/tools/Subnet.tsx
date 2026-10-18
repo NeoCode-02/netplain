@@ -19,10 +19,9 @@ export default function Subnet() {
 
   return (
     <section className="panel panel-pad tool">
-      <h3>{k.title}</h3>
       <p className="small muted">{k.lead}</p>
       <div className="row tool-form">
-        <input className="input sm mono" value={value} placeholder="192.168.1.10/24" aria-label={k.title} onChange={(e) => setTyped(e.target.value)} />
+        <input className="input sm mono" value={value} placeholder="192.168.1.10/24" aria-label={k.lead} onChange={(e) => setTyped(e.target.value)} />
       </div>
       {value.trim() && !s && <p className="note">{k.invalid}</p>}
       {s && (

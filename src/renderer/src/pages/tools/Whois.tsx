@@ -25,7 +25,6 @@ export default function Whois({ initial }: { initial?: string }) {
   return (
     <>
       <section className="panel panel-pad tool">
-        <h3>{k.title}</h3>
         <p className="small muted">{k.lead}</p>
         <Ask key={initial} initial={initial} placeholder={k.placeholder} label={k.run} busy={q.busy} onRun={(v) => void q.run(() => window.netplain.whois(v))} />
         <ErrNote t={t} e={q.err} />
