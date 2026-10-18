@@ -11,11 +11,11 @@ See what your computer does on the network, in plain language — without `ipcon
 - **Apps** — data received and sent by each app, and the sites it talked to. Needs Wireshark.
 - **Connections** — which app talks to which company and country; programs waiting for connections (open ports).
 - **Packets** — every packet in plain words, Wireshark display filters, full details, save as `.pcapng` or open in Wireshark.
-- **Devices** — who is on your local network and who made each device.
+- **Devices** — who is on your local network and who made each device; scan a device's ports or wake a computer (Wake-on-LAN) from its row.
 - **History** — data per hour and day, per app, adapter and network, kept 90 days; a monthly data limit (for mobile internet or a hotspot) warns at 80% and 100%.
 - **Uptime** — is the internet steady? The router, the internet and name lookups are checked every 15 seconds; every drop is logged with where it broke (Wi-Fi, router, provider or DNS), next to 24 hours of response times; your own sites, server ports and hosts are watched too, with alerts when one goes down or its https certificate runs out.
 - **Alerts** — a new app went online, a new port opened to the network, unencrypted traffic, a known-bad address (your own list or FireHOL level 1), an internet drop of a minute or more.
-- **Tools** — the terminal as buttons: "is the internet not working?" (adapter → address → router → DNS → internet), ping, traceroute, DNS lookup, port check, public IP; fixes: clear DNS cache, renew IP, restart adapter.
+- **Tools** — the terminal as buttons, each answer explained: "is the internet not working?" (adapter → address → router → DNS → internet), ping, traceroute, port check, public IP and fixes (clear DNS cache, renew IP, restart adapter); a speed test with delay under load (bufferbloat); a Wi-Fi analyzer (crowded channels, a quieter one for your router, unsafe networks nearby); a port scanner that names what answers; DNS records from four servers side by side, with SPF and DMARC explained; whois from the registry (RDAP); a website check (redirects, certificate chain, security headers); a subnet calculator for IPv4 and IPv6.
 - **Share** — pick a site running on this computer (found by itself, by its page title) and give it an https:// link that opens anywhere, like ngrok without an account: Cloudflare Quick Tunnel or localhost.run, an optional password, and every visit with its headers and body, sent again with one click.
 - **Always on** — closing the window keeps Netplain in the tray, with the live speed in its tooltip, so history and alerts keep going; it can start with Windows (or at login on macOS and Linux).
 - **Security** (Windows) — a "was I hacked?" check (antivirus, firewall, UAC, admins, unsigned startup programs and services, unsigned programs online, hosts redirects, proxy, DNS, updates), honest that no list proves a computer clean; Microsoft Defender scans and threat history; turn accounts, services and startup programs off and on. Changes ask for admin rights through the system's own prompt.
@@ -43,6 +43,7 @@ Optional: [Wireshark](https://www.wireshark.org/) — Netplain uses its engine (
 Everything is read on your computer; there is no telemetry. Netplain goes online only:
 
 - when you press a button that says so — the location database ([DB-IP Lite](https://db-ip.com), ~9 MB), FireHOL level 1 from GitHub, your public IP from api.ipify.org, Cloudflare's `cloudflared` from its GitHub releases (checksum and, on Windows, Cloudflare's signature are checked);
+- when you use a tool that asks the internet — the speed test (speed.cloudflare.com, about 100 MB or more), DNS records (your DNS plus 1.1.1.1, 8.8.8.8 and 9.9.9.9), whois (rdap.org, which forwards to the registry), and the address you scan or check;
 - while you share a local site — through Cloudflare or localhost.run, which carry the visits to it;
 - while the internet-drop checks are on: one TCP handshake with 1.1.1.1 or 8.8.8.8 every 15 seconds, under 40 MB a month (off in Settings);
 - once at start, to ask the GitHub API whether a new version is out (off in Settings).
