@@ -27,6 +27,8 @@ See what your computer does on the network, in plain language — without `ipcon
 | **Packets** | **Security** |
 | ![Packets in plain words](docs/packets.png) | ![Was I hacked? check](docs/security.png) |
 
+![Map: which countries the traffic goes to, received and sent](docs/map.png)
+
 ## Install
 
 Download the installer for your system from [Releases](https://github.com/NeoCode-02/netplain/releases).

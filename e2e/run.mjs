@@ -76,6 +76,8 @@ await run(async () => {
       await until('the world', () => document.querySelectorAll('.world .land').length >= 150)
       // Countries show once the location database is there; without it the page offers it, like Connections.
       await until('countries or the location banner', () => document.querySelector('.map-row, .geo-banner') !== null)
+      // With countries listed, the arcs start from your own country (asked from api.ipify.org).
+      if (await inPage(() => document.querySelector('.map-row') !== null)) await until(['your country', 20_000], () => document.querySelector('.world .home') !== null)
       await shot(`map-${theme.toLowerCase()}`)
       // Opt-in: a traceroute takes up to a minute and needs the internet: E2E_TRACE=1
       if (process.env.E2E_TRACE && theme === 'Light' && (await inPage(() => document.querySelector('.map-row') !== null))) {

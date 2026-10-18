@@ -211,8 +211,10 @@ export async function run(steps) {
   if (docs) {
     const dir = path.join(root, 'docs')
     fs.mkdirSync(dir, { recursive: true })
-    for (const n of ['overview-dark', 'apps-traffic', 'connections-geo', 'packets', 'security'])
-      if (fs.existsSync(path.join(shots, `${n}.png`))) fs.copyFileSync(path.join(shots, `${n}.png`), path.join(dir, `${n}.png`))
+    // README picture ← screenshot; with E2E_GEO_FROM the Connections and Map pages already show countries.
+    const pick = { 'overview-dark': 'overview-dark', 'apps-traffic': 'apps-traffic', 'connections-geo': process.env.E2E_GEO_FROM ? 'connections-light' : 'connections-geo', packets: 'packets', security: 'security', map: 'map-light' }
+    for (const [doc, shotName] of Object.entries(pick))
+      if (fs.existsSync(path.join(shots, `${shotName}.png`))) fs.copyFileSync(path.join(shots, `${shotName}.png`), path.join(dir, `${doc}.png`))
   }
   console.log(`e2e passed; screenshots in ${path.relative(root, shots)}`)
 }
