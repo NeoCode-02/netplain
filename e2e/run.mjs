@@ -435,7 +435,8 @@ try {
   })
 
   await step('seen from the internet', async () => {
-    await until('From the internet tab', clickText, 'From the internet')
+    // Outside Windows it is the only tab, so there is no tab bar to click.
+    await inPage(clickText, 'From the internet')
     await until('the check button', hasText, 'Shodan’s InternetDB')
     // Sends this network's public address to Shodan's InternetDB, so only when asked for.
     if (process.env.E2E_EXPOSURE) {

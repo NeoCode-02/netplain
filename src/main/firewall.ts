@@ -53,9 +53,8 @@ export function parseBlocked(json: string): Blocked[] {
 export async function blockedList(): Promise<Blocked[]> {
   const out = await powershell(`
 $ErrorActionPreference = 'SilentlyContinue'
-@(Get-NetFirewallRule -DisplayName '${PREFIX}*' | ForEach-Object {
-  [pscustomobject]@{ name = $_.DisplayName; program = ($_ | Get-NetFirewallApplicationFilter).Program; remote = (($_ | Get-NetFirewallAddressFilter).RemoteAddress -join ',') }
-}) | ConvertTo-Json -Compress
+# One line: a script read from stdin runs line by line, so a pipeline split over lines never finishes.
+@(Get-NetFirewallRule -DisplayName '${PREFIX}*' | ForEach-Object { [pscustomobject]@{ name = $_.DisplayName; program = ($_ | Get-NetFirewallApplicationFilter).Program; remote = (($_ | Get-NetFirewallAddressFilter).RemoteAddress -join ',') } }) | ConvertTo-Json -Compress
 `)
   return parseBlocked(out)
 }
