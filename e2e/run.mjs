@@ -5,202 +5,9 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { app, clickText, data, hasText, inMain, inPage, root, run, saved, setInput, shot, shots, step, until } from './lib.mjs'
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const shots = path.join(root, 'e2e', 'shots')
-fs.mkdirSync(shots, { recursive: true })
-const data = fs.mkdtempSync(path.join(os.tmpdir(), 'netplain-e2e-'))
-
-/** A capture file with one HTTP request carrying a Basic login (Ethernet/IPv4/TCP, classic pcap). */
-function loginPcap() {
-  const payload = Buffer.from('GET /admin HTTP/1.1\r\nHost: cam.example\r\nAuthorization: Basic YWRtaW46c2VjcmV0\r\n\r\n')
-  const ip = Buffer.alloc(20)
-  ip[0] = 0x45
-  ip.writeUInt16BE(40 + payload.length, 2)
-  ip[8] = 64
-  ip[9] = 6
-  Buffer.from([192, 168, 1, 10, 203, 0, 113, 80]).copy(ip, 12)
-  const tcp = Buffer.alloc(20)
-  tcp.writeUInt16BE(50000, 0)
-  tcp.writeUInt16BE(80, 2)
-  tcp.writeUInt32BE(1, 4)
-  tcp.writeUInt32BE(1, 8)
-  tcp[12] = 0x50
-  tcp[13] = 0x18
-  tcp.writeUInt16BE(65535, 14)
-  const frame = Buffer.concat([Buffer.from([2, 0, 0x5e, 0, 0, 1, 2, 0, 0x5e, 0, 0, 2, 8, 0]), ip, tcp, payload])
-  const head = Buffer.alloc(24)
-  head.writeUInt32LE(0xa1b2c3d4, 0)
-  head.writeUInt16LE(2, 4)
-  head.writeUInt16LE(4, 6)
-  head.writeUInt32LE(65535, 16)
-  head.writeUInt32LE(1, 20)
-  const rec = Buffer.alloc(16)
-  rec.writeUInt32LE(1_760_000_000, 0)
-  rec.writeUInt32LE(frame.length, 8)
-  rec.writeUInt32LE(frame.length, 12)
-  return Buffer.concat([head, rec, frame])
-}
-const pcapFile = path.join(data, 'login.pcap')
-fs.writeFileSync(pcapFile, loginPcap())
-
-const require_ = (await import('node:module')).createRequire(import.meta.url)
-const electron = require_('electron')
-// --inspect opens the main process too (unpacked Electron only), for what the page cannot do, such as a real window close.
-const args = [root, '--remote-debugging-port=0', '--inspect=0', ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [])]
-const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000', NETPLAIN_LAN_MS: '3000' }, stdio: ['ignore', 'pipe', 'pipe'] })
-let appLog = ''
-app.stdout.on('data', (d) => (appLog += d))
-const devtools = await new Promise((resolve, reject) => {
-  const timer = setTimeout(() => reject(new Error(`The app did not start:\n${appLog}`)), 30_000)
-  app.stderr.on('data', (d) => {
-    appLog += d
-    const m = /DevTools listening on (ws:\/\/[^\s]+)/.exec(appLog)
-    if (m) {
-      clearTimeout(timer)
-      resolve(m[1])
-    }
-  })
-  app.on('exit', (code) => reject(new Error(`The app exited (${code}):\n${appLog}`)))
-})
-
-const inspector = /Debugger listening on (ws:\/\/[^\s]+)/.exec(appLog)?.[1]
-
-/** Evaluates `expr` in the app's main process (`process.mainModule.require('electron')` reaches Electron). */
-async function inMain(expr) {
-  if (!inspector) throw new Error('the main process has no inspector')
-  const ws = new WebSocket(inspector)
-  await new Promise((resolve, reject) => (ws.addEventListener('open', resolve), ws.addEventListener('error', reject)))
-  const r = await new Promise((resolve) => {
-    ws.addEventListener('message', (m) => {
-      const d = JSON.parse(m.data)
-      if (d.id === 1) resolve(d)
-    })
-    ws.send(JSON.stringify({ id: 1, method: 'Runtime.evaluate', params: { expression: expr, awaitPromise: true, returnByValue: true } }))
-  })
-  ws.close()
-  if (r.result?.exceptionDetails) throw new Error(r.result.exceptionDetails.exception?.description ?? 'main process error')
-  return r.result?.result?.value
-}
-
-// Native Open and Save dialogs cannot be driven: the main process gets its answers from this test
-// (the capture file below; saved files land in the test's data folder under their suggested names).
-await inMain(`(() => {
-  const { dialog } = process.mainModule.require('electron')
-  const path = process.mainModule.require('path')
-  dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [${JSON.stringify(pcapFile)}] })
-  dialog.showSaveDialog = async (_win, o) => ({ canceled: false, filePath: path.join(${JSON.stringify(data)}, o.defaultPath) })
-  return true
-})()`)
-/** A file the app saved into the data folder, by name pattern (waits up to 30 s). */
-async function saved(pattern) {
-  const end = Date.now() + 30_000
-  for (;;) {
-    const name = fs.readdirSync(data).find((n) => pattern.test(n))
-    if (name) return path.join(data, name)
-    if (Date.now() > end) throw new Error(`Timed out waiting for a saved ${pattern}`)
-    await new Promise((r) => setTimeout(r, 300))
-  }
-}
-
-const port = new URL(devtools).port
-let page
-for (let i = 0; i < 50 && !page; i++) {
-  page = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find((t) => t.type === 'page')
-  if (!page) await new Promise((r) => setTimeout(r, 200))
-}
-const socket = new WebSocket(page.webSocketDebuggerUrl)
-await new Promise((r) => socket.addEventListener('open', r))
-let seq = 0
-const pending = new Map()
-const consoleErrors = []
-socket.addEventListener('message', (m) => {
-  const d = JSON.parse(m.data)
-  if (d.id && pending.has(d.id)) pending.get(d.id)(d)
-  if (d.method === 'Runtime.exceptionThrown') consoleErrors.push(d.params.exceptionDetails.exception?.description ?? d.params.exceptionDetails.text)
-  if (d.method === 'Runtime.consoleAPICalled' && d.params.type === 'error') consoleErrors.push(d.params.args.map((a) => a.value ?? a.description).join(' '))
-})
-let gone = null
-const cdp = (method, params = {}) =>
-  new Promise((resolve, reject) => {
-    if (gone) return reject(gone)
-    pending.set(++seq, (d) => (d instanceof Error ? reject(d) : resolve(d)))
-    socket.send(JSON.stringify({ id: seq, method, params }))
-  })
-// The page went away (the app quit or crashed): fail with its output instead of waiting forever.
-socket.addEventListener('close', () => {
-  gone = new Error(`The app closed the page. Its output:\n${appLog.slice(-3000)}`)
-  for (const f of pending.values()) f(gone)
-  pending.clear()
-})
-await cdp('Runtime.enable')
-
-async function inPage(fn, ...a) {
-  const r = await cdp('Runtime.evaluate', { expression: `(${fn})(...${JSON.stringify(a)})`, awaitPromise: true, returnByValue: true })
-  if (r.result?.exceptionDetails) throw new Error(r.result.exceptionDetails.exception?.description ?? 'page error')
-  return r.result?.result?.value
-}
-
-/** `what` is a label, or [label, ms] for a longer wait than 30 s. */
-async function until(what, fn, ...a) {
-  const [label, ms] = Array.isArray(what) ? what : [what, 30_000]
-  const end = Date.now() + ms
-  for (;;) {
-    const v = await inPage(fn, ...a).catch(() => undefined)
-    if (v) return v
-    if (Date.now() > end) throw new Error(`Timed out waiting for: ${label}`)
-    await new Promise((r) => setTimeout(r, 200))
-  }
-}
-
-// E2E_DOCS=1: screenshots for the README, with this machine's names and hardware addresses replaced.
-const docs = process.env.E2E_DOCS ? [[`\\Users\\${os.userInfo().username}\\`, '\\Users\\you\\'], [os.hostname(), 'MY-PC']] : null
-const scrub = async (pairs) => {
-  const snap = await window.netplain.snapshot()
-  for (const a of snap?.adapters ?? []) if (a.wifi?.ssid) pairs.push([a.wifi.ssid, 'Home Wi-Fi'])
-  const fake = (window.__macs ??= new Map())
-  // Twice: the second pass also hides the MACs inside the packet hex dump, learnt in the first.
-  for (let pass = 0; pass < 2; pass++) {
-    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
-    for (let n; (n = walk.nextNode()); ) {
-      let v = n.nodeValue
-      for (const [a, b] of pairs) v = v.split(a).join(b)
-      v = v.replace(/\b([0-9a-f]{2}[:-]){5}[0-9a-f]{2}\b/gi, (m) => {
-        if (m.startsWith('02:00:5e:00:00:')) return m
-        if (!fake.has(m.toLowerCase())) fake.set(m.toLowerCase(), `02:00:5e:00:00:${String(fake.size + 1).padStart(2, '0')}`)
-        return fake.get(m.toLowerCase())
-      }).replace(/\{[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}\}/gi, '{…}')
-      for (const [real, f] of fake) v = v.split(real.replace(/[:-]/g, ' ')).join(f.replace(/:/g, ' '))
-      if (v !== n.nodeValue) n.nodeValue = v
-    }
-  }
-  return true
-}
-
-async function shot(name) {
-  if (docs) await inPage(scrub, docs)
-  const r = await cdp('Page.captureScreenshot', { format: 'png' })
-  fs.writeFileSync(path.join(shots, `${name}.png`), Buffer.from(r.result.data, 'base64'))
-}
-
-const clickText = (text) => {
-  // Navigation items also carry a badge, so their label is matched on its own.
-  const el = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === text || b.querySelector('.label')?.textContent.trim() === text)
-  if (!el || el.disabled) return false
-  el.click()
-  return true
-}
-const hasText = (text) => document.body.innerText.includes(text)
-
-const step = async (name, fn) => {
-  process.stdout.write(`• ${name} … `)
-  await fn()
-  process.stdout.write('ok\n')
-}
-
-let failed = false
-try {
+await run(async () => {
   await until('the app', () => document.querySelector('.rail') !== null)
   // Language is switched in Settings, like a person would (the system language decides the first one).
   await until('Settings', () => {
@@ -280,16 +87,13 @@ try {
     if (watching === 'yes') {
       await inPage(() => document.querySelector('.pk-body .pk-row').click())
       await until('packet details', () => document.querySelectorAll('.pk-layer').length >= 2)
-      const setFilter = (v) => {
-        const el = document.querySelector('.pk-filter input')
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v)
-        el.dispatchEvent(new Event('input', { bubbles: true }))
-        document.querySelector('.pk-filter button[type=submit]').click()
-        return true
+      const filter = async (v) => {
+        await setInput('.pk-filter input', v)
+        await inPage(() => (document.querySelector('.pk-filter button[type=submit]').click(), true))
       }
-      await inPage(setFilter, 'tcp.port ==')
+      await filter('tcp.port ==')
       await until('the filter error', hasText, 'Wireshark did not understand the filter')
-      await inPage(setFilter, 'ip')
+      await filter('ip')
       await until('filter matches', hasText, 'packets match the filter')
       await until('Save (.pcapng)', clickText, 'Save (.pcapng)')
       await saved(/^netplain-[\d-]+\.pcapng$/)
@@ -400,12 +204,7 @@ try {
     const exited = new Promise((r) => child.once('exit', () => r(true)))
     try {
       await until('Connections', clickText, 'Connections')
-      await inPage((v) => {
-        const el = document.querySelector('.search input')
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v)
-        el.dispatchEvent(new Event('input', { bubbles: true }))
-        return true
-      }, port)
+      await setInput('.search input', port)
       const row = (p) => [...document.querySelectorAll('.port-row')].find((r) => r.querySelector('.port')?.textContent === p)
       const stop = `(${row})`
       await until('its row with a Stop button', (p, f) => !!eval(f)(p)?.querySelector('.block-button button'), port, stop)
@@ -416,12 +215,7 @@ try {
       if (!gone) throw new Error('the program was not stopped')
     } finally {
       child.kill()
-      await inPage(() => {
-        const el = document.querySelector('.search input')
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, '')
-        el.dispatchEvent(new Event('input', { bubbles: true }))
-        return true
-      })
+      await setInput('.search input', '')
     }
   })
 
@@ -512,21 +306,17 @@ try {
     await until('Tools', clickText, 'Tools')
     await until('Check', clickText, 'Check')
     await until('the diagnosis', () => document.querySelectorAll('.steps-list li').length === 5)
-    const ask = (i, host) => {
-      const form = document.querySelectorAll('.tool-form')[i]
-      const input = form.querySelector('input')
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, host)
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-      setTimeout(() => form.querySelector('button[type=submit]').click(), 50)
-      return true
+    const ask = async (i, host) => {
+      await setInput('.tool-form', host, i)
+      await inPage((n) => (document.querySelectorAll('.tool-form')[n].querySelector('button[type=submit]').click(), true), i)
     }
-    await inPage(ask, 0, '127.0.0.1')
+    await ask(0, '127.0.0.1')
     await until('ping result', hasText, 'answered')
-    await inPage(ask, 1, 'localhost')
+    await ask(1, 'localhost')
     await until('lookup result', hasText, 'Answered in')
-    await inPage(ask, 2, '127.0.0.1')
+    await ask(2, '127.0.0.1')
     await until('port result', () => /Open:|Closed:|No answer:/.test(document.body.innerText))
-    await inPage(ask, 3, '127.0.0.1')
+    await ask(3, '127.0.0.1')
     // Some Linux systems have neither traceroute nor tracepath; the page then says what to install.
     await until('route', () => document.querySelectorAll('.hops li').length >= 1 || document.body.innerText.includes('No route tool on this computer'))
     if (process.env.E2E_FIXES) {
@@ -540,18 +330,13 @@ try {
     await shot('tools')
   })
 
-  const fill = (i, v) => {
-    const el = document.querySelectorAll('.tool-form input')[i]
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v)
-    el.dispatchEvent(new Event('input', { bubbles: true }))
-    return true
-  }
+  const fill = (i, v) => setInput('.tool-form input', v, i)
 
   await step('subnet calculator', async () => {
     await until('Subnet', clickText, 'Subnet')
-    await inPage(fill, 0, '10.1.2.3/8')
+    await fill(0, '10.1.2.3/8')
     await until('the network', hasText, '10.0.0.0/8')
-    await inPage(fill, 1, '10.200.0.1')
+    await fill(1, '10.200.0.1')
     await until('the inside answer', hasText, 'Inside')
     await shot('tools-subnet')
   })
@@ -583,9 +368,9 @@ try {
     const greeter = net.createServer((c) => c.end('SSH-2.0-E2E\r\n'))
     await new Promise((r) => greeter.listen(0, '127.0.0.1', r))
     try {
-      await inPage(fill, 0, '127.0.0.1')
+      await fill(0, '127.0.0.1')
       await until('Custom', clickText, 'Custom')
-      await inPage(fill, 1, `${greeter.address().port}, 1-50`)
+      await fill(1, `${greeter.address().port}, 1-50`)
       await until('Scan', clickText, 'Scan')
       await until('the open port and what it said', hasText, 'SSH-2.0-E2E')
       await until('the end of the scan', () => /open ports? on 127\.0\.0\.1/.test(document.body.innerText))
@@ -598,7 +383,7 @@ try {
   await step('dns records', async () => {
     await until('DNS', clickText, 'DNS')
     await until('TXT', clickText, 'TXT')
-    await inPage(fill, 0, 'example.com')
+    await fill(0, 'example.com')
     await until('Look up', clickText, 'Look up')
     // Four servers answer (or say they can't), and TXT also explains the domain's mail rules.
     await until('four server rows', () => document.querySelectorAll('.list .list-row').length === 4)
@@ -608,7 +393,7 @@ try {
 
   await step('whois', async () => {
     await until('Whois', clickText, 'Whois')
-    await inPage(fill, 0, 'example.com')
+    await fill(0, 'example.com')
     await until('Look up', clickText, 'Look up')
     // The registry answers through rdap.org; if it is down the page says so instead.
     await until('the registration or a reason', () => document.body.innerText.includes('Registered') || document.querySelector('.note.danger') !== null)
@@ -621,7 +406,7 @@ try {
     await new Promise((r) => site.listen(0, '127.0.0.1', r))
     try {
       await until('Website', clickText, 'Website')
-      await inPage(fill, 0, `http://127.0.0.1:${site.address().port}/`)
+      await fill(0, `http://127.0.0.1:${site.address().port}/`)
       await until('Check', clickText, 'Check')
       await until('the redirect and the verdicts', () => document.querySelectorAll('.hops li').length === 2 && document.body.innerText.includes('1 of 6 protective headers'))
       await until('the plain-http warning', hasText, 'No encryption')
@@ -677,13 +462,7 @@ try {
       const site = http.createServer((_q, r) => r.end('hello from netplain e2e'))
       await new Promise((r) => site.listen(0, '127.0.0.1', r))
       try {
-        const setPort = (p) => {
-          const el = document.querySelector('.share-port')
-          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, String(p))
-          el.dispatchEvent(new Event('input', { bubbles: true }))
-          return true
-        }
-        await inPage(setPort, site.address().port)
+        await setInput('.share-port', site.address().port)
         const provider = process.env.E2E_SHARE === 'cloudflare' ? 'Cloudflare' : 'localhost.run'
         await until(provider, clickText, provider)
         // Cloudflare's connector is downloaded by the Share button itself the first time.
@@ -737,16 +516,9 @@ try {
     const http = await import('node:http')
     const site = http.createServer((_q, r) => r.end('ok'))
     await new Promise((r) => site.listen(0, '127.0.0.1', r))
-    const setField = (sel, v) => {
-      const el = document.querySelector(sel)
-      const select = el.tagName === 'SELECT'
-      Object.getOwnPropertyDescriptor((select ? HTMLSelectElement : HTMLInputElement).prototype, 'value').set.call(el, v)
-      el.dispatchEvent(new Event(select ? 'change' : 'input', { bubbles: true }))
-      return true
-    }
     const watch = async (kind, target) => {
-      await inPage(setField, '.monitor-form select', kind)
-      await inPage(setField, '.monitor-form input', target)
+      await setInput('.monitor-form select', kind)
+      await setInput('.monitor-form input', target)
       await inPage(() => (document.querySelector('.monitor-form button[type=submit]').click(), true))
     }
     try {
@@ -772,14 +544,8 @@ try {
   await step('monthly data limit', async () => {
     await until('Settings', clickText, 'Settings')
     await until('the limit form', () => document.querySelector('.cap-form') !== null)
-    const setField = (i, v) => {
-      const el = document.querySelectorAll('.cap-form input')[i]
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v)
-      el.dispatchEvent(new Event('input', { bubbles: true }))
-      return true
-    }
-    await inPage(setField, 0, '0.5')
-    await inPage(setField, 1, '1')
+    await setInput('.cap-form input', '0.5', 0)
+    await setInput('.cap-form input', '1', 1)
     await until('Save', clickText, 'Save')
     await until('saved', hasText, 'Saved.')
     await until('History', clickText, 'History')
@@ -838,28 +604,4 @@ try {
     await until('adapter data', () => document.querySelector('.internet') !== null || document.body.innerText.includes('internetga chiqa olmayapti'))
     await shot('network-uz')
   })
-
-  if (consoleErrors.length) throw new Error(`Console errors:\n${consoleErrors.join('\n')}`)
-} catch (e) {
-  failed = true
-  console.error(`\n${e.message}`)
-  if (gone) console.error(gone.message)
-  await shot('failure').catch(() => {})
-  if (process.env.GITHUB_ACTIONS) console.log(`::error title=E2E::${e.message.replace(/%/g, '%25').replace(/\r/g, '').replace(/\n/g, '%0A')}`)
-} finally {
-  socket.close()
-  if (app.exitCode === null && app.signalCode === null) {
-    const exited = new Promise((r) => app.once('exit', r))
-    app.kill()
-    await exited
-  }
-  fs.rmSync(data, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
-}
-if (failed) process.exit(1)
-if (docs) {
-  const dir = path.join(root, 'docs')
-  fs.mkdirSync(dir, { recursive: true })
-  for (const n of ['overview-dark', 'apps-traffic', 'connections-geo', 'packets', 'security'])
-    if (fs.existsSync(path.join(shots, `${n}.png`))) fs.copyFileSync(path.join(shots, `${n}.png`), path.join(dir, `${n}.png`))
-}
-console.log(`e2e passed; screenshots in ${path.relative(root, shots)}`)
+})

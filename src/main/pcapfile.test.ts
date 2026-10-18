@@ -2,53 +2,11 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { DATA, LOGIN, pcap, SYN, type Frame } from '../../e2e/pcap'
 import { analyzePcap, createSummary, parseCredentials, SCAN_PORTS } from './pcapfile'
 import { findTshark } from './tshark'
 
 const noGeo = () => ({ country: null, org: null })
-
-/** A classic pcap of Ethernet/IPv4/TCP frames; sequence numbers run on per flow, as tshark expects. */
-function pcap(frames: [src: string, dst: string, sport: number, dport: number, flags: number, payload?: string][]) {
-  const seq = new Map<string, number>()
-  const ip = (s: string) => Buffer.from(s.split('.').map(Number))
-  const parts = [Buffer.alloc(24)]
-  parts[0].writeUInt32LE(0xa1b2c3d4, 0)
-  parts[0].writeUInt16LE(2, 4)
-  parts[0].writeUInt16LE(4, 6)
-  parts[0].writeUInt32LE(65535, 16)
-  parts[0].writeUInt32LE(1, 20)
-  frames.forEach(([src, dst, sport, dport, flags, payload = ''], i) => {
-    const data = Buffer.from(payload, 'latin1')
-    const flow = `${src}:${sport}>${dst}:${dport}`
-    const s = seq.get(flow) ?? 1
-    seq.set(flow, s + data.length)
-    const tcp = Buffer.alloc(20)
-    tcp.writeUInt16BE(sport, 0)
-    tcp.writeUInt16BE(dport, 2)
-    tcp.writeUInt32BE(s, 4)
-    tcp.writeUInt32BE(flags & 0x10 ? 1 : 0, 8)
-    tcp[12] = 5 << 4
-    tcp[13] = flags
-    tcp.writeUInt16BE(65535, 14)
-    const ipv4 = Buffer.alloc(20)
-    ipv4[0] = 0x45
-    ipv4.writeUInt16BE(40 + data.length, 2)
-    ipv4[8] = 64
-    ipv4[9] = 6
-    ip(src).copy(ipv4, 12)
-    ip(dst).copy(ipv4, 16)
-    const frame = Buffer.concat([Buffer.from([2, 0, 0x5e, 0, 0, 1, 2, 0, 0x5e, 0, 0, 2, 8, 0]), ipv4, tcp, data])
-    const rec = Buffer.alloc(16)
-    rec.writeUInt32LE(1_760_000_000 + i, 0)
-    rec.writeUInt32LE(frame.length, 8)
-    rec.writeUInt32LE(frame.length, 12)
-    parts.push(rec, frame)
-  })
-  return Buffer.concat(parts)
-}
-
-const SYN = 0x02
-const DATA = 0x18 // PSH, ACK
 
 describe('capture file report', () => {
   it('adds up protocols, talkers, names and finds a port scan', () => {
@@ -97,10 +55,10 @@ describe('capture file report', () => {
     fs.writeFileSync(
       file,
       pcap([
-        ['192.168.1.10', '203.0.113.80', 50000, 80, DATA, 'GET /admin HTTP/1.1\r\nHost: cam.example\r\nAuthorization: Basic YWRtaW46c2VjcmV0\r\n\r\n'],
+        LOGIN,
         ['192.168.1.10', '203.0.113.21', 50001, 21, DATA, 'USER bob\r\n'],
         ['192.168.1.10', '203.0.113.21', 50001, 21, DATA, 'PASS hunter2\r\n'],
-        ...Array.from({ length: 150 }, (_, i): [string, string, number, number, number] => ['198.51.100.66', '192.168.1.10', 40000, i + 1, SYN])
+        ...Array.from({ length: 150 }, (_, i): Frame => ['198.51.100.66', '192.168.1.10', 40000, i + 1, SYN])
       ])
     )
     const r = await analyzePcap(tshark!, file, noGeo)
