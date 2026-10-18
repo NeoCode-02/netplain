@@ -357,6 +357,22 @@ try {
     await shot('tools')
   })
 
+  const fill = (i, v) => {
+    const el = document.querySelectorAll('.tool-form input')[i]
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v)
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+    return true
+  }
+
+  await step('subnet calculator', async () => {
+    await until('Subnet', clickText, 'Subnet')
+    await inPage(fill, 0, '10.1.2.3/8')
+    await until('the network', hasText, '10.0.0.0/8')
+    await inPage(fill, 1, '10.200.0.1')
+    await until('the inside answer', hasText, 'Inside')
+    await shot('tools-subnet')
+  })
+
   await step('share page', async () => {
     // A site running here is found by itself and offered by its page title.
     const http = await import('node:http')

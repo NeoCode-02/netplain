@@ -5,19 +5,7 @@ import { addr, bits } from '../format'
 import { useT } from '../i18n'
 import { useLive, type Point } from '../live'
 import RateChart from '../RateChart'
-import { Icon, KIND_ICON } from '../ui'
-
-function Fact({ label, value, note, mono }: { label: string; value: string; note?: string; mono?: boolean }) {
-  return (
-    <div className="fact">
-      <dt>{label}</dt>
-      <dd>
-        <span className={mono ? 'mono' : undefined}>{value}</span>
-        {note && <small>{note}</small>}
-      </dd>
-    </div>
-  )
-}
+import { Fact, Icon, KIND_ICON } from '../ui'
 
 function Facts({ a }: { a: Adapter }) {
   const t = useT()

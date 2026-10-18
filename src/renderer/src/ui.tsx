@@ -81,6 +81,19 @@ export function Empty({ icon, title, body, children }: { icon: IconName; title: 
   )
 }
 
+/** One labelled value in a `<dl className="facts">`, with an optional plain-language note. */
+export function Fact({ label, value, note, mono }: { label: string; value: string; note?: string; mono?: boolean }) {
+  return (
+    <div className="fact">
+      <dt>{label}</dt>
+      <dd>
+        <span className={mono ? 'mono' : undefined}>{value}</span>
+        {note && <small>{note}</small>}
+      </dd>
+    </div>
+  )
+}
+
 const icons = new Map<string, Promise<string | null>>()
 /** A running program's own icon (asked from the OS once per path), or a neutral box. */
 export function AppIcon({ path }: { path: string | null }) {

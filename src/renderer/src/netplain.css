@@ -203,6 +203,7 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .tool-form { margin-top: 12px; }
 .tool-form .input { flex: 1; min-width: 0; }
 .port-input { flex: 0 0 76px !important; }
+.tool .facts { margin: 18px 0 6px; }
 .tool-out { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; }
 .tool-out .big { font-size: 20px; font-weight: 600; }
 .port-open { color: var(--ok); }
