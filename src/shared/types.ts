@@ -384,6 +384,35 @@ export interface LookupResult {
 
 export type PortState = 'open' | 'closed' | 'filtered'
 
+export type RecordType = 'A' | 'AAAA' | 'CNAME' | 'MX' | 'TXT' | 'NS' | 'SOA' | 'CAA' | 'SRV'
+
+/** One DNS server's answer, timed. */
+export interface DnsAnswer {
+  /** "system" for this computer's own DNS server, else the public service's name. */
+  server: string
+  ip: string | null
+  ms: number
+  records: string[]
+  /** none: the name exists without such records; nxdomain: no such name. */
+  error: 'none' | 'nxdomain' | 'timeout' | 'fail' | null
+}
+
+/** What a domain's SPF and DMARC records say about mail sent in its name. */
+export interface MailPolicy {
+  spf: 'strict' | 'soft' | 'open' | 'missing'
+  dmarc: 'reject' | 'quarantine' | 'none' | 'missing'
+  spfRecord: string | null
+  dmarcRecord: string | null
+}
+
+export interface DnsReport {
+  name: string
+  type: RecordType | 'PTR'
+  answers: DnsAnswer[]
+  /** For MX and TXT questions. */
+  mail: MailPolicy | null
+}
+
 /** An open port found by the scanner, with what the service said about itself. */
 export interface ScanHit {
   port: number

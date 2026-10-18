@@ -316,3 +316,4 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 /* port scan */
 .scan-port { width: 56px; flex-shrink: 0; font-weight: 600; }
 .scan-meter { margin-bottom: 12px; }
+.dns-records { display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }

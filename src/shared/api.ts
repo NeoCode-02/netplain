@@ -3,6 +3,7 @@ import type {
   BlocklistInfo,
   Connections,
   DiagnoseStep,
+  DnsReport,
   Finding,
   GeoInfo,
   Hop,
@@ -13,6 +14,7 @@ import type {
   PingResult,
   PortState,
   PublicIp,
+  RecordType,
   Release,
   ScanHit,
   ScanKind,
@@ -113,6 +115,8 @@ export interface Api {
   checkPort(host: string, port: number): Promise<PortState>
   /** Open ports among up to 1000 given ones, with what each service says (the page asks in batches). */
   scanPorts(host: string, ports: number[]): Promise<ScanHit[]>
+  /** One record type from this computer's DNS and three public ones, timed; SPF/DMARC for MX and TXT. An IP is looked up backwards. */
+  dnsQuery(name: string, type: RecordType): Promise<DnsReport>
   /** Asks api.ipify.org for the address the internet sees. Throws E_PUBLIC_IP. */
   publicIp(): Promise<PublicIp>
   /** Checks adapter → address → router → DNS → internet. */

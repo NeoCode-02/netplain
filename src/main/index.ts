@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { CHANNELS, type Api } from '../shared/api'
-import type { Release, Snapshot } from '../shared/types'
+import type { RecordType, Release, Snapshot } from '../shared/types'
 import { createAlerts } from './alerts'
 import { collector } from './collectors'
 import { join } from './connections'
@@ -20,6 +20,7 @@ import { createMonitors } from './monitors'
 import { createCap } from './cap'
 import { createUsage } from './usage'
 import { checkPort, diagnose, isHost, lookup, ping, publicIp, scanPorts, trace } from './tools'
+import { dnsQuery, RECORD_TYPES } from './dnskit'
 import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
 import { createSecurity } from './security'
 import { createScanner } from './defender'
@@ -293,6 +294,7 @@ const handlers: Api = {
   lookup: (name) => lookup(name, geo.lookup),
   checkPort: (host, port) => checkPort(host, port),
   scanPorts: (host, ports) => scanPorts(host, ports),
+  dnsQuery: (name, type) => dnsQuery(name, type),
   publicIp: () => publicIp(geo.lookup),
   diagnose: () => diagnose(latest),
   flushDns: () => flushDns(),
@@ -413,6 +415,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   lookup: (a) => isHost(a[0]),
   checkPort: (a) => isHost(a[0]) && isPort(a[1]),
   scanPorts: (a) => isHost(a[0]) && Array.isArray(a[1]) && a[1].length >= 1 && a[1].length <= 1000 && a[1].every(isPort),
+  dnsQuery: (a) => isHost(a[0]) && RECORD_TYPES.includes(a[1] as RecordType),
   publicIp: none,
   diagnose: none,
   flushDns: none,

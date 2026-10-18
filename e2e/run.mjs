@@ -398,6 +398,17 @@ try {
     }
   })
 
+  await step('dns records', async () => {
+    await until('DNS', clickText, 'DNS')
+    await until('TXT', clickText, 'TXT')
+    await inPage(fill, 0, 'example.com')
+    await until('Look up', clickText, 'Look up')
+    // Four servers answer (or say they can't), and TXT also explains the domain's mail rules.
+    await until('four server rows', () => document.querySelectorAll('.list .list-row').length === 4)
+    await until('the mail section', hasText, 'E-mail protection')
+    await shot('tools-dns')
+  })
+
   await step('share page', async () => {
     // A site running here is found by itself and offered by its page title.
     const http = await import('node:http')

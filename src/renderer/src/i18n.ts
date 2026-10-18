@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { AlertKind, OutageCause } from '../../shared/types'
+import type { AlertKind, OutageCause, RecordType } from '../../shared/types'
 import { bytes } from './format'
 
 const en = {
@@ -355,7 +355,37 @@ const en = {
   tools: {
     title: 'Tools',
     lead: 'What you would type in a terminal, as buttons — with the answer explained.',
-    tabs: { diagnose: 'Diagnose', scan: 'Port scan', subnet: 'Subnet' },
+    tabs: { diagnose: 'Diagnose', scan: 'Port scan', dns: 'DNS', subnet: 'Subnet' },
+    dns: {
+      title: 'DNS records',
+      lead: 'What a name points to, asked from your own DNS server and from Cloudflare, Google and Quad9 at once. An IP is looked up backwards (PTR).',
+      placeholder: 'example.com or 1.1.1.1',
+      run: 'Look up',
+      type: 'Record type',
+      types: {
+        A: 'A — the IPv4 address.',
+        AAAA: 'AAAA — the IPv6 address.',
+        CNAME: 'CNAME — another name this one stands for.',
+        MX: 'MX — the servers that receive its e-mail; SPF and DMARC are checked too.',
+        TXT: 'TXT — free text: ownership proofs and the SPF mail rule.',
+        NS: 'NS — the servers in charge of the domain.',
+        SOA: 'SOA — the zone’s main server, contact and timers.',
+        CAA: 'CAA — which companies may issue its certificates.',
+        SRV: 'SRV — where a service runs, e.g. _sip._tcp.example.com.'
+      } as Record<RecordType, string>,
+      answer: (type: string, name: string) => `${type} for ${name}`,
+      errors: { none: 'The name exists, but has no records of this type.', nxdomain: 'No such name.', timeout: 'The DNS server did not answer.', fail: 'The DNS server could not answer.' },
+      short: { none: 'No records', nxdomain: 'No such name', timeout: 'No answer', fail: 'Failed' },
+      servers: 'The same question to four servers',
+      differs: 'Different answers are normal for big sites: they send each region to its nearest server. Only your own DNS answering differently can mean it filters or tampers.',
+      system: 'Your DNS',
+      same: 'Same',
+      different: 'Different',
+      mail: 'E-mail protection',
+      mailLead: 'Whether others can send mail pretending to be this domain.',
+      spf: { strict: 'Mail from other servers is refused', soft: 'Mail from other servers is marked suspicious', open: 'Does not stop mail from other servers', missing: 'Missing: any server can send in its name' },
+      dmarc: { reject: 'Fake mail is refused', quarantine: 'Fake mail goes to spam', none: 'Fake mail is only reported, still delivered', missing: 'Missing: receivers get no instructions' }
+    },
     scan: {
       title: 'Port scanner',
       lead: 'Which services a device offers: open ports, what answers on each, and which ones are risky. It starts with your router.',
@@ -1186,7 +1216,37 @@ const uz: Dict = {
   tools: {
     title: 'Asboblar',
     lead: 'Terminalda yoziladigan buyruqlar — tugma ko‘rinishida, javobi tushuntirilgan holda.',
-    tabs: { diagnose: 'Tashxis', scan: 'Port skaner', subnet: 'Subnet' },
+    tabs: { diagnose: 'Tashxis', scan: 'Port skaner', dns: 'DNS', subnet: 'Subnet' },
+    dns: {
+      title: 'DNS yozuvlari',
+      lead: 'Nom nimaga olib boradi — sizning DNS serveringizdan va Cloudflare, Google, Quad9’dan birdaniga so‘raladi. IP teskari tomonga qidiriladi (PTR).',
+      placeholder: 'example.com yoki 1.1.1.1',
+      run: 'Qidirish',
+      type: 'Yozuv turi',
+      types: {
+        A: 'A — IPv4 manzil.',
+        AAAA: 'AAAA — IPv6 manzil.',
+        CNAME: 'CNAME — bu nom o‘rniga turgan boshqa nom.',
+        MX: 'MX — uning pochtasini qabul qiladigan serverlar; SPF va DMARC ham tekshiriladi.',
+        TXT: 'TXT — erkin matn: egalik isboti va SPF pochta qoidasi.',
+        NS: 'NS — domenga mas’ul serverlar.',
+        SOA: 'SOA — zonaning asosiy serveri, aloqa va taymerlar.',
+        CAA: 'CAA — qaysi kompaniyalar uning sertifikatini bera oladi.',
+        SRV: 'SRV — xizmat qayerda ishlaydi, masalan _sip._tcp.example.com.'
+      },
+      answer: (type, name) => `${name} uchun ${type}`,
+      errors: { none: 'Nom bor, lekin bu turdagi yozuvi yo‘q.', nxdomain: 'Bunday nom yo‘q.', timeout: 'DNS server javob bermadi.', fail: 'DNS server javob bera olmadi.' },
+      short: { none: 'Yozuv yo‘q', nxdomain: 'Nom yo‘q', timeout: 'Javob yo‘q', fail: 'Xato' },
+      servers: 'Bitta savol to‘rt serverga',
+      differs: 'Katta saytlar uchun har xil javob normal: ular har mintaqani eng yaqin serverga yo‘naltiradi. Faqat sizning DNS boshqacha javob bersa, u filtrlayotgan yoki o‘zgartirayotgan bo‘lishi mumkin.',
+      system: 'Sizning DNS',
+      same: 'Bir xil',
+      different: 'Boshqacha',
+      mail: 'Pochta himoyasi',
+      mailLead: 'Boshqalar shu domen nomidan soxta xat yubora oladimi.',
+      spf: { strict: 'Boshqa serverlardan kelgan xat rad etiladi', soft: 'Boshqa serverlardan kelgan xat shubhali deb belgilanadi', open: 'Boshqa serverlardan kelgan xatni to‘xtatmaydi', missing: 'Yo‘q: istalgan server uning nomidan yubora oladi' },
+      dmarc: { reject: 'Soxta xat rad etiladi', quarantine: 'Soxta xat spamga tushadi', none: 'Soxta xat faqat hisobotga yoziladi, baribir yetkaziladi', missing: 'Yo‘q: qabul qiluvchilarga ko‘rsatma berilmagan' }
+    },
     scan: {
       title: 'Port skaner',
       lead: 'Qurilma qanday xizmatlar taklif qiladi: ochiq portlar, har birida nima javob beradi va qaysilari xavfli. Routeringizdan boshlanadi.',

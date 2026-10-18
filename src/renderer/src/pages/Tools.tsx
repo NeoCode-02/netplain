@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useT } from '../i18n'
 import { GO } from '../live'
 import Diagnose from './tools/Diagnose'
+import Dns from './tools/Dns'
 import Scan from './tools/Scan'
 import Subnet from './tools/Subnet'
 
-const TABS = ['diagnose', 'scan', 'subnet'] as const
+const TABS = ['diagnose', 'scan', 'dns', 'subnet'] as const
 export type ToolTab = (typeof TABS)[number]
 
 let pending: { tab: ToolTab; value: string } | null = null
@@ -40,6 +41,7 @@ export default function Tools() {
       </div>
       {tab === 'diagnose' && <Diagnose />}
       {tab === 'scan' && <Scan initial={initial} />}
+      {tab === 'dns' && <Dns />}
       {tab === 'subnet' && <Subnet />}
     </div>
   )
