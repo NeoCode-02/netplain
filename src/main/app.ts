@@ -1,0 +1,545 @@
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, powerMonitor, session, shell, type IpcMainInvokeEvent } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { CHANNELS, type Api } from '../shared/api'
+import type { Neighbor, RecordType, Release, Settings, Snapshot } from '../shared/types'
+import { createAlerts } from './alerts'
+import { collector } from './collectors'
+import { join } from './connections'
+import { cached, run } from './exec'
+import { createGeo } from './geodb'
+import { internetIp, realDevices, sweep } from './net'
+import { allowCaptureLinux, createTrafficWatch } from './traffic'
+import { findTshark, vendorTable } from './tshark'
+import { analyzePcap } from './pcapfile'
+import { stopGuard, stopProcess } from './kill'
+import { applyHosts, parseHosts, readHosts, writeHosts } from './hosts'
+import { isSettings, loadSettings, normalize, saveSettings } from './settings'
+import { autostart, setAutostart } from './autostart'
+import { createTray } from './tray'
+import { createUptime } from './uptime'
+import { createMonitors } from './monitors'
+import { createCap } from './cap'
+import { createUsage } from './usage'
+import { checkPort, diagnose, isHost, lookup, ping, publicIp, scanPorts, trace, wake } from './tools'
+import { dnsQuery, RECORD_TYPES } from './dnskit'
+import { whois } from './whois'
+import { exposure } from './exposure'
+import { createLanWatch } from './lanwatch'
+import { block, blockedList, publicIp as isPublicIp, unblock } from './firewall'
+import { inspectSite } from './webcheck'
+import { createSpeed } from './speed'
+import { wifiScan } from './wifiscan'
+import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
+import { createSecurity } from './security'
+import { createScanner } from './defender'
+import { checkRelease } from './update'
+import { findCloudflared, installCloudflared } from './cloudflared'
+import { createShare } from './share'
+import { localSites } from './sites'
+import type { ShareOptions } from '../shared/types'
+
+const settingsFile = path.join(app.getPath('userData'), 'settings.json')
+let settings = loadSettings(settingsFile)
+nativeTheme.themeSource = settings.theme
+const dataDir = path.join(app.getPath('userData'), 'data')
+
+let win: BrowserWindow | null = null
+let tray: ReturnType<typeof createTray> | null = null
+/** Set once the app is really quitting, so closing the window no longer just hides it. */
+let quitting = false
+let latest: Snapshot | null = null
+let problem: string | null = null
+let release: Promise<Release | null> | undefined
+/** The capture file the user opened last; the UI never names paths itself. */
+let pcapFile: string | null = null
+
+const send = (channel: string, ...args: unknown[]) => {
+  if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
+}
+
+function report(code: string | null) {
+  if (code === problem) return
+  problem = code
+  send(CHANNELS.problem, code)
+}
+
+const geo = createGeo(path.join(app.getPath('userData'), 'geo'))
+const icons = new Map<string, string | null>()
+/** Program files seen running this session: the only paths the UI may ask an icon for. */
+const knownPaths = new Set<string>()
+const freshProcesses = async () => {
+  const list = await collector.processes()
+  for (const p of list) if (p.path) knownPaths.add(p.path)
+  return list
+}
+// The process list costs ~0.4 s on Windows (PowerShell start), the DNS cache ~1 s.
+const processes = cached(5000, freshProcesses, [])
+const dnsNames = cached(30_000, async () => new Map(await collector.dnsCache()), new Map<string, string>())
+
+// Capture files live only while the app runs; anything left by a crash goes now.
+const captureDir = path.join(app.getPath('userData'), 'capture')
+fs.rmSync(captureDir, { recursive: true, force: true })
+
+const usage = createUsage(path.join(dataDir, 'usage'))
+usage.prune()
+const alerts = createAlerts(dataDir, () => settings.alerts, (a) => send(CHANNELS.alert, a))
+alerts.setOwnBlocklist(settings.blocklist)
+
+const traffic = createTrafficWatch(
+  {
+    collector,
+    processes,
+    freshProcesses,
+    hosts: dnsNames,
+    geo: geo.lookup,
+    publish: (t) => {
+      send(CHANNELS.traffic, t)
+      usage.apps(t)
+    },
+    dir: captureDir,
+    plaintext: (app, target) => alerts.plaintext(app, target)
+  },
+  settings.capture
+)
+
+async function currentConnections() {
+  const [sockets, procs, hosts] = await Promise.all([collector.sockets(), processes(), dnsNames()])
+  return join(sockets, procs, hosts, geo.lookup)
+}
+
+const security =
+  process.platform === 'win32'
+    ? createSecurity({
+        online: async () => (await currentConnections()).conns.filter((c) => c.scope === 'internet').map((c) => ({ app: c.title ?? c.app, path: c.path })),
+        dns: () => latest?.adapters.find((a) => a.id === latest?.defaultId)?.dns ?? [],
+        geo: geo.lookup
+      })
+    : null
+const binDir = path.join(app.getPath('userData'), 'bin')
+const share = createShare({
+  cloudflared: () => findCloudflared(binDir),
+  knownHosts: path.join(app.getPath('userData'), 'known_hosts'),
+  country: (ip) => geo.lookup(ip).country,
+  push: (s) => send(CHANNELS.share, s)
+})
+
+// After a scan the threat list and the last-scan dates change.
+const scanner = createScanner(() => void security?.get(true).catch(console.error))
+
+const cap = createCap(dataDir, { cap: () => settings.cap, used: usage.used, tell: (step, name, used, limit) => alerts.dataCap(step, name, used, limit) })
+const monitors = createMonitors(dataDir, ([kind, detail], target) => alerts.tell(kind, target, detail))
+const uptime = createUptime({ dir: dataDir, snapshot: () => latest, on: () => settings.uptime, onEnd: (o) => alerts.outage(o) })
+const speed = createSpeed(dataDir)
+const lan = createLanWatch(path.join(dataDir, 'lan.json'), alerts.tell)
+
+setInterval(() => {
+  usage.save()
+  uptime.save()
+  monitors.save()
+  cap.check()
+}, 60_000)
+// Signals are checked in the background, whichever page is open.
+setInterval(() => currentConnections().then((c) => alerts.connections(c), console.error), Number(process.env.NETPLAIN_CHECK_MS) || 15_000)
+setInterval(() => watchLan().catch(console.error), Number(process.env.NETPLAIN_LAN_MS) || 120_000)
+// The first security reading takes ~10 s (file signatures); have it ready before the page is opened.
+setTimeout(() => security?.get().catch(console.error), 15_000)
+
+const stopWatch = collector.watch(
+      async (adapters) => {
+        const ip = await internetIp()
+        const internet = ip ? adapters.find((a) => a.ipv4.some((c) => c.split('/')[0] === ip)) : undefined
+        const prev = latest
+        latest = { at: Date.now(), adapters: adapters.filter((a) => a.kind !== 'loopback'), defaultId: internet?.id ?? null }
+        // The tray tooltip: speed of the adapter the internet goes through.
+        const now = latest.adapters.find((a) => a.id === latest?.defaultId)
+        const was = prev?.adapters.find((a) => a.id === now?.id)
+        const dt = prev ? (latest.at - prev.at) / 1000 : 0
+        if (now && was && dt > 0) tray?.rate((Math.max(0, now.rx - was.rx) * 8) / dt, (Math.max(0, now.tx - was.tx) * 8) / dt)
+        report(null)
+        send(CHANNELS.snapshot, latest)
+        traffic.follow(latest)
+        usage.adapters(latest)
+      },
+      (e) => {
+        console.error(e)
+        report('E_COLLECT')
+      }
+    )
+
+async function devices() {
+  const [list, vendors] = await Promise.all([collector.neighbors(), vendorTable()])
+  return realDevices(list).map((n) => ({ ...n, vendor: vendors.get(n.mac.slice(0, 8)) ?? null }))
+}
+
+/** The home network's devices, router, DNS and the system proxy against what they were; `list` comes from the user's scan. */
+async function watchLan(list?: Neighbor[]) {
+  const a = latest?.adapters.find((x) => x.id === latest?.defaultId)
+  if (a) lan.check(a, list ?? (await devices()), !!list)
+  lan.proxy(await session.defaultSession.resolveProxy('https://example.com/'))
+}
+
+const overlay = () => ({ color: '#00000000', symbolColor: nativeTheme.shouldUseDarkColors ? '#a1a4ab' : '#3f4148', height: 48 })
+const rendererFile = pathToFileURL(path.join(__dirname, '../renderer/index.html')).href
+
+/** `hidden`: started at login, so it waits in the tray until opened. */
+function createWindow(hidden = false) {
+  win = new BrowserWindow({
+    width: 1280,
+    height: 840,
+    minWidth: 960,
+    minHeight: 620,
+    show: false,
+    title: 'Netplain',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#0f1113' : '#f6f7f7',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: overlay(),
+    trafficLightPosition: { x: 16, y: 17 },
+    webPreferences: { preload: path.join(__dirname, '../preload/index.js'), sandbox: true, contextIsolation: true }
+  })
+  win.once('ready-to-show', () => !hidden && win?.show())
+  // Closing hides the window to the tray, so watching, history and alerts go on.
+  win.on('close', (e) => {
+    if (quitting || !settings.background || !tray) return
+    e.preventDefault()
+    win?.hide()
+    const told = path.join(app.getPath('userData'), 'tray-told')
+    if (!fs.existsSync(told)) {
+      fs.writeFileSync(told, '')
+      tray.tellHidden()
+    }
+  })
+  // Logging off or shutting down Windows must not be held up by a window that only hides.
+  win.on('query-session-end', () => (quitting = true))
+  win.on('session-end', () => (quitting = true))
+  // Links never open inside the app.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://')) void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  win.webContents.on('will-navigate', (e) => e.preventDefault())
+  if (process.env.ELECTRON_RENDERER_URL) void win.loadURL(process.env.ELECTRON_RENDERER_URL)
+  else void win.loadFile(path.join(__dirname, '../renderer/index.html'))
+}
+
+nativeTheme.on('updated', () => {
+  if (win && process.platform !== 'darwin') win.setTitleBarOverlay(overlay())
+})
+
+function applySettings(s: Settings) {
+  const before = settings
+  settings = normalize(s)
+  nativeTheme.themeSource = settings.theme
+  saveSettings(settingsFile, settings)
+  if (settings.capture !== before.capture) {
+    traffic.setEnabled(settings.capture, latest)
+    tray?.refresh()
+  }
+  if (settings.blocklist !== before.blocklist) alerts.setOwnBlocklist(settings.blocklist)
+  if (settings.autostart !== autostart()) setAutostart(settings.autostart)
+  if (before.uptime && !settings.uptime) uptime.pause()
+  if (JSON.stringify(before.cap) !== JSON.stringify(settings.cap)) cap.check()
+}
+
+const none = (a: unknown[]) => a.length === 0
+const isShare = (v: unknown): v is ShareOptions => {
+  const o = v as ShareOptions
+  return typeof v === 'object' && v !== null && Number.isInteger(o.port) && o.port > 0 && o.port < 65536 && typeof o.https === 'boolean' && ['cloudflare', 'ssh'].includes(o.provider) && typeof o.password === 'boolean'
+}
+const int = (v: unknown) => Number.isSafeInteger(v) && (v as number) >= 0
+const isPort = (v: unknown) => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 65535
+const httpsUrl = (v: unknown) => {
+  try {
+    return typeof v === 'string' && v.length < 2048 && new URL(v).protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+/** Every IPC method: the check its arguments must pass, then what it does. */
+const api: { [K in keyof Api]: [check: (a: unknown[]) => boolean, handle: Api[K]] } = {
+  appInfo: [none, () => ({ version: app.getVersion(), platform: process.platform })],
+  update: [none, () => (settings.updates ? (release ??= checkRelease(app.getVersion()).catch(() => null)) : Promise.resolve(null))],
+  getSettings: [none, () => ({ ...settings, autostart: autostart() })],
+  saveSettings: [(a) => isSettings(a[0]), applySettings],
+  dataCap: [none, () => cap.state()],
+  networks: [none, () => usage.networks()],
+  uptime: [none, () => uptime.view()],
+  monitors: [none, () => monitors.list()],
+  addMonitor: [
+    (a) => ['http', 'tcp', 'ping'].includes(a[0] as string) && typeof a[1] === 'string' && a[1].length <= 2048 && (a[2] === 60 || a[2] === 300),
+    (kind, target, every) => monitors.add(kind, target, every)
+  ],
+  removeMonitor: [(a) => typeof a[0] === 'string' && a[0].length <= 64, (id) => monitors.remove(id)],
+  checkMonitor: [(a) => typeof a[0] === 'string' && a[0].length <= 64, (id) => monitors.checkNow(id)],
+  showWindow: [none, () => show()],
+  uiLang: [(a) => a[0] === 'en' || a[0] === 'uz', (lang) => tray?.setLang(lang)],
+  snapshot: [none, () => latest],
+  neighbors: [none, devices],
+  scan: [
+    none,
+    async () => {
+      const ip = await internetIp()
+      if (!ip) throw new Error('E_OFFLINE')
+      await sweep(ip)
+      const list = await devices()
+      await watchLan(list).catch(console.error)
+      return list
+    }
+  ],
+  openUrl: [(a) => httpsUrl(a[0]), (url) => void shell.openExternal(url)],
+  connections: [none, currentConnections],
+  appIcon: [
+    (a) => typeof a[0] === 'string' && knownPaths.has(a[0]),
+    async (file) => {
+      if (!icons.has(file))
+        icons.set(
+          file,
+          await app.getFileIcon(file, { size: 'normal' }).then(
+            (i) => i.toDataURL(),
+            () => null
+          )
+        )
+      return icons.get(file) ?? null
+    }
+  ],
+  geoInfo: [none, () => geo.info()],
+  geoUpdate: [none, () => geo.update()],
+  traffic: [none, () => traffic.view()],
+  retryCapture: [none, () => traffic.setEnabled(settings.capture, latest)],
+  allowCapture: [none, () => allowCaptureLinux()],
+  packets: [(a) => int(a[0]) && int(a[1]), (session, after) => traffic.packets(session, after)],
+  packetDetail: [(a) => int(a[0]) && (a[0] as number) > 0, (n) => traffic.detail(n)],
+  packetFilter: [(a) => typeof a[0] === 'string' && a[0].trim().length > 0 && a[0].length <= 2000, (expr) => traffic.filter(expr)],
+  savePackets: [
+    none,
+    async () => {
+      const copy = traffic.snapshotFile()
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
+      const r = await dialog.showSaveDialog(win!, { defaultPath: `netplain-${stamp}.pcapng`, filters: [{ name: 'pcapng', extensions: ['pcapng'] }] })
+      if (r.canceled || !r.filePath) return false
+      fs.copyFileSync(copy, r.filePath)
+      return true
+    }
+  ],
+  openInWireshark: [none, () => traffic.openInWireshark(traffic.snapshotFile())],
+  openPcap: [
+    none,
+    async () => {
+      const exe = findTshark()
+      if (!exe) throw new Error('E_NO_TSHARK')
+      const r = await dialog.showOpenDialog(win!, { properties: ['openFile'], filters: [{ name: 'pcap, pcapng', extensions: ['pcap', 'pcapng', 'cap'] }, { name: '*', extensions: ['*'] }] })
+      if (r.canceled || !r.filePaths[0]) return null
+      pcapFile = r.filePaths[0]
+      return analyzePcap(exe, pcapFile, geo.lookup)
+    }
+  ],
+  pcapInWireshark: [none, () => void (pcapFile && traffic.openInWireshark(pcapFile))],
+  usage: [(a) => a[0] === 'day' || a[0] === 'week' || a[0] === 'month', (range) => usage.query(range)],
+  alerts: [none, () => alerts.list()],
+  markAlertsRead: [none, () => alerts.markRead()],
+  clearAlerts: [none, () => alerts.clear()],
+  blocklistInfo: [none, () => alerts.blocklistInfo()],
+  updateFirehol: [none, () => alerts.updateFirehol()],
+  removeFirehol: [none, () => alerts.removeFirehol()],
+  ping: [(a) => isHost(a[0]), (host) => ping(host)],
+  trace: [(a) => isHost(a[0]), (host) => trace(host, geo.lookup)],
+  lookup: [(a) => isHost(a[0]), (name) => lookup(name, geo.lookup)],
+  checkPort: [(a) => isHost(a[0]) && isPort(a[1]), (host, port) => checkPort(host, port)],
+  scanPorts: [(a) => isHost(a[0]) && Array.isArray(a[1]) && a[1].length >= 1 && a[1].length <= 1000 && a[1].every(isPort), (host, ports) => scanPorts(host, ports)],
+  dnsQuery: [(a) => isHost(a[0]) && RECORD_TYPES.includes(a[1] as RecordType), (name, type) => dnsQuery(name, type)],
+  whois: [(a) => isHost(a[0]), (q) => whois(q)],
+  inspectSite: [(a) => typeof a[0] === 'string' && a[0].length > 0 && a[0].length <= 2048, (input) => inspectSite(input)],
+  speedTest: [(a) => a[0] === 'latency' || a[0] === 'down' || a[0] === 'up', (phase) => speed.phase(phase)],
+  speedHistory: [none, () => speed.history()],
+  wifiScan: [none, () => wifiScan()],
+  wake: [
+    (a) => typeof a[0] === 'string' && /^([0-9a-f]{2}:){5}[0-9a-f]{2}$/i.test(a[0]),
+    (mac) => wake(mac, (latest?.adapters ?? []).filter((a) => a.up).flatMap((a) => a.ipv4))
+  ],
+  exposure: [none, async () => exposure(geo.lookup, await internetIp())],
+  publicIp: [none, () => publicIp(geo.lookup)],
+  diagnose: [none, () => diagnose(latest)],
+  flushDns: [none, () => flushDns()],
+  renewIp: [(a) => typeof a[0] === 'string' && a[0].length <= 200, (id) => renewIp(adapter(id))],
+  restartAdapter: [(a) => typeof a[0] === 'string' && a[0].length <= 200, (id) => restartAdapter(adapter(id))],
+  security: [(a) => a[0] === undefined || typeof a[0] === 'boolean', (fresh) => windowsSecurity().get(fresh)],
+  scanState: [none, () => scanner.state()],
+  startScan: [(a) => (a[0] === 'quick' || a[0] === 'full') && typeof a[1] === 'boolean', (kind, admin) => scanner.start(kind, admin)],
+  updateDefinitions: [none, () => scanner.updateDefinitions()],
+  removeThreats: [none, () => scanner.removeThreats()],
+  hosts: [none, async () => parseHosts(readHosts())],
+  editHosts: [
+    (a) => {
+      const o = a[0] as Record<string, unknown>
+      if (typeof o !== 'object' || o === null || typeof o.ip !== 'string' || o.ip.length > 64) return false
+      return o.kind === 'add' ? typeof o.name === 'string' && o.name.length <= 253 && Object.keys(o).length === 3 : (o.kind === 'remove' || o.kind === 'toggle') && int(o.line) && Object.keys(o).length === 3
+    },
+    async (op) => {
+      await writeHosts(applyHosts(readHosts(), op), path.join(app.getPath('userData'), 'tmp'))
+      return parseHosts(readHosts())
+    }
+  ],
+  stopProcess: [
+    (a) => int(a[0]),
+    async (pid) => {
+      const refused = stopGuard(pid, (await currentConnections()).listening, [process.pid, ...app.getAppMetrics().map((m) => m.pid)])
+      if (refused) throw new Error(refused)
+      await stopProcess(pid)
+    }
+  ],
+  saveReport: [
+    (a) => typeof a[0] === 'string' && a[0].length <= 2_000_000,
+    async (html) => {
+      // A page of its own with scripts off; the report's CSP also stops it loading anything.
+      const page = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } })
+      try {
+        await page.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+        const pdf = await page.webContents.printToPDF({ pageSize: 'A4', printBackground: true })
+        const stamp = new Date().toISOString().slice(0, 10)
+        const file = (await dialog.showSaveDialog(win!, { defaultPath: `netplain-report-${stamp}.pdf`, filters: [{ name: 'PDF', extensions: ['pdf'] }] })).filePath
+        if (!file) return false
+        fs.writeFileSync(file, pdf)
+        return true
+      } finally {
+        page.destroy()
+      }
+    }
+  ],
+  blocked: [none, () => windowsOnly(blockedList)],
+  // Only programs seen running (their paths come from this computer, like icons) and public addresses.
+  block: [
+    (a) => {
+      const t = a[0] as Record<string, unknown>
+      return a.length === 1 && typeof t === 'object' && t !== null && Object.keys(t).length === 1 && ((typeof t.program === 'string' && knownPaths.has(t.program) && t.program !== process.execPath) || (typeof t.ip === 'string' && isPublicIp(t.ip)))
+    },
+    (target) => windowsOnly(() => block(target))
+  ],
+  unblock: [(a) => typeof a[0] === 'string' && a[0].length <= 1000, (name) => windowsOnly(() => unblock(name))],
+  setStartup: [
+    (a) => typeof a[0] === 'string' && a[0].length <= 1000 && typeof a[1] === 'boolean',
+    async (id, on) => {
+      const e = (await windowsSecurity().get()).startup.find((x) => x.id === id)
+      if (!e) throw new Error('E_BAD_ARGS')
+      const change = startupChange(e, on)
+      // Your own entries switch without admin rights; others ask through UAC.
+      const done = change.direct ? await run(...change.direct).then(() => true, () => false) : false
+      if (!done) await elevate(change.line)
+      await windowsSecurity().get(true)
+    }
+  ],
+  setService: [
+    (a) => typeof a[0] === 'string' && safeService(a[0]) && ['start', 'stop', 'auto', 'manual', 'disabled'].includes(a[1] as string),
+    async (name, action) => {
+      if (!(await windowsSecurity().get()).services.some((x) => x.name === name)) throw new Error('E_BAD_ARGS')
+      await elevate(serviceCommand(name, action))
+      await windowsSecurity().get(true)
+    }
+  ],
+  setUser: [
+    (a) => typeof a[0] === 'string' && safeUser(a[0]) && (a[1] === 'disable' || a[1] === 'enable' || a[1] === 'unadmin'),
+    async (name, action) => {
+      const sec = await windowsSecurity().get()
+      const refused = userGuard(sec.users, name, action)
+      if (refused) throw new Error(refused)
+      await elevate(userCommand(name, action))
+      await windowsSecurity().get(true)
+    }
+  ],
+  shareState: [none, () => share.state()],
+  localSites: [none, async () => localSites((await currentConnections()).listening)],
+  shareStart: [(a) => isShare(a[0]), (o) => share.start(o)],
+  shareStop: [none, () => share.stop()],
+  shareRequests: [(a) => int(a[0]), (after) => share.requests(after)],
+  shareRequest: [(a) => int(a[0]), (id) => share.request(id)],
+  shareReplay: [(a) => int(a[0]), (id) => share.replay(id)],
+  installCloudflared: [
+    none,
+    async () => {
+      await installCloudflared(binDir)
+      await share.state()
+    }
+  ],
+  fixFinding: [
+    (a) => a[0] === 'firewallOn' || a[0] === 'openDefender' || a[0] === 'openFirewall',
+    async (fix) => {
+      if (fix === 'openDefender') return void shell.openExternal('windowsdefender:')
+      if (fix === 'openFirewall') return void shell.openPath(path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'wf.msc'))
+      await elevate('netsh advfirewall set allprofiles state on')
+    }
+  ]
+}
+
+function show() {
+  if (!win || win.isDestroyed()) return createWindow()
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+}
+
+/** The security reading exists on Windows only. */
+function windowsSecurity() {
+  if (!security) throw new Error('E_UNSUPPORTED')
+  return security
+}
+
+function windowsOnly<T>(f: () => Promise<T>): Promise<T> {
+  return process.platform === 'win32' ? f() : Promise.reject(new Error('E_UNSUPPORTED'))
+}
+
+function adapter(id: string) {
+  const a = latest?.adapters.find((x) => x.id === id)
+  if (!a) throw new Error('E_BAD_ARGS')
+  return a
+}
+
+/** Only our own window's page may call the main process. */
+function trusted(e: IpcMainInvokeEvent): boolean {
+  if (!win || e.sender !== win.webContents) return false
+  const url = e.senderFrame?.url ?? ''
+  const dev = process.env.ELECTRON_RENDERER_URL
+  if (dev) {
+    try {
+      return new URL(url).origin === new URL(dev).origin
+    } catch {
+      return false
+    }
+  }
+  return url.split(/[?#]/)[0] === rendererFile
+}
+
+for (const [key, [check, handle]] of Object.entries(api)) {
+  ipcMain.handle(key, (e, ...args: unknown[]) => {
+    if (!trusted(e) || !check(args)) throw new Error('E_BAD_ARGS')
+    return (handle as (...a: unknown[]) => unknown)(...args)
+  })
+}
+
+app.on('second-instance', show)
+// macOS: clicking the Dock icon brings the hidden window back.
+app.on('activate', show)
+
+void app.whenReady().then(() => {
+  try {
+    tray = createTray({ show, quit: () => app.quit(), capture: () => settings.capture, setCapture: (on) => applySettings({ ...settings, autostart: autostart(), capture: on }) })
+  } catch (e) {
+    console.error(e)
+  }
+  // Started at login: stay in the tray (only when there is one to come back from).
+  createWindow(process.argv.includes('--hidden') && tray !== null)
+  powerMonitor.on('shutdown', () => (quitting = true))
+  // Sleep is not a connection drop.
+  powerMonitor.on('suspend', () => uptime.pause())
+  powerMonitor.on('resume', () => uptime.resume())
+})
+app.on('before-quit', () => {
+  quitting = true
+  stopWatch()
+  traffic.stop()
+  share.stop()
+  uptime.stop()
+  monitors.stop()
+  usage.save()
+})
+app.on('window-all-closed', () => app.quit())

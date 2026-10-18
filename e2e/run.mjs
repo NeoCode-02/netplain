@@ -49,7 +49,7 @@ const require_ = (await import('node:module')).createRequire(import.meta.url)
 const electron = require_('electron')
 // --inspect opens the main process too (unpacked Electron only), for what the page cannot do, such as a real window close.
 const args = [root, '--remote-debugging-port=0', '--inspect=0', ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [])]
-const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000', NETPLAIN_LAN_MS: '3000', NETPLAIN_PCAP: pcapFile, NETPLAIN_REPORT: path.join(data, 'report.pdf') }, stdio: ['ignore', 'pipe', 'pipe'] })
+const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000', NETPLAIN_LAN_MS: '3000' }, stdio: ['ignore', 'pipe', 'pipe'] })
 let appLog = ''
 app.stdout.on('data', (d) => (appLog += d))
 const devtools = await new Promise((resolve, reject) => {
@@ -82,6 +82,26 @@ async function inMain(expr) {
   ws.close()
   if (r.result?.exceptionDetails) throw new Error(r.result.exceptionDetails.exception?.description ?? 'main process error')
   return r.result?.result?.value
+}
+
+// Native Open and Save dialogs cannot be driven: the main process gets its answers from this test
+// (the capture file below; saved files land in the test's data folder under their suggested names).
+await inMain(`(() => {
+  const { dialog } = process.mainModule.require('electron')
+  const path = process.mainModule.require('path')
+  dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [${JSON.stringify(pcapFile)}] })
+  dialog.showSaveDialog = async (_win, o) => ({ canceled: false, filePath: path.join(${JSON.stringify(data)}, o.defaultPath) })
+  return true
+})()`)
+/** A file the app saved into the data folder, by name pattern (waits up to 30 s). */
+async function saved(pattern) {
+  const end = Date.now() + 30_000
+  for (;;) {
+    const name = fs.readdirSync(data).find((n) => pattern.test(n))
+    if (name) return path.join(data, name)
+    if (Date.now() > end) throw new Error(`Timed out waiting for a saved ${pattern}`)
+    await new Promise((r) => setTimeout(r, 300))
+  }
 }
 
 const port = new URL(devtools).port
@@ -271,6 +291,9 @@ try {
       await until('the filter error', hasText, 'Wireshark did not understand the filter')
       await inPage(setFilter, 'ip')
       await until('filter matches', hasText, 'packets match the filter')
+      await until('Save (.pcapng)', clickText, 'Save (.pcapng)')
+      await saved(/^netplain-[\d-]+\.pcapng$/)
+      await until('saved', hasText, 'Saved')
       // Opt-in, because it opens a Wireshark window (closed again right away): E2E_WIRESHARK=1 (Windows)
       if (process.env.E2E_WIRESHARK) {
         await until('Open in Wireshark', clickText, 'Open in Wireshark')
@@ -412,12 +435,10 @@ try {
     }
     await shot('security')
     if (await inPage(() => document.querySelector('.verdict') !== null)) {
-      // The report goes to the e2e folder's file instead of the native Save dialog.
-      const pdf = path.join(data, 'report.pdf')
       await until('Report (PDF)', clickText, 'Report (PDF)')
-      const end = Date.now() + 30_000
-      while (!fs.existsSync(pdf) && Date.now() < end) await new Promise((r) => setTimeout(r, 300))
-      if (!fs.existsSync(pdf) || fs.readFileSync(pdf).subarray(0, 5).toString() !== '%PDF-') throw new Error('no PDF report')
+      const pdf = await saved(/^netplain-report-.*\.pdf$/)
+      await new Promise((r) => setTimeout(r, 300))
+      if (fs.readFileSync(pdf).subarray(0, 5).toString() !== '%PDF-') throw new Error('no PDF report')
       fs.copyFileSync(pdf, path.join(shots, 'security-report.pdf'))
       await until('Antivirus tab', clickText, 'Antivirus')
       await until('defender cards', () => document.querySelectorAll('.kpi').length === 4)

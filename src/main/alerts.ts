@@ -4,8 +4,6 @@ import path from 'node:path'
 import type { Alert, AlertKind, BlocklistInfo, Connections, Outage } from '../shared/types'
 import { createBlocklist } from './blocklist'
 import { readJson, writeJson } from './store'
-import type { LanKind } from './lanwatch'
-import type { MonitorEvent } from './monitors'
 import { dayKey } from './usage'
 
 const KEEP = 300
@@ -19,7 +17,8 @@ type Rules = Record<AlertKind, boolean>
  * Security signals. The first check only records what is already there (the baseline), so a new
  * install does not start with a pile of alerts about programs that were always there.
  */
-export function createAlerts(dir: string, emit: (a: Alert) => void) {
+/** `rules`: which kinds the user wants (read at each alert, so a change in Settings applies at once). */
+export function createAlerts(dir: string, rules: () => Rules, emit: (a: Alert) => void) {
   const file = path.join(dir, 'alerts.json')
   const seenFile = path.join(dir, 'seen.json')
   const fireholFile = path.join(dir, 'firehol_level1.netset')
@@ -32,8 +31,8 @@ export function createAlerts(dir: string, emit: (a: Alert) => void) {
   let own = createBlocklist('')
   let firehol = fs.existsSync(fireholFile) ? createBlocklist(fs.readFileSync(fireholFile, 'utf8')) : null
 
-  function push(rules: Rules, kind: AlertKind, app: string, detail: string) {
-    if (!rules[kind]) return
+  function push(kind: AlertKind, app: string, detail: string) {
+    if (!rules()[kind]) return
     const a: Alert = { id: randomUUID(), at: Date.now(), kind, app, detail, read: false }
     list = [a, ...list].slice(0, KEEP)
     writeJson(file, list)
@@ -48,7 +47,7 @@ export function createAlerts(dir: string, emit: (a: Alert) => void) {
 
   return {
     /** New apps online, new ports open to the network, and connections to blocked addresses. */
-    connections(c: Connections, rules: Rules) {
+    connections(c: Connections) {
       let changed = !seen.baseline
       for (const x of c.conns) {
         if (x.scope !== 'internet' || !x.remoteIp) continue
@@ -57,9 +56,9 @@ export function createAlerts(dir: string, emit: (a: Alert) => void) {
         if (!app.startsWith('PID ') && !apps.has(app)) {
           apps.add(app)
           changed = true
-          if (seen.baseline) push(rules, 'newApp', app, x.host ?? x.remoteIp)
+          if (seen.baseline) push('newApp', app, x.host ?? x.remoteIp)
         }
-        if ((own.has(x.remoteIp) || firehol?.has(x.remoteIp)) && first(`b|${app}|${x.remoteIp}|${dayKey(Date.now())}`)) push(rules, 'blocklist', app, x.remoteIp)
+        if ((own.has(x.remoteIp) || firehol?.has(x.remoteIp)) && first(`b|${app}|${x.remoteIp}|${dayKey(Date.now())}`)) push('blocklist', app, x.remoteIp)
       }
       for (const x of c.listening) {
         if (x.scope === 'loopback') continue
@@ -68,7 +67,7 @@ export function createAlerts(dir: string, emit: (a: Alert) => void) {
         if (app.startsWith('PID ') || ports.has(key)) continue
         ports.add(key)
         changed = true
-        if (seen.baseline) push(rules, 'exposed', app, String(x.localPort))
+        if (seen.baseline) push('exposed', app, String(x.localPort))
       }
       if (changed) {
         seen.baseline = true
@@ -79,29 +78,22 @@ export function createAlerts(dir: string, emit: (a: Alert) => void) {
     },
 
     /** A connection drop of a minute or more, told once it is over (detail: "cause|milliseconds"). */
-    outage(rules: Rules, o: Outage) {
-      if (o.end !== null && o.end - o.start >= 60_000) push(rules, 'outage', o.network ?? '', `${o.cause}|${o.end - o.start}`)
+    outage(o: Outage) {
+      if (o.end !== null && o.end - o.start >= 60_000) push('outage', o.network ?? '', `${o.cause}|${o.end - o.start}`)
     },
 
     /** The monthly data limit: 80 % or 100 % used (detail: "step|used|limit" in bytes). */
-    dataCap(rules: Rules, step: number, network: string | null, used: number, limit: number) {
-      push(rules, 'dataCap', network ?? '', `${step}|${used}|${limit}`)
+    dataCap(step: number, network: string | null, used: number, limit: number) {
+      push('dataCap', network ?? '', `${step}|${used}|${limit}`)
     },
 
-    /** A watched site or server went down, came back, or its certificate runs out soon. */
-    monitor(rules: Rules, [kind, detail]: MonitorEvent, target: string) {
-      push(rules, kind, target, detail)
-    },
-
-    /** A stranger on the home network, a taken-over router address, or a changed DNS server or proxy. */
-    lan(rules: Rules, kind: LanKind, app: string, detail: string) {
-      push(rules, kind, app, detail)
-    },
+    /** Alerts other modules phrase themselves: watched sites, the home network. */
+    tell: push,
 
     /** A program sent something readable by anyone on the way (HTTP, FTP, Telnet). */
-    plaintext(rules: Rules, app: string, target: string) {
+    plaintext(app: string, target: string) {
       if (BENIGN_HTTP.test(target)) return
-      if (first(`p|${app}|${target}|${dayKey(Date.now())}`)) push(rules, 'plain', app, target)
+      if (first(`p|${app}|${target}|${dayKey(Date.now())}`)) push('plain', app, target)
     },
 
     setOwnBlocklist(text: string) {

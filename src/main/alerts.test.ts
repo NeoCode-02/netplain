@@ -9,6 +9,7 @@ import { isSettings, loadSettings, normalize, saveSettings } from './settings'
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'netplain-alerts-'))
 const ALL = { newApp: true, exposed: true, plain: true, blocklist: true, outage: true, monitorDown: true, monitorUp: true, certExpiry: true, dataCap: true, newDevice: true, arpSpoof: true, netChange: true }
+let rules = ALL
 
 describe('blocklist', () => {
   it('matches addresses and ranges, ignoring comments and junk', () => {
@@ -25,16 +26,16 @@ describe('alerts', () => {
   it('records a baseline first, then reports new apps, new open ports and blocked addresses once', () => {
     const dir = tmp()
     const got: Alert[] = []
-    const a = createAlerts(dir, (x) => got.push(x))
+    const a = createAlerts(dir, () => rules, (x) => got.push(x))
     a.setOwnBlocklist('6.6.6.0/24')
     const listen = conn({ localIp: '0.0.0.0', localPort: 445, remoteIp: null, remotePort: null, state: 'listen', app: 'System', scope: 'local' })
-    a.connections(data([conn({})], [listen]), ALL)
+    a.connections(data([conn({})], [listen]))
     expect(got).toEqual([])
 
     const curl = conn({ app: 'curl', remoteIp: '6.6.6.6', host: 'bad.example' })
     const dev = conn({ localIp: '0.0.0.0', localPort: 3000, remoteIp: null, remotePort: null, state: 'listen', app: 'node', scope: 'local' })
-    a.connections(data([conn({}), curl, conn({ app: 'PID 99' })], [listen, dev]), ALL)
-    a.connections(data([curl], [dev]), ALL)
+    a.connections(data([conn({}), curl, conn({ app: 'PID 99' })], [listen, dev]))
+    a.connections(data([curl], [dev]))
     expect(got.map((x) => [x.kind, x.app, x.detail])).toEqual([
       ['newApp', 'curl', 'bad.example'],
       ['blocklist', 'curl', '6.6.6.6'],
@@ -43,33 +44,37 @@ describe('alerts', () => {
 
     // The baseline survives a restart; switched-off rules stay quiet.
     const again: Alert[] = []
-    const b = createAlerts(dir, (x) => again.push(x))
-    b.connections(data([conn({ app: 'zoom' })]), { ...ALL, newApp: false })
-    b.connections(data([conn({ app: 'zoom' })]), ALL)
+    const b = createAlerts(dir, () => rules, (x) => again.push(x))
+    rules = { ...ALL, newApp: false }
+    b.connections(data([conn({ app: 'zoom' })]))
+    rules = ALL
+    b.connections(data([conn({ app: 'zoom' })]))
     expect(again).toEqual([])
     expect(b.list().map((x) => x.kind)).toEqual(['exposed', 'blocklist', 'newApp'])
     b.markRead()
-    expect(createAlerts(dir, () => {}).list().every((x) => x.read)).toBe(true)
+    expect(createAlerts(dir, () => rules, () => {}).list().every((x) => x.read)).toBe(true)
   })
 
   it('reports unencrypted traffic once a day, but not certificate checks', () => {
     const got: Alert[] = []
-    const a = createAlerts(tmp(), (x) => got.push(x))
-    a.plaintext(ALL, 'game', 'http://example.com')
-    a.plaintext(ALL, 'game', 'http://example.com')
-    a.plaintext(ALL, 'svchost', 'http://ocsp.digicert.com')
-    a.plaintext(ALL, 'svchost', 'http://ctldl.windowsupdate.com')
+    const a = createAlerts(tmp(), () => rules, (x) => got.push(x))
+    a.plaintext('game', 'http://example.com')
+    a.plaintext('game', 'http://example.com')
+    a.plaintext('svchost', 'http://ocsp.digicert.com')
+    a.plaintext('svchost', 'http://ctldl.windowsupdate.com')
     expect(got.map((x) => x.detail)).toEqual(['http://example.com'])
   })
 
   it('tells about connection drops of a minute or more, once they are over', () => {
     const got: Alert[] = []
-    const a = createAlerts(tmp(), (x) => got.push(x))
+    const a = createAlerts(tmp(), () => rules, (x) => got.push(x))
     const drop = { id: '1', start: 0, end: 90_000, cause: 'provider' as const, network: 'Home' }
-    a.outage(ALL, { ...drop, end: 30_000 })
-    a.outage(ALL, { ...drop, end: null })
-    a.outage({ ...ALL, outage: false }, drop)
-    a.outage(ALL, drop)
+    a.outage({ ...drop, end: 30_000 })
+    a.outage({ ...drop, end: null })
+    rules = { ...ALL, outage: false }
+    a.outage(drop)
+    rules = ALL
+    a.outage(drop)
     expect(got.map((x) => [x.kind, x.app, x.detail])).toEqual([['outage', 'Home', 'provider|90000']])
   })
 })
