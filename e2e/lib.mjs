@@ -12,6 +12,7 @@ export const shots = path.join(root, 'e2e', 'shots')
 fs.mkdirSync(shots, { recursive: true })
 export const data = fs.mkdtempSync(path.join(os.tmpdir(), 'netplain-e2e-'))
 
+if (process.env.E2E_GEO_FROM) fs.cpSync(process.env.E2E_GEO_FROM, path.join(data, 'geo'), { recursive: true })
 const pcapFile = path.join(data, 'login.pcap')
 fs.writeFileSync(pcapFile, pcap([LOGIN]))
 

@@ -63,12 +63,27 @@ await run(async () => {
       await until('Connections', clickText, 'Connections')
       await until('connection data', () => document.querySelector('.page-title p')?.textContent !== 'Reading connections…' && document.querySelector('.ad-row, .list-empty') !== null)
       // Without the location database (fresh data folder) the page offers to download it.
-      await until('the location banner', () => document.querySelector('.geo-banner') !== null)
+      if (!process.env.E2E_GEO_FROM) await until('the location banner', () => document.querySelector('.geo-banner') !== null)
       await inPage(() => document.querySelector('.ad-toggle')?.click())
       await shot(`connections-${theme.toLowerCase()}`)
       await inPage(() => document.querySelector('.content').scrollTo(0, 1e6))
       await shot(`connections-ports-${theme.toLowerCase()}`)
       await inPage(() => document.querySelector('.content').scrollTo(0, 0))
+    })
+
+    await step(`map (${theme.toLowerCase()})`, async () => {
+      await until('Map', clickText, 'Map')
+      await until('the world', () => document.querySelectorAll('.world .land').length >= 150)
+      // Countries show once the location database is there; without it the page offers it, like Connections.
+      await until('countries or the location banner', () => document.querySelector('.map-row, .geo-banner') !== null)
+      await shot(`map-${theme.toLowerCase()}`)
+      // Opt-in: a traceroute takes up to a minute and needs the internet: E2E_TRACE=1
+      if (process.env.E2E_TRACE && theme === 'Light' && (await inPage(() => document.querySelector('.map-row') !== null))) {
+        await inPage(() => (document.querySelector('.map-row').click(), true))
+        await until('Show route', clickText, 'Show route')
+        await until(['the route', 120_000], () => document.querySelectorAll('.map-stops li').length > 0 || document.querySelector('.note.danger') !== null)
+        await shot('map-route')
+      }
     })
   }
 
