@@ -80,12 +80,15 @@
 .dev-title { font-weight: 550; }
 .dev-mac { text-align: right; }
 .row-actions { display: flex; justify-content: flex-end; gap: 4px; }
+.row-actions .btn { color: var(--accent-text); }
 
 /* settings */
 .setting { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .setting > span { font-weight: 550; }
 
 /* connections */
+.ip-link { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted var(--text-3); text-underline-offset: 3px; }
+.ip-link:hover { color: var(--accent); }
 .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .search { position: relative; flex: 1; max-width: 420px; }
 .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
@@ -249,8 +252,6 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .share-port { width: 110px; flex: none; }
 .share-go { justify-content: space-between; gap: 16px; }
 .share-go p { max-width: 60ch; }
-.share-link { flex-wrap: wrap; }
-.share-link a { flex-basis: 100%; font-size: 15px; font-weight: 550; overflow-wrap: anywhere; }
 .share-login { flex-wrap: wrap; }
 .share-row { width: 100%; background: none; border: 0; color: inherit; font: inherit; display: grid; grid-template-columns: 80px 56px minmax(0, 1fr) auto 64px 64px minmax(0, 180px); gap: 12px; align-items: center; padding: 10px 18px; border-top: 1px solid var(--line); text-align: left; font-size: 12.5px; cursor: pointer; }
 .list > div:first-child .share-row { border-top: 0; }
@@ -265,6 +266,7 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .share-pre { font-family: var(--mono); font-size: 12px; background: var(--sunken); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; max-height: 260px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* uptime */
+.tile-foot { margin-top: 10px; }
 .uptime-now { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .uptime-tile { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 8px; background: var(--sunken); min-width: 0; }
 .uptime-tile strong { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
@@ -308,12 +310,10 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .setup-row.done .setup-mark { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
 .devices-hint { margin-bottom: 4px; }
 
-/* port scan */
+/* tools: port scan, DNS, website, speed */
 .scan-port { width: 56px; flex-shrink: 0; font-weight: 600; }
 .scan-meter { margin-bottom: 12px; }
 .dns-records { display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
-.ip-link { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted var(--text-3); text-underline-offset: 3px; }
-.ip-link:hover { color: var(--accent); }
 .verdicts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .verdicts li { display: flex; align-items: center; gap: 10px; }
 .verdicts li.ok svg { color: var(--ok); }
@@ -334,5 +334,3 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .chan-count, .chan-n { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; min-height: 14px; }
 .chan.mine .chan-n, .chan.best .chan-n { color: var(--text); font-weight: 600; }
 .wifi-meter { width: 90px; flex-shrink: 0; }
-.tile-foot { margin-top: 10px; }
-.row-actions .btn { color: var(--accent-text); }

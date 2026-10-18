@@ -18,7 +18,8 @@ function Facts({ a }: { a: Adapter }) {
       {a.dns.length > 0 && <Fact label={n.dns} value={a.dns.join(', ')} note={n.dnsNote} mono />}
       {a.mac && <Fact label={n.mac} value={a.mac} note={n.macNote} mono />}
       {a.dhcp !== null && <Fact label={n.assigned} value={a.dhcp ? n.dhcp : n.manual} />}
-      {a.speed && <Fact label={n.linkSpeed} value={bits(a.speed)} />}
+      {/* A Wi-Fi card already shows its link rate. */}
+      {a.speed && !a.wifi && <Fact label={n.linkSpeed} value={bits(a.speed)} />}
       {a.ipv6.length > 0 && <Fact label={n.ipv6} value={a.ipv6.join(', ')} mono />}
     </dl>
   )
