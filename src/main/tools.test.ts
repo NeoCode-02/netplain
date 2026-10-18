@@ -2,7 +2,7 @@ import http from 'node:http'
 import net from 'node:net'
 import { describe, expect, it } from 'vitest'
 import { safeName, serviceCommand, startupChange, uacScript, userCommand, userGuard } from './admin'
-import { bannerOf, checkPort, isHost, lookup, parsePing, parseTestConnection, parseTrace, ping, scanPorts } from './tools'
+import { bannerOf, broadcastOf, checkPort, isHost, lookup, magicPacket, parsePing, parseTestConnection, parseTrace, ping, scanPorts, wake } from './tools'
 
 describe('parsers', () => {
   it('reads Windows Test-Connection and Unix ping', () => {
@@ -167,5 +167,23 @@ describe('startup changes', () => {
     expect(() => startupChange({ kind: 'run', hive: 'HKCU', name: 'Once', approved: '' }, false)).toThrow('E_BAD_ARGS')
     expect(() => startupChange({ kind: 'run', hive: 'HKCU', name: 'a" & calc', approved: sa }, false)).toThrow('E_BAD_ARGS')
     expect(() => startupChange({ kind: 'task', hive: '', name: '/Delete', approved: '' }, false)).toThrow('E_BAD_ARGS')
+  })
+})
+
+describe('wake-on-lan', () => {
+  it('builds the magic packet and the broadcast addresses', () => {
+    const p = magicPacket('00:00:5e:00:53:01')
+    expect(p.length).toBe(102)
+    expect(p.subarray(0, 6).every((b) => b === 0xff)).toBe(true)
+    expect(p.subarray(96).toString('hex')).toBe('00005e005301')
+    expect(broadcastOf('192.168.1.20/24')).toBe('192.168.1.255')
+    expect(broadcastOf('10.1.2.3/8')).toBe('10.255.255.255')
+    expect(broadcastOf('172.16.5.4/20')).toBe('172.16.15.255')
+    expect(broadcastOf('10.0.0.1/31')).toBeNull()
+    expect(broadcastOf('fe80::1/64')).toBeNull()
+  })
+
+  it('sends it without errors', async () => {
+    await expect(wake('00:00:5e:00:53:01', ['127.0.0.1/8'])).resolves.toBeUndefined()
   })
 })

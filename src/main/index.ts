@@ -19,7 +19,7 @@ import { createUptime } from './uptime'
 import { createMonitors } from './monitors'
 import { createCap } from './cap'
 import { createUsage } from './usage'
-import { checkPort, diagnose, isHost, lookup, ping, publicIp, scanPorts, trace } from './tools'
+import { checkPort, diagnose, isHost, lookup, ping, publicIp, scanPorts, trace, wake } from './tools'
 import { dnsQuery, RECORD_TYPES } from './dnskit'
 import { whois } from './whois'
 import { inspectSite } from './webcheck'
@@ -305,6 +305,7 @@ const handlers: Api = {
   speedTest: (phase) => speed.phase(phase),
   speedHistory: () => speed.history(),
   wifiScan: () => wifiScan(),
+  wake: (mac) => wake(mac, (latest?.adapters ?? []).filter((a) => a.up).flatMap((a) => a.ipv4)),
   publicIp: () => publicIp(geo.lookup),
   diagnose: () => diagnose(latest),
   flushDns: () => flushDns(),
@@ -431,6 +432,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   speedTest: (a) => a[0] === 'latency' || a[0] === 'down' || a[0] === 'up',
   speedHistory: none,
   wifiScan: none,
+  wake: (a) => typeof a[0] === 'string' && /^([0-9a-f]{2}:){5}[0-9a-f]{2}$/i.test(a[0]),
   publicIp: none,
   diagnose: none,
   flushDns: none,

@@ -123,7 +123,10 @@ const en = {
     ip: 'IP address',
     mac: 'MAC address',
     ports: 'Ports',
-    portsNote: 'Scan this device’s open ports'
+    portsNote: 'Scan this device’s open ports',
+    wake: 'Wake',
+    wakeNote: 'Send a Wake-on-LAN packet: turns on a sleeping or switched-off computer that allows it',
+    woke: (mac: string) => `Wake-up packet sent to ${mac}. A computer that allows it starts within a few seconds.`
   },
   share: {
     title: 'Share a site',
@@ -974,6 +977,7 @@ const en = {
     E_SPEED: 'The speed test server could not be reached. Check the internet connection.',
     E_BUSY: 'A test is already running.',
     E_NO_WIFI: 'No Wi-Fi networks found: this computer has no Wi-Fi adapter, or it is turned off.',
+    E_WAKE: 'The wake-up packet could not be sent: no network connection.',
     E_WIFI_ACCESS: 'Windows did not allow the Wi-Fi scan. Turn on Settings → Privacy & security → Location → “Let desktop apps access your location”.',
     E_SITE: (m: string) =>
       `The site did not answer: ${({ ENOTFOUND: 'no such name', ECONNREFUSED: 'nothing accepts connections there', timeout: 'no answer within 10 seconds', ECONNRESET: 'the connection was cut' } as Record<string, string>)[m] ?? m}.`,
@@ -1102,7 +1106,10 @@ const uz: Dict = {
     ip: 'IP manzil',
     mac: 'MAC manzil',
     ports: 'Portlar',
-    portsNote: 'Bu qurilmaning ochiq portlarini skanerlash'
+    portsNote: 'Bu qurilmaning ochiq portlarini skanerlash',
+    wake: 'Uyg‘otish',
+    wakeNote: 'Wake-on-LAN paketi yuborish: bunga ruxsat bergan, uxlayotgan yoki o‘chiq kompyuterni yoqadi',
+    woke: (mac) => `${mac} ga uyg‘otish paketi yuborildi. Ruxsat bergan kompyuter bir necha soniyada yonadi.`
   },
   share: {
     title: 'Saytni ulashish',
@@ -1948,6 +1955,7 @@ const uz: Dict = {
     E_SPEED: 'Tezlik o‘lchash serveriga ulanib bo‘lmadi. Internet ulanishini tekshiring.',
     E_BUSY: 'Test allaqachon ketyapti.',
     E_NO_WIFI: 'Wi-Fi tarmoqlari topilmadi: kompyuterda Wi-Fi adapteri yo‘q yoki u o‘chiq.',
+    E_WAKE: 'Uyg‘otish paketini yuborib bo‘lmadi: tarmoq ulanishi yo‘q.',
     E_WIFI_ACCESS: 'Windows Wi-Fi skaneriga ruxsat bermadi. Sozlamalar → Maxfiylik va xavfsizlik → Joylashuv → “Ish stoli ilovalariga joylashuvdan foydalanishga ruxsat”ni yoqing.',
     E_SITE: (m) =>
       `Sayt javob bermadi: ${({ ENOTFOUND: 'bunday nom yo‘q', ECONNREFUSED: 'u yerda hech narsa ulanish qabul qilmaydi', timeout: '10 soniyada javob kelmadi', ECONNRESET: 'ulanish uzildi' } as Record<string, string>)[m] ?? m}.`,

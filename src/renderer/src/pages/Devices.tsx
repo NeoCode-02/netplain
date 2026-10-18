@@ -8,7 +8,7 @@ import { openTool } from './Tools'
 
 const ipNum = (ip: string) => ip.split('.').reduce((n, p) => n * 256 + Number(p), 0)
 
-function DeviceRow({ n, adapter }: { n: Neighbor; adapter?: Adapter }) {
+function DeviceRow({ n, adapter, onWake }: { n: Neighbor; adapter?: Adapter; onWake(mac: string): void }) {
   const d = useT().devices
   const router = adapter?.gateway === n.ip
   const random = !n.vendor && randomMac(n.mac)
@@ -28,6 +28,12 @@ function DeviceRow({ n, adapter }: { n: Neighbor; adapter?: Adapter }) {
       <button className="btn sm quiet" title={d.portsNote} onClick={() => openTool('scan', n.ip)}>
         {d.ports}
       </button>
+      {/* Phones (private MACs), routers and virtual machines do not wake this way. */}
+      {!router && !random && adapter?.kind !== 'virtual' && (
+        <button className="btn sm quiet" title={d.wakeNote} onClick={() => onWake(n.mac)}>
+          {d.wake}
+        </button>
+      )}
     </div>
   )
 }
@@ -40,6 +46,7 @@ export default function Devices() {
   const [busy, setBusy] = useState(false)
   const [scanned, setScanned] = useState(false)
   const [err, setErr] = useState<unknown>(null)
+  const [woke, setWoke] = useState<string | null>(null)
 
   useEffect(() => {
     window.netplain.neighbors().then(setList, setErr)
@@ -56,6 +63,12 @@ export default function Devices() {
     } finally {
       setBusy(false)
     }
+  }
+
+  const wake = (mac: string) => {
+    setErr(null)
+    setWoke(null)
+    window.netplain.wake(mac).then(() => setWoke(mac), setErr)
   }
 
   const adapters = snap?.adapters ?? []
@@ -87,6 +100,7 @@ export default function Devices() {
         )}
       </header>
       {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      {woke && <p className="note">{d.woke(woke)}</p>}
       {noVendors && <p className="note">{d.noVendors}</p>}
       {list && list.length === 0 && <Empty icon="devices" title={d.empty} body={d.emptyBody} />}
       {few && (
@@ -110,7 +124,7 @@ export default function Devices() {
             {g.items
               .sort((a, b) => Number(b.ip === g.adapter?.gateway) - Number(a.ip === g.adapter?.gateway) || ipNum(a.ip) - ipNum(b.ip))
               .map((n) => (
-                <DeviceRow key={n.ip + n.mac} n={n} adapter={g.adapter} />
+                <DeviceRow key={n.ip + n.mac} n={n} adapter={g.adapter} onWake={wake} />
               ))}
           </div>
         </section>

@@ -132,6 +132,8 @@ export interface Api {
   speedHistory(): SpeedResult[]
   /** Nearby Wi-Fi networks after a fresh scan. Throws E_NO_WIFI, E_WIFI_ACCESS. */
   wifiScan(): Promise<WifiNet[]>
+  /** Wake-on-LAN packet to a MAC, on every local network. Throws E_WAKE. */
+  wake(mac: string): Promise<void>
   /** Asks api.ipify.org for the address the internet sees. Throws E_PUBLIC_IP. */
   publicIp(): Promise<PublicIp>
   /** Checks adapter → address → router → DNS → internet. */

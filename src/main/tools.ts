@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import dgram from 'node:dgram'
 import dns from 'node:dns/promises'
 import net from 'node:net'
 import type { DiagnoseStep, Hop, LookupResult, PingResult, PortState, PublicIp, ScanHit, Snapshot } from '../shared/types'
@@ -199,4 +200,33 @@ export async function diagnose(snap: Snapshot | null): Promise<DiagnoseStep[]> {
   if (!add('dns', !!name, a.dns.join(', '))) return skipRest()
   add('internet', (await checkPort('1.1.1.1', 443, 4000)) === 'open' || (await checkPort('8.8.8.8', 443, 4000)) === 'open')
   return steps
+}
+
+/** Wake-on-LAN: six 0xff bytes, then the MAC sixteen times. */
+export const magicPacket = (mac: string) => Buffer.concat([Buffer.alloc(6, 0xff), ...Array<Buffer>(16).fill(Buffer.from(mac.replace(/[:-]/g, ''), 'hex'))])
+
+/** "192.168.1.20/24" → "192.168.1.255": the address every device on that network hears. */
+export function broadcastOf(cidr: string): string | null {
+  const [ip, bits] = cidr.split('/')
+  const p = Number(bits)
+  if (!net.isIPv4(ip) || !Number.isInteger(p) || p < 0 || p > 30) return null
+  const n = ip.split('.').reduce((a, x) => a * 256 + Number(x), 0)
+  const b = n + (2 ** (32 - p) - 1 - (n % 2 ** (32 - p)))
+  return [24, 16, 8, 0].map((s) => Math.floor(b / 2 ** s) % 256).join('.')
+}
+
+/** Sends the wake-up packet to every local network's broadcast address (and the general one), on UDP 9 and 7. */
+export async function wake(mac: string, cidrs: string[]): Promise<void> {
+  const packet = magicPacket(mac)
+  const s = dgram.createSocket('udp4')
+  try {
+    await new Promise<void>((r) => s.bind(r))
+    s.setBroadcast(true)
+    const to = [...new Set(['255.255.255.255', ...cidrs.map(broadcastOf).filter((x): x is string => x !== null)])]
+    let sent = 0
+    for (const addr of to) for (const port of [9, 7]) sent += await new Promise<number>((r) => s.send(packet, port, addr, (e) => r(e ? 0 : 1)))
+    if (!sent) throw new Error('E_WAKE')
+  } finally {
+    s.close()
+  }
 }
