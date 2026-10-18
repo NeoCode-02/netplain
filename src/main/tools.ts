@@ -86,9 +86,10 @@ export async function lookup(name: string, geo: GeoLookup): Promise<LookupResult
 
 /**
  * One TCP handshake: ms until it was accepted or failed, and why it failed (the error code, or E_TIMEOUT
- * when nothing answered in time). An accepted connection is closed with a reset: 4 packets instead of 7.
+ * when nothing answered in time). `reset` closes an accepted connection with a reset (4 packets instead of 7);
+ * only for frequent checks of routers and big servers, as a careless server may treat it as an error.
  */
-export function connect(host: string, port: number, timeout: number): Promise<{ ms: number; code: string | null }> {
+export function connect(host: string, port: number, timeout: number, reset = false): Promise<{ ms: number; code: string | null }> {
   return new Promise((resolve) => {
     const t0 = performance.now()
     const s = net.connect({ host, port })
@@ -97,7 +98,7 @@ export function connect(host: string, port: number, timeout: number): Promise<{ 
       if (!timer) return
       clearTimeout(timer)
       timer = undefined
-      if (code === null) s.resetAndDestroy()
+      if (code === null && reset) s.resetAndDestroy()
       else s.destroy()
       resolve({ ms: Math.max(1, Math.round(performance.now() - t0)), code })
     }

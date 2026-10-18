@@ -59,9 +59,9 @@ export function pingOnce(host: string): Promise<number | null> {
   )
 }
 
-/** ms until a TCP connection is accepted; null when it is not. */
+/** ms until a TCP connection is accepted; null when it is not. Closed with a reset: it runs every 15 s. */
 export async function knock(host: string, port: number, timeout: number): Promise<number | null> {
-  const { ms, code } = await connect(host, port, timeout)
+  const { ms, code } = await connect(host, port, timeout, true)
   return code === null ? ms : null
 }
 

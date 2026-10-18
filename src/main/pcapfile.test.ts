@@ -90,6 +90,7 @@ describe('capture file report', () => {
   })
 
   const tshark = findTshark()
+  // Four tshark starts: slow while the rest of the suite runs alongside, hence the longer limit.
   it.skipIf(!tshark)('reads a real file with tshark (Wireshark installed)', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'np-pcap-'))
     const file = path.join(dir, 'test.pcap')
@@ -112,5 +113,5 @@ describe('capture file report', () => {
 
     fs.writeFileSync(file, 'not a capture')
     await expect(analyzePcap(tshark!, file, noGeo)).rejects.toThrow(/^E_PCAP\|/)
-  })
+  }, 30_000)
 })
