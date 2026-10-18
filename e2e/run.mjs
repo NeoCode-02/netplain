@@ -12,11 +12,44 @@ const shots = path.join(root, 'e2e', 'shots')
 fs.mkdirSync(shots, { recursive: true })
 const data = fs.mkdtempSync(path.join(os.tmpdir(), 'netplain-e2e-'))
 
+/** A capture file with one HTTP request carrying a Basic login (Ethernet/IPv4/TCP, classic pcap). */
+function loginPcap() {
+  const payload = Buffer.from('GET /admin HTTP/1.1\r\nHost: cam.example\r\nAuthorization: Basic YWRtaW46c2VjcmV0\r\n\r\n')
+  const ip = Buffer.alloc(20)
+  ip[0] = 0x45
+  ip.writeUInt16BE(40 + payload.length, 2)
+  ip[8] = 64
+  ip[9] = 6
+  Buffer.from([192, 168, 1, 10, 203, 0, 113, 80]).copy(ip, 12)
+  const tcp = Buffer.alloc(20)
+  tcp.writeUInt16BE(50000, 0)
+  tcp.writeUInt16BE(80, 2)
+  tcp.writeUInt32BE(1, 4)
+  tcp.writeUInt32BE(1, 8)
+  tcp[12] = 0x50
+  tcp[13] = 0x18
+  tcp.writeUInt16BE(65535, 14)
+  const frame = Buffer.concat([Buffer.from([2, 0, 0x5e, 0, 0, 1, 2, 0, 0x5e, 0, 0, 2, 8, 0]), ip, tcp, payload])
+  const head = Buffer.alloc(24)
+  head.writeUInt32LE(0xa1b2c3d4, 0)
+  head.writeUInt16LE(2, 4)
+  head.writeUInt16LE(4, 6)
+  head.writeUInt32LE(65535, 16)
+  head.writeUInt32LE(1, 20)
+  const rec = Buffer.alloc(16)
+  rec.writeUInt32LE(1_760_000_000, 0)
+  rec.writeUInt32LE(frame.length, 8)
+  rec.writeUInt32LE(frame.length, 12)
+  return Buffer.concat([head, rec, frame])
+}
+const pcapFile = path.join(data, 'login.pcap')
+fs.writeFileSync(pcapFile, loginPcap())
+
 const require_ = (await import('node:module')).createRequire(import.meta.url)
 const electron = require_('electron')
 // --inspect opens the main process too (unpacked Electron only), for what the page cannot do, such as a real window close.
 const args = [root, '--remote-debugging-port=0', '--inspect=0', ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [])]
-const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000', NETPLAIN_LAN_MS: '3000' }, stdio: ['ignore', 'pipe', 'pipe'] })
+const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000', NETPLAIN_LAN_MS: '3000', NETPLAIN_PCAP: pcapFile }, stdio: ['ignore', 'pipe', 'pipe'] })
 let appLog = ''
 app.stdout.on('data', (d) => (appLog += d))
 const devtools = await new Promise((resolve, reject) => {
@@ -250,6 +283,18 @@ try {
       }
     }
     await shot('packets')
+  })
+
+  // A capture file needs only Wireshark's engine (the e2e file stands in for the native Open dialog).
+  await step('capture file report', async () => {
+    const offered = await until('the Open button or the Wireshark hint', () => (document.querySelector('.page-actions, .pk-head .row') ? [...document.querySelectorAll('button')].some((b) => b.textContent === 'Open a file…') ? 'yes' : 'no' : false))
+    if (offered !== 'yes') return
+    await until('Open a file…', clickText, 'Open a file…')
+    await until('the report', () => /1 login was sent readable/.test(document.body.innerText) && document.body.innerText.includes('HTTP basic auth, user “admin”'))
+    if (await inPage(() => document.body.innerText.includes('c2VjcmV0') || document.body.innerText.includes('secret'))) throw new Error('the password is on screen')
+    await until('cam.example', hasText, 'cam.example')
+    await shot('packets-file')
+    await until('Back to live packets', clickText, 'Back to live packets')
   })
 
   // Opt-in, because it downloads 5 MB from Cloudflare's speed test: E2E_TRAFFIC=1 npm run e2e

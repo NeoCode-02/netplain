@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { DetailNode, PacketDetail, PacketRow } from '../../../shared/types'
+import type { DetailNode, PacketDetail, PacketRow, PcapReport } from '../../../shared/types'
 import { describePacket, layerKey, PRESETS } from '../explain'
 import { bytes } from '../format'
 import { errText, useT, type Dict } from '../i18n'
 import { useLive } from '../live'
 import { Icon, Page } from '../ui'
 import { Blocked } from './Apps'
+import PcapView from './PcapView'
 
 const ROW = 30
 const KEEP = 5000
@@ -79,6 +80,8 @@ export default function Packets() {
   const [err, setErr] = useState<unknown>(null)
   const [saved, setSaved] = useState(false)
   const [sel, setSel] = useState<number | null>(null)
+  const [file, setFile] = useState<PcapReport | null>(null)
+  const [opening, setOpening] = useState(false)
   const pos = useRef({ session: 0, after: 0 })
   const box = useRef<HTMLDivElement>(null)
   const [view, setView] = useState({ top: 0, height: 600 })
@@ -139,9 +142,51 @@ export default function Packets() {
     }
   }
 
+  const openFile = async () => {
+    setOpening(true)
+    setErr(null)
+    try {
+      const r = await window.netplain.openPcap()
+      if (r) setFile(r)
+    } catch (e) {
+      setErr(e)
+    } finally {
+      setOpening(false)
+    }
+  }
+  // Reading a file needs Wireshark's engine, not a running capture.
+  const openButton = traffic?.state !== 'missing' && (
+    <button className="btn sm" onClick={() => void openFile()} disabled={opening}>
+      {opening && <Icon name="refresh" className="spin" />}
+      {k.openFile}
+    </button>
+  )
+  const errNote = err !== null && <p className="note danger">{errText(t, err)}</p>
+
+  if (file)
+    return (
+      <Page
+        title={k.title}
+        note={file.file}
+        actions={
+          <>
+            <button className="btn sm" onClick={() => window.netplain.pcapInWireshark()}>
+              {k.open}
+            </button>
+            <button className="btn sm quiet" onClick={() => setFile(null)}>
+              {k.back}
+            </button>
+          </>
+        }
+      >
+        <PcapView r={file} t={t} />
+      </Page>
+    )
+
   if (traffic && !on && traffic.state !== 'starting')
     return (
-      <Page title={k.title}>
+      <Page title={k.title} actions={openButton}>
+        {errNote}
         <Blocked tr={traffic} t={t} />
       </Page>
     )
@@ -158,6 +203,7 @@ export default function Packets() {
             <p className="muted">{k.lead}</p>
           </div>
           <div className="row">
+            {openButton}
             <button className="btn sm" onClick={() => setPaused(!paused)}>
               {paused ? k.resume : k.pause}
             </button>
@@ -209,7 +255,7 @@ export default function Packets() {
             )}
           </form>
         </div>
-        {err !== null && <p className="note danger">{errText(t, err)}</p>}
+        {errNote}
         {matches && <p className="small muted">{k.matches(matches.size)}</p>}
 
         <div className="pk-table" role="table">

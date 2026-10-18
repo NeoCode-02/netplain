@@ -13,6 +13,7 @@ import type {
   Neighbor,
   PacketBatch,
   PacketDetail,
+  PcapReport,
   PingResult,
   PortState,
   PublicIp,
@@ -102,6 +103,10 @@ export interface Api {
   packetFilter(expr: string): Promise<number[]>
   /** Asks where to save the capture so far (.pcapng); false when cancelled. */
   savePackets(): Promise<boolean>
+  /** Asks for a .pcap/.pcapng file and reads it with tshark; null when cancelled. Throws E_NO_TSHARK, E_PCAP|reason. */
+  openPcap(): Promise<PcapReport | null>
+  /** Opens the last file read by openPcap in Wireshark. */
+  pcapInWireshark(): void
   /** Opens the capture so far in Wireshark. */
   openInWireshark(): void
   /** Data used per hour (today) or per day (last 7 / 30 days). */

@@ -413,6 +413,23 @@ export interface DnsReport {
   mail: MailPolicy | null
 }
 
+/** What a capture file holds, read with tshark. Times are ms since 1970. */
+export interface PcapReport {
+  file: string
+  packets: number
+  bytes: number
+  start: number | null
+  end: number | null
+  protocols: { name: string; packets: number }[]
+  talkers: { ip: string; packets: number; bytes: number; org: string | null; country: string | null }[]
+  /** DNS questions, TLS server names and HTTP hosts. */
+  names: { name: string; count: number }[]
+  /** Logins sent readable by anyone on the way: frame number, how, and the user name (never the password). */
+  credentials: { n: number; protocol: string; user: string }[]
+  /** One source knocking on many ports of one target. */
+  scans: { src: string; dst: string; ports: number }[]
+}
+
 /** A firewall rule Netplain made: a program cut off from the internet, or an address blocked both ways. */
 export interface Blocked {
   name: string

@@ -11,7 +11,8 @@ import { cached, run } from './exec'
 import { createGeo } from './geodb'
 import { internetIp, realDevices, sweep } from './net'
 import { allowCaptureLinux, createTrafficWatch } from './traffic'
-import { vendorTable } from './tshark'
+import { findTshark, vendorTable } from './tshark'
+import { analyzePcap } from './pcapfile'
 import { isSettings, loadSettings, normalize, saveSettings } from './settings'
 import { autostart, setAutostart } from './autostart'
 import { createTray } from './tray'
@@ -55,6 +56,8 @@ let quitting = false
 let latest: Snapshot | null = null
 let problem: string | null = null
 let release: Promise<Release | null> | undefined
+/** The capture file the user opened last; the UI never names paths itself. */
+let pcapFile: string | null = null
 
 const send = (channel: string, ...args: unknown[]) => {
   if (win && !win.isDestroyed()) win.webContents.send(channel, ...args)
@@ -301,6 +304,18 @@ const handlers: Api = {
     return true
   },
   openInWireshark: () => traffic!.openInWireshark(traffic!.snapshotFile()),
+  openPcap: async () => {
+    const exe = findTshark()
+    if (!exe) throw new Error('E_NO_TSHARK')
+    // NETPLAIN_PCAP: the e2e test's file, as the native dialog cannot be driven.
+    const r = process.env.NETPLAIN_PCAP
+      ? { canceled: false, filePaths: [process.env.NETPLAIN_PCAP] }
+      : await dialog.showOpenDialog(win!, { properties: ['openFile'], filters: [{ name: 'pcap, pcapng', extensions: ['pcap', 'pcapng', 'cap'] }, { name: '*', extensions: ['*'] }] })
+    if (r.canceled || !r.filePaths[0]) return null
+    pcapFile = r.filePaths[0]
+    return analyzePcap(exe, pcapFile, geo.lookup)
+  },
+  pcapInWireshark: () => void (pcapFile && traffic?.openInWireshark(pcapFile)),
   usage: (range) => usage.query(range),
   alerts: () => alerts.list(),
   markAlertsRead: () => alerts.markRead(),
@@ -445,6 +460,8 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   packetFilter: (a) => typeof a[0] === 'string' && a[0].trim().length > 0 && a[0].length <= 2000,
   savePackets: none,
   openInWireshark: none,
+  openPcap: none,
+  pcapInWireshark: none,
   usage: (a) => a[0] === 'day' || a[0] === 'week' || a[0] === 'month',
   alerts: none,
   markAlertsRead: none,

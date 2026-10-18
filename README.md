@@ -10,7 +10,7 @@ See what your computer does on the network, in plain language — without `ipcon
 - **Network** — every adapter explained (what a VirtualBox or WSL adapter is), Wi-Fi signal, band and security, IP / router / DNS, live traffic.
 - **Apps** — data received and sent by each app, and the sites it talked to. Needs Wireshark.
 - **Connections** — which app talks to which company and country; programs waiting for connections (open ports).
-- **Packets** — every packet in plain words, Wireshark display filters, full details, save as `.pcapng` or open in Wireshark.
+- **Packets** — every packet in plain words, Wireshark display filters, full details, save as `.pcapng` or open in Wireshark; open a `.pcap`/`.pcapng` file for a summary (protocols, busiest addresses, names) that points out logins sent in the clear (never the password) and port scans.
 - **Devices** — who is on your local network and who made each device; scan a device's ports or wake a computer (Wake-on-LAN) from its row.
 - **History** — data per hour and day, per app, adapter and network, kept 90 days; a monthly data limit (for mobile internet or a hotspot) warns at 80% and 100%.
 - **Uptime** — is the internet steady? The router, the internet and name lookups are checked every 15 seconds; every drop is logged with where it broke (Wi-Fi, router, provider or DNS), next to 24 hours of response times; your own sites, server ports and hosts are watched too, with alerts when one goes down or its https certificate runs out.
