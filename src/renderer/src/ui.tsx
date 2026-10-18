@@ -10,6 +10,7 @@ const PATHS = {
   box: 'M21 8 12 3 3 8v8l9 5 9-5ZM3 8l9 5 9-5M12 13v8',
   bluetooth: 'M7 7l10 10-5 5V2l5 5L7 17',
   cell: 'M3 20h.01M8 20v-4M13 20v-8M18 20V8',
+  map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2ZM9 4v14M15 6v14',
   globe: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18',
   router: 'M3 14h18v6H3zM7 17h.01M11 17h.01M8.5 10.5a5 5 0 0 1 7 0M5.5 7.5a9 9 0 0 1 13 0',
   devices: 'M3 5h12v9H3zM6 18h6M9 14v4M17 9h4v11h-4z',

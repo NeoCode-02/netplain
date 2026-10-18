@@ -3,7 +3,7 @@ import { bytes } from '../../../shared/format'
 
 export const en = {
   lang: 'English',
-  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', security: 'Security', tools: 'Tools', share: 'Share', uptime: 'Uptime', settings: 'Settings' },
+  nav: { overview: 'Overview', network: 'Network', apps: 'Apps', connections: 'Connections', map: 'Map', packets: 'Packets', devices: 'Devices', history: 'History', alerts: 'Alerts', security: 'Security', tools: 'Tools', share: 'Share', uptime: 'Uptime', settings: 'Settings' },
   navGroups: { connection: 'Connection', traffic: 'Apps & traffic', home: 'Home network', protection: 'Protection', tools: 'Tools' },
   /** One line each, shown when hovering a page in the sidebar. */
   navHints: {
@@ -13,6 +13,7 @@ export const en = {
     history: 'How much data was used, per day, app and network',
     apps: 'How much each app sends and receives',
     connections: 'Which app talks to which company and country',
+    map: 'Which countries your traffic goes to, and the way there',
     packets: 'Every single packet, like Wireshark — for experts',
     devices: 'Phones, TVs and other devices on your network',
     security: '“Was I hacked?” check, antivirus, accounts, services',
@@ -943,6 +944,27 @@ export const en = {
     offBody: 'Turn it on to see how much each app sends and receives.',
     turnOn: 'Turn on',
     error: 'Watching traffic stopped unexpectedly. Retrying…'
+  },
+  map: {
+    title: 'Map',
+    lead: 'Where this computer’s traffic goes, by country, and the way it takes.',
+    you: 'You',
+    from: (country: string) => `You are in ${country}`,
+    noHome: 'Your own country is unknown (no internet connection right now).',
+    received: 'Received',
+    sent: 'Sent',
+    theyStarted: 'They connected to you',
+    youStarted: 'You connected to them',
+    conns: (n: number) => (n === 1 ? '1 connection' : `${n} connections`),
+    countries: 'Countries',
+    addresses: 'Addresses',
+    pick: 'Click a country, on the map or in the list, to see its addresses and the route there.',
+    empty: 'Nothing is talking to another country right now.',
+    needGeo: 'Countries show once the location database is downloaded (the button above).',
+    route: 'Show route',
+    tracing: (name: string) => `Following the way to ${name}… (up to a minute)`,
+    routeTo: (name: string) => `The way to ${name}`,
+    routeNote: 'Routers are placed by the country their address is registered in, which can differ from where they stand. Silent routers and your own network are left out.'
   },
   connections: {
     title: 'Connections',

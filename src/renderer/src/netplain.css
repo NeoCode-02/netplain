@@ -103,6 +103,33 @@
 .conn-table td { vertical-align: top; }
 .pcap-findings { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
 .pcap-findings ul { margin: 6px 0; padding-left: 20px; }
+/* Map */
+.map-panel { padding: 12px 14px 14px; }
+.map-legend { gap: 16px; margin-bottom: 8px; color: var(--text-2); }
+.map-legend .row { gap: 6px; }
+.map-box { position: relative; }
+.world { display: block; width: 100%; height: auto; }
+.world .land { fill: color-mix(in srgb, var(--text) 9%, var(--surface)); stroke: var(--surface); stroke-width: 0.5; }
+.world .land.busy { fill: color-mix(in srgb, var(--accent) 22%, var(--surface)); cursor: pointer; }
+.world .land.on { fill: color-mix(in srgb, var(--accent) 40%, var(--surface)); }
+.world .arc { fill: none; stroke-linecap: round; opacity: 0.85; pointer-events: none; }
+.world .arc.down { stroke: var(--down); }
+.world .arc.up { stroke: var(--up); }
+.world .place { cursor: pointer; }
+.world .place circle:not(.hit) { fill: var(--text-2); stroke: var(--surface); stroke-width: 2; }
+.world .place.on circle:not(.hit) { fill: var(--text); }
+.world .hit { fill: transparent; }
+.world .route { fill: none; stroke: var(--text); stroke-width: 2; stroke-dasharray: 6 4; stroke-linejoin: round; pointer-events: none; }
+.world .stop circle { fill: var(--surface); stroke: var(--text); stroke-width: 2; }
+.world .stop text, .world .home text { font-size: 9px; font-weight: 700; text-anchor: middle; fill: var(--text); pointer-events: none; }
+.world .home circle { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.world .home text { font-size: 11px; }
+.map-tip { position: absolute; z-index: 2; display: flex; flex-direction: column; gap: 4px; max-width: 260px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow-sm); pointer-events: none; }
+.map-tip .row { gap: 10px; }
+.map-row { width: 100%; text-align: left; background: none; border: 0; font: inherit; color: inherit; cursor: pointer; gap: 12px; }
+.map-row.on { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.map-route-title { font-size: 14px; margin-bottom: 8px; }
+.map-stops { display: flex; flex-direction: column; gap: 8px; padding-left: 20px; }
 .sec-bar { justify-content: flex-end; margin-bottom: 12px; }
 .hosts-ip, .tool-form .input.hosts-ip { flex: 0 0 150px; width: 150px; }
 .pcap-names { display: flex; flex-wrap: wrap; gap: 6px; }

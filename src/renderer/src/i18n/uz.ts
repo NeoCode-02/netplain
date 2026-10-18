@@ -4,7 +4,7 @@ import type { Dict } from './en'
 
 export const uz: Dict = {
   lang: 'O‘zbekcha',
-  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', security: 'Xavfsizlik', tools: 'Asboblar', share: 'Ulashish', uptime: 'Barqarorlik', settings: 'Sozlamalar' },
+  nav: { overview: 'Umumiy', network: 'Tarmoq', apps: 'Ilovalar', connections: 'Ulanishlar', map: 'Xarita', packets: 'Paketlar', devices: 'Qurilmalar', history: 'Tarix', alerts: 'Signallar', security: 'Xavfsizlik', tools: 'Asboblar', share: 'Ulashish', uptime: 'Barqarorlik', settings: 'Sozlamalar' },
   navGroups: { connection: 'Ulanish', traffic: 'Ilovalar va trafik', home: 'Uy tarmog‘i', protection: 'Himoya', tools: 'Asboblar' },
   navHints: {
     overview: 'Hozir nima bo‘layotgani, bir necha jumlada',
@@ -13,6 +13,7 @@ export const uz: Dict = {
     history: 'Qancha ma’lumot ishlatildi: kun, ilova va tarmoq bo‘yicha',
     apps: 'Har bir ilova qancha yuboradi va oladi',
     connections: 'Qaysi ilova qaysi kompaniya va davlat bilan bog‘lanmoqda',
+    map: 'Trafigingiz qaysi davlatlarga va qaysi yo‘l bilan boryapti',
     packets: 'Har bir paket, Wireshark kabi — mutaxassislar uchun',
     devices: 'Tarmog‘ingizdagi telefon, televizor va boshqa qurilmalar',
     security: '“Buzilganmi?” tekshiruvi, antivirus, akkauntlar, xizmatlar',
@@ -938,6 +939,27 @@ export const uz: Dict = {
     offBody: 'Har bir ilova qancha yuborib, qancha olayotganini ko‘rish uchun yoqing.',
     turnOn: 'Yoqish',
     error: 'Trafik kuzatuvi kutilmaganda to‘xtadi. Qayta urinilmoqda…'
+  },
+  map: {
+    title: 'Xarita',
+    lead: 'Bu kompyuter trafigi qaysi davlatlarga va qaysi yo‘l bilan boryapti.',
+    you: 'Siz',
+    from: (country) => `Siz ${country}dasiz`,
+    noHome: 'O‘z davlatingiz noma’lum (hozir internet ulanishi yo‘q).',
+    received: 'Kelgan',
+    sent: 'Ketgan',
+    theyStarted: 'Ular sizga ulangan',
+    youStarted: 'Siz ularga ulangansiz',
+    conns: (n) => `${n} ta ulanish`,
+    countries: 'Davlatlar',
+    addresses: 'Manzillar',
+    pick: 'Manzillari va u yerga boradigan yo‘lni ko‘rish uchun xaritada yoki ro‘yxatda davlatni bosing.',
+    empty: 'Hozir boshqa davlat bilan aloqa yo‘q.',
+    needGeo: 'Davlatlar joylashuv bazasi yuklangandan keyin ko‘rinadi (yuqoridagi tugma).',
+    route: 'Yo‘lni ko‘rsatish',
+    tracing: (name) => `${name} gacha yo‘l kuzatilmoqda… (bir daqiqagacha)`,
+    routeTo: (name) => `${name} gacha yo‘l`,
+    routeNote: 'Routerlar manzili ro‘yxatdan o‘tgan davlatda ko‘rsatiladi, bu ular turgan joydan farq qilishi mumkin. Javob bermagan routerlar va o‘z tarmog‘ingiz ko‘rsatilmaydi.'
   },
   connections: {
     title: 'Ulanishlar',

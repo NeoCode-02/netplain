@@ -5,6 +5,7 @@ import { GO, useLive } from './live'
 import Alerts from './pages/Alerts'
 import Apps from './pages/Apps'
 import Connections from './pages/Connections'
+import WorldMap from './pages/Map'
 import Devices from './pages/Devices'
 import History from './pages/History'
 import Network from './pages/Network'
@@ -17,7 +18,7 @@ import Tools from './pages/Tools'
 import Uptime from './pages/Uptime'
 import { Icon, Mark, type IconName } from './ui'
 
-export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'packets' | 'devices' | 'history' | 'uptime' | 'alerts' | 'security' | 'tools' | 'share' | 'settings'
+export type Page = 'overview' | 'network' | 'apps' | 'connections' | 'map' | 'packets' | 'devices' | 'history' | 'uptime' | 'alerts' | 'security' | 'tools' | 'share' | 'settings'
 type Group = 'connection' | 'traffic' | 'home' | 'protection' | 'tools'
 /** Pages in groups, so a newcomer sees where to look; the Overview stays on top. */
 const NAV: [Group | null, [Page, IconName][]][] = [
@@ -35,6 +36,7 @@ const NAV: [Group | null, [Page, IconName][]][] = [
     [
       ['apps', 'grid'],
       ['connections', 'link'],
+      ['map', 'map'],
       ['packets', 'list']
     ]
   ],
@@ -120,6 +122,7 @@ export default function App() {
           {page === 'network' && <Network />}
           {page === 'apps' && <Apps />}
           {page === 'connections' && <Connections />}
+          {page === 'map' && <WorldMap />}
           {page === 'packets' && <Packets />}
           {page === 'devices' && <Devices />}
           {page === 'history' && <History />}
