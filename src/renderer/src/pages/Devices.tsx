@@ -25,15 +25,17 @@ function DeviceRow({ n, adapter, onWake }: { n: Neighbor; adapter?: Adapter; onW
       </div>
       <span className="mono">{n.ip}</span>
       <span className="mono faint dev-mac">{n.mac}</span>
-      <button className="btn sm quiet" title={d.portsNote} onClick={() => openTool('scan', n.ip)}>
-        {d.ports}
-      </button>
-      {/* Phones (private MACs), routers and virtual machines do not wake this way. */}
-      {!router && !random && adapter?.kind !== 'virtual' && (
-        <button className="btn sm quiet" title={d.wakeNote} onClick={() => onWake(n.mac)}>
-          {d.wake}
+      <div className="row-actions">
+        <button className="btn sm quiet" title={d.portsNote} onClick={() => openTool('scan', n.ip)}>
+          {d.ports}
         </button>
-      )}
+        {/* Phones (private MACs), routers and virtual machines do not wake this way. */}
+        {!router && !random && adapter?.kind !== 'virtual' && (
+          <button className="btn sm quiet" title={d.wakeNote} onClick={() => onWake(n.mac)}>
+            {d.wake}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
