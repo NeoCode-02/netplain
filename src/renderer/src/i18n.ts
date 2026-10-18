@@ -355,7 +355,33 @@ const en = {
   tools: {
     title: 'Tools',
     lead: 'What you would type in a terminal, as buttons — with the answer explained.',
-    tabs: { diagnose: 'Diagnose', scan: 'Port scan', dns: 'DNS', subnet: 'Subnet' },
+    tabs: { diagnose: 'Diagnose', scan: 'Port scan', dns: 'DNS', whois: 'Whois', subnet: 'Subnet' },
+    whois: {
+      title: 'Who owns it (whois)',
+      lead: 'Who holds a domain or an IP address, since when, and where to report abuse — straight from the registry.',
+      placeholder: 'example.com or 8.8.8.8',
+      run: 'Look up',
+      open: 'Who owns this address?',
+      kinds: { ip: 'IP block', domain: 'Domain' },
+      holder: 'Holder',
+      network: 'Owner of the block',
+      hidden: 'Hidden by the registry for privacy',
+      registrar: 'Registrar',
+      registrarNote: 'The company it was registered through.',
+      range: 'Address range',
+      country: 'Country',
+      created: 'Registered',
+      expires: 'Paid until',
+      left: (d: number) => (d === 0 ? 'Runs out today.' : d === 1 ? 'Runs out tomorrow.' : `${d} days left.`),
+      expired: 'Already expired.',
+      updated: 'Last changed',
+      abuse: 'Report abuse to',
+      abuseNote: 'Spam, attacks or fraud from this network go here.',
+      nameservers: 'Name servers',
+      status: 'Status',
+      locked: 'Locked against transfer: the usual protection from domain theft.',
+      source: 'From the registry in charge, through rdap.org.'
+    },
     dns: {
       title: 'DNS records',
       lead: 'What a name points to, asked from your own DNS server and from Cloudflare, Google and Quad9 at once. An IP is looked up backwards (PTR).',
@@ -859,6 +885,8 @@ const en = {
     E_SHARE_START: (m: string) => `The link could not be opened.${m ? ` The tunnel said: ${m}` : ''}`,
     E_CLOUDFLARED_DOWNLOAD: 'cloudflared could not be downloaded. Check the internet connection and try again.',
     E_CLOUDFLARED_SIGNATURE: 'The downloaded file is not signed by Cloudflare, so it was deleted.',
+    E_NO_RDAP: 'No registration found: the name is not registered, or its registry does not publish this data.',
+    E_RDAP: 'The registry did not answer. Check the internet connection and try again in a minute.',
     unknown: (m: string) => `Something went wrong: ${m}`
   }
 }
@@ -1216,7 +1244,33 @@ const uz: Dict = {
   tools: {
     title: 'Asboblar',
     lead: 'Terminalda yoziladigan buyruqlar — tugma ko‘rinishida, javobi tushuntirilgan holda.',
-    tabs: { diagnose: 'Tashxis', scan: 'Port skaner', dns: 'DNS', subnet: 'Subnet' },
+    tabs: { diagnose: 'Tashxis', scan: 'Port skaner', dns: 'DNS', whois: 'Whois', subnet: 'Subnet' },
+    whois: {
+      title: 'Kimniki (whois)',
+      lead: 'Domen yoki IP manzil kimga tegishli, qachondan beri va suiiste’mol haqida qayerga yozish kerak — to‘g‘ridan-to‘g‘ri reyestrdan.',
+      placeholder: 'example.com yoki 8.8.8.8',
+      run: 'Qidirish',
+      open: 'Bu manzil kimniki?',
+      kinds: { ip: 'IP blok', domain: 'Domen' },
+      holder: 'Egasi',
+      network: 'Blok egasi',
+      hidden: 'Reyestr maxfiylik uchun yashirgan',
+      registrar: 'Registrator',
+      registrarNote: 'Domen qaysi kompaniya orqali ro‘yxatdan o‘tgan.',
+      range: 'Manzillar oralig‘i',
+      country: 'Davlat',
+      created: 'Ro‘yxatdan o‘tgan',
+      expires: 'To‘langan muddat',
+      left: (d) => (d === 0 ? 'Bugun tugaydi.' : `${d} kun qoldi.`),
+      expired: 'Muddati o‘tgan.',
+      updated: 'Oxirgi o‘zgarish',
+      abuse: 'Shikoyat uchun',
+      abuseNote: 'Shu tarmoqdan kelgan spam, hujum yoki firibgarlik haqida shu yerga yoziladi.',
+      nameservers: 'Nom serverlari',
+      status: 'Holat',
+      locked: 'Ko‘chirishdan qulflangan: domenni o‘g‘irlashdan odatiy himoya.',
+      source: 'Mas’ul reyestrdan, rdap.org orqali.'
+    },
     dns: {
       title: 'DNS yozuvlari',
       lead: 'Nom nimaga olib boradi — sizning DNS serveringizdan va Cloudflare, Google, Quad9’dan birdaniga so‘raladi. IP teskari tomonga qidiriladi (PTR).',
@@ -1715,6 +1769,8 @@ const uz: Dict = {
     E_SHARE_START: (m) => `Havolani ochib bo‘lmadi.${m ? ` Tunnel javobi: ${m}` : ''}`,
     E_CLOUDFLARED_DOWNLOAD: 'cloudflared’ni yuklab bo‘lmadi. Internet ulanishini tekshirib, qayta urinib ko‘ring.',
     E_CLOUDFLARED_SIGNATURE: 'Yuklangan fayl Cloudflare imzosiga ega emas, shuning uchun o‘chirildi.',
+    E_NO_RDAP: 'Ro‘yxat topilmadi: nom ro‘yxatdan o‘tmagan yoki uning reyestri bu ma’lumotni e’lon qilmaydi.',
+    E_RDAP: 'Reyestr javob bermadi. Internet ulanishini tekshiring va bir daqiqadan keyin qayta urinib ko‘ring.',
     unknown: (m) => `Nimadir xato ketdi: ${m}`
   }
 }

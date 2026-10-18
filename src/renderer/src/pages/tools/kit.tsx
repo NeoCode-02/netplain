@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import { company, countryName } from '../../explain'
 import { errText, type Dict } from '../../i18n'
 import { Icon } from '../../ui'
@@ -8,7 +8,7 @@ export function useRun<T>() {
   const [busy, setBusy] = useState(false)
   const [res, setRes] = useState<T | null>(null)
   const [err, setErr] = useState<unknown>(null)
-  const run = async (f: () => Promise<T>) => {
+  const run = useCallback(async (f: () => Promise<T>) => {
     setBusy(true)
     setErr(null)
     setRes(null)
@@ -19,7 +19,7 @@ export function useRun<T>() {
     } finally {
       setBusy(false)
     }
-  }
+  }, [])
   return { busy, res, err, run }
 }
 

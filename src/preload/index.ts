@@ -48,6 +48,7 @@ const names: Record<keyof Api, true> = {
   checkPort: true,
   scanPorts: true,
   dnsQuery: true,
+  whois: true,
   publicIp: true,
   diagnose: true,
   flushDns: true,

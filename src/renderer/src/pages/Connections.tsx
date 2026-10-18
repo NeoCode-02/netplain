@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Conn, Connections as Data } from '../../../shared/types'
-import { company, countryName, listJoin, service } from '../explain'
+import { addressKind, company, countryName, listJoin, service } from '../explain'
 import { useGeo } from '../geo'
 import { errText, getLang, useT, type Dict } from '../i18n'
 import { AppIcon, Icon } from '../ui'
+import { openTool } from './Tools'
 
 type Filter = 'internet' | 'local' | 'all'
 
@@ -88,7 +89,13 @@ function AppGroup({ g, t, lang }: { g: Group; t: Dict; lang: string }) {
                 <td>
                   {c.host && <div className="ellipsis">{c.host}</div>}
                   <div className={`mono ${c.host ? 'faint' : ''}`}>
-                    {c.remoteIp}
+                    {c.remoteIp && addressKind(c.remoteIp) === 'public' ? (
+                      <button className="ip-link" title={t.tools.whois.open} onClick={() => openTool('whois', c.remoteIp!)}>
+                        {c.remoteIp}
+                      </button>
+                    ) : (
+                      c.remoteIp
+                    )}
                     {n > 1 && <span className="times">×{n}</span>}
                   </div>
                 </td>

@@ -317,3 +317,5 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .scan-port { width: 56px; flex-shrink: 0; font-weight: 600; }
 .scan-meter { margin-bottom: 12px; }
 .dns-records { display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.ip-link { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted var(--text-3); text-underline-offset: 3px; }
+.ip-link:hover { color: var(--accent); }

@@ -34,7 +34,8 @@ import type {
   NetworkUse,
   MonitorState,
   Uptime,
-  UsageRange
+  UsageRange,
+  Whois
 } from './types'
 
 /** Main → renderer pushes. */
@@ -117,6 +118,8 @@ export interface Api {
   scanPorts(host: string, ports: number[]): Promise<ScanHit[]>
   /** One record type from this computer's DNS and three public ones, timed; SPF/DMARC for MX and TXT. An IP is looked up backwards. */
   dnsQuery(name: string, type: RecordType): Promise<DnsReport>
+  /** Who holds a domain or IP block, from the registry through rdap.org. Throws E_NO_RDAP, E_RDAP. */
+  whois(query: string): Promise<Whois>
   /** Asks api.ipify.org for the address the internet sees. Throws E_PUBLIC_IP. */
   publicIp(): Promise<PublicIp>
   /** Checks adapter → address → router → DNS → internet. */

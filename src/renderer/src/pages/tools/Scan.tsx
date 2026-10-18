@@ -48,6 +48,14 @@ export default function Scan({ initial }: { initial?: string }) {
     setRun({ ...r, busy: false })
   }
 
+  // Opened for a device (its Ports button): start right away, once.
+  const auto = useRef(!!initial)
+  useEffect(() => {
+    if (!auto.current) return
+    auto.current = false
+    void start()
+  })
+
   const num = (n: number) => n.toLocaleString(getLang())
 
   return (

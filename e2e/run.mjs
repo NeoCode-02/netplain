@@ -374,14 +374,21 @@ try {
   })
 
   await step('port scanner', async () => {
-    // A device's Ports button opens the scanner on that address.
+    // A device's Ports button opens the scanner on that address and starts it (CI runners may list no device).
     await until('Devices', clickText, 'Devices')
-    const ip = await until('a device', () => {
+    await until('device list', () => document.querySelector('.dev-row, .empty') !== null)
+    const ip = await inPage(() => {
       const row = document.querySelector('.dev-row')
       row?.querySelector('button').click()
-      return row?.querySelector('.mono').textContent
+      return row?.querySelector('.mono').textContent ?? null
     })
-    await until('the scanner on that device', (v) => document.querySelector('[role=tab][aria-selected=true]')?.textContent === 'Port scan' && document.querySelector('.tool-form input')?.value === v, ip)
+    if (ip) {
+      await until('the scanner on that device', (v) => document.querySelector('[role=tab][aria-selected=true]')?.textContent === 'Port scan' && document.querySelector('.tool-form input')?.value === v, ip)
+      await until('its scan', (v) => document.body.innerText.includes(`on ${v}`), ip)
+    } else {
+      await until('Tools', clickText, 'Tools')
+      await until('Port scan', clickText, 'Port scan')
+    }
     const net = await import('node:net')
     const greeter = net.createServer((c) => c.end('SSH-2.0-E2E\r\n'))
     await new Promise((r) => greeter.listen(0, '127.0.0.1', r))
@@ -407,6 +414,15 @@ try {
     await until('four server rows', () => document.querySelectorAll('.list .list-row').length === 4)
     await until('the mail section', hasText, 'E-mail protection')
     await shot('tools-dns')
+  })
+
+  await step('whois', async () => {
+    await until('Whois', clickText, 'Whois')
+    await inPage(fill, 0, 'example.com')
+    await until('Look up', clickText, 'Look up')
+    // The registry answers through rdap.org; if it is down the page says so instead.
+    await until('the registration or a reason', () => document.body.innerText.includes('Registered') || document.querySelector('.note.danger') !== null)
+    await shot('tools-whois')
   })
 
   await step('share page', async () => {

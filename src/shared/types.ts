@@ -413,6 +413,25 @@ export interface DnsReport {
   mail: MailPolicy | null
 }
 
+/** Registration data of a domain or an IP block (RDAP). Dates are YYYY-MM-DD. */
+export interface Whois {
+  kind: 'ip' | 'domain'
+  name: string
+  /** Null when there is none or the registry hides it for privacy. */
+  holder: string | null
+  /** The network's own description (IP blocks). */
+  about: string | null
+  registrar: string | null
+  country: string | null
+  range: string | null
+  created: string | null
+  updated: string | null
+  expires: string | null
+  abuse: string | null
+  status: string[]
+  nameservers: string[]
+}
+
 /** An open port found by the scanner, with what the service said about itself. */
 export interface ScanHit {
   port: number
