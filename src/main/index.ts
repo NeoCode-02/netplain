@@ -22,6 +22,7 @@ import { createUsage } from './usage'
 import { checkPort, diagnose, isHost, lookup, ping, publicIp, scanPorts, trace } from './tools'
 import { dnsQuery, RECORD_TYPES } from './dnskit'
 import { whois } from './whois'
+import { inspectSite } from './webcheck'
 import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
 import { createSecurity } from './security'
 import { createScanner } from './defender'
@@ -297,6 +298,7 @@ const handlers: Api = {
   scanPorts: (host, ports) => scanPorts(host, ports),
   dnsQuery: (name, type) => dnsQuery(name, type),
   whois: (q) => whois(q),
+  inspectSite: (input) => inspectSite(input),
   publicIp: () => publicIp(geo.lookup),
   diagnose: () => diagnose(latest),
   flushDns: () => flushDns(),
@@ -419,6 +421,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   scanPorts: (a) => isHost(a[0]) && Array.isArray(a[1]) && a[1].length >= 1 && a[1].length <= 1000 && a[1].every(isPort),
   dnsQuery: (a) => isHost(a[0]) && RECORD_TYPES.includes(a[1] as RecordType),
   whois: (a) => isHost(a[0]),
+  inspectSite: (a) => typeof a[0] === 'string' && a[0].length > 0 && a[0].length <= 2048,
   publicIp: none,
   diagnose: none,
   flushDns: none,

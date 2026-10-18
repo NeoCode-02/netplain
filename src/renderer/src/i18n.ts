@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { AlertKind, OutageCause, RecordType } from '../../shared/types'
+import type { AlertKind, OutageCause, RecordType, SecHeader } from '../../shared/types'
 import { bytes } from './format'
 
 const en = {
@@ -355,7 +355,51 @@ const en = {
   tools: {
     title: 'Tools',
     lead: 'What you would type in a terminal, as buttons — with the answer explained.',
-    tabs: { diagnose: 'Diagnose', scan: 'Port scan', dns: 'DNS', whois: 'Whois', subnet: 'Subnet' },
+    tabs: { diagnose: 'Diagnose', scan: 'Port scan', dns: 'DNS', whois: 'Whois', web: 'Website', subnet: 'Subnet' },
+    web: {
+      title: 'Website check',
+      lead: 'How a browser reaches a site: where it redirects, whether its certificate is trusted, and which protective headers it sends.',
+      placeholder: 'example.com or https://example.com/page',
+      run: 'Check',
+      trusted: 'The connection is encrypted and the certificate is trusted.',
+      untrusted: (code: string) => `The certificate is not trusted (${code}).`,
+      tlsErrors: {
+        CERT_HAS_EXPIRED: 'The certificate has expired: browsers show a warning.',
+        CERT_NOT_YET_VALID: 'The certificate is not valid yet — or this computer’s clock is wrong.',
+        ERR_TLS_CERT_ALTNAME_INVALID: 'The certificate is for a different name: browsers show a warning.',
+        DEPTH_ZERO_SELF_SIGNED_CERT: 'Self-signed certificate: no trusted authority vouches for it.',
+        SELF_SIGNED_CERT_IN_CHAIN: 'The chain ends in an authority this computer does not trust.',
+        UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'The chain is incomplete: the server does not send its intermediate certificate.',
+        UNABLE_TO_GET_ISSUER_CERT_LOCALLY: 'Issued by an authority this computer does not know.'
+      } as Record<string, string>,
+      plain: 'No encryption: the site answers over plain http.',
+      upgrades: 'Plain http moves to https by itself.',
+      noUpgrade: 'Plain http does not move to https: people who type the name may stay unencrypted.',
+      headerScore: (n: number, of: number) => `${n} of ${of} protective headers are sent.`,
+      redirects: 'Redirects',
+      certificate: 'Certificate',
+      names: 'Valid for',
+      more: (n: number) => `and ${n} more`,
+      issuer: 'Issued by',
+      validTo: 'Valid until',
+      left: (d: number) => (d === 0 ? 'Runs out today.' : d === 1 ? 'Runs out tomorrow.' : `${d} days left.`),
+      expired: 'Expired.',
+      protocol: 'Protocol',
+      oldTls: 'An outdated version: modern browsers refuse it.',
+      chain: 'Chain',
+      headers: 'Protective headers',
+      header: {
+        hsts: ['HSTS', 'Browsers always use https here, even when a link says http.'],
+        csp: ['Content-Security-Policy', 'Limits which scripts may run: the main defence against injected code (XSS).'],
+        frames: ['Frame protection', 'Other sites cannot show this one inside a frame to trick clicks (X-Frame-Options or frame-ancestors).'],
+        nosniff: ['X-Content-Type-Options', 'Browsers do not guess file types, so an uploaded file cannot run as a script.'],
+        referrer: ['Referrer-Policy', 'How much of the address is passed on to other sites.'],
+        permissions: ['Permissions-Policy', 'Turns off the camera, microphone and other features the site does not use.']
+      } as Record<SecHeader, [string, string]>,
+      present: 'Sent',
+      missing: 'Missing',
+      server: (s: string) => `The server calls itself “${s}”.`
+    },
     whois: {
       title: 'Who owns it (whois)',
       lead: 'Who holds a domain or an IP address, since when, and where to report abuse — straight from the registry.',
@@ -887,6 +931,8 @@ const en = {
     E_CLOUDFLARED_SIGNATURE: 'The downloaded file is not signed by Cloudflare, so it was deleted.',
     E_NO_RDAP: 'No registration found: the name is not registered, or its registry does not publish this data.',
     E_RDAP: 'The registry did not answer. Check the internet connection and try again in a minute.',
+    E_SITE: (m: string) =>
+      `The site did not answer: ${({ ENOTFOUND: 'no such name', ECONNREFUSED: 'nothing accepts connections there', timeout: 'no answer within 10 seconds', ECONNRESET: 'the connection was cut' } as Record<string, string>)[m] ?? m}.`,
     unknown: (m: string) => `Something went wrong: ${m}`
   }
 }
@@ -1244,7 +1290,51 @@ const uz: Dict = {
   tools: {
     title: 'Asboblar',
     lead: 'Terminalda yoziladigan buyruqlar — tugma ko‘rinishida, javobi tushuntirilgan holda.',
-    tabs: { diagnose: 'Tashxis', scan: 'Port skaner', dns: 'DNS', whois: 'Whois', subnet: 'Subnet' },
+    tabs: { diagnose: 'Tashxis', scan: 'Port skaner', dns: 'DNS', whois: 'Whois', web: 'Veb-sayt', subnet: 'Subnet' },
+    web: {
+      title: 'Veb-saytni tekshirish',
+      lead: 'Brauzer saytga qanday yetadi: qayerga yo‘naltiradi, sertifikatiga ishonsa bo‘ladimi va qaysi himoya sarlavhalarini yuboradi.',
+      placeholder: 'example.com yoki https://example.com/sahifa',
+      run: 'Tekshirish',
+      trusted: 'Ulanish shifrlangan va sertifikatga ishonsa bo‘ladi.',
+      untrusted: (code) => `Sertifikatga ishonib bo‘lmaydi (${code}).`,
+      tlsErrors: {
+        CERT_HAS_EXPIRED: 'Sertifikat muddati o‘tgan: brauzerlar ogohlantirish ko‘rsatadi.',
+        CERT_NOT_YET_VALID: 'Sertifikat hali kuchga kirmagan — yoki bu kompyuterning soati noto‘g‘ri.',
+        ERR_TLS_CERT_ALTNAME_INVALID: 'Sertifikat boshqa nom uchun berilgan: brauzerlar ogohlantirish ko‘rsatadi.',
+        DEPTH_ZERO_SELF_SIGNED_CERT: 'O‘zi imzolagan sertifikat: hech bir ishonchli markaz uni tasdiqlamaydi.',
+        SELF_SIGNED_CERT_IN_CHAIN: 'Zanjir bu kompyuter ishonmaydigan markaz bilan tugaydi.',
+        UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'Zanjir to‘liq emas: server oraliq sertifikatini yubormaydi.',
+        UNABLE_TO_GET_ISSUER_CERT_LOCALLY: 'Bu kompyuter tanimaydigan markaz bergan.'
+      },
+      plain: 'Shifrlanmagan: sayt oddiy http orqali javob beradi.',
+      upgrades: 'Oddiy http o‘zi https’ga o‘tadi.',
+      noUpgrade: 'Oddiy http https’ga o‘tmaydi: nomni qo‘lda yozganlar shifrsiz qolishi mumkin.',
+      headerScore: (n, of) => `${of} ta himoya sarlavhasidan ${n} tasi yuboriladi.`,
+      redirects: 'Yo‘naltirishlar',
+      certificate: 'Sertifikat',
+      names: 'Qaysi nomlar uchun',
+      more: (n) => `va yana ${n} ta`,
+      issuer: 'Kim bergan',
+      validTo: 'Amal qilish muddati',
+      left: (d) => (d === 0 ? 'Bugun tugaydi.' : `${d} kun qoldi.`),
+      expired: 'Muddati o‘tgan.',
+      protocol: 'Protokol',
+      oldTls: 'Eskirgan versiya: zamonaviy brauzerlar rad etadi.',
+      chain: 'Zanjir',
+      headers: 'Himoya sarlavhalari',
+      header: {
+        hsts: ['HSTS', 'Havola http desa ham, brauzer bu yerda doim https ishlatadi.'],
+        csp: ['Content-Security-Policy', 'Qaysi skriptlar ishlashi mumkinligini cheklaydi: kod qo‘shishga (XSS) qarshi asosiy himoya.'],
+        frames: ['Ramka himoyasi', 'Boshqa saytlar bu saytni ramka ichida ko‘rsatib, aldab bostira olmaydi (X-Frame-Options yoki frame-ancestors).'],
+        nosniff: ['X-Content-Type-Options', 'Brauzer fayl turini taxmin qilmaydi, yuklangan fayl skript bo‘lib ishga tushmaydi.'],
+        referrer: ['Referrer-Policy', 'Boshqa saytlarga manzilning qancha qismi uzatiladi.'],
+        permissions: ['Permissions-Policy', 'Sayt ishlatmaydigan kamera, mikrofon va boshqa imkoniyatlarni o‘chiradi.']
+      },
+      present: 'Bor',
+      missing: 'Yo‘q',
+      server: (s) => `Server o‘zini “${s}” deb ataydi.`
+    },
     whois: {
       title: 'Kimniki (whois)',
       lead: 'Domen yoki IP manzil kimga tegishli, qachondan beri va suiiste’mol haqida qayerga yozish kerak — to‘g‘ridan-to‘g‘ri reyestrdan.',
@@ -1771,6 +1861,8 @@ const uz: Dict = {
     E_CLOUDFLARED_SIGNATURE: 'Yuklangan fayl Cloudflare imzosiga ega emas, shuning uchun o‘chirildi.',
     E_NO_RDAP: 'Ro‘yxat topilmadi: nom ro‘yxatdan o‘tmagan yoki uning reyestri bu ma’lumotni e’lon qilmaydi.',
     E_RDAP: 'Reyestr javob bermadi. Internet ulanishini tekshiring va bir daqiqadan keyin qayta urinib ko‘ring.',
+    E_SITE: (m) =>
+      `Sayt javob bermadi: ${({ ENOTFOUND: 'bunday nom yo‘q', ECONNREFUSED: 'u yerda hech narsa ulanish qabul qilmaydi', timeout: '10 soniyada javob kelmadi', ECONNRESET: 'ulanish uzildi' } as Record<string, string>)[m] ?? m}.`,
     unknown: (m) => `Nimadir xato ketdi: ${m}`
   }
 }

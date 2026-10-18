@@ -432,6 +432,40 @@ export interface Whois {
   nameservers: string[]
 }
 
+export type SecHeader = 'hsts' | 'csp' | 'frames' | 'nosniff' | 'referrer' | 'permissions'
+
+/** One certificate of a chain; dates are YYYY-MM-DD. */
+export interface CertInfo {
+  subject: string
+  issuer: string
+  validFrom: string
+  validTo: string
+  /** Names it is valid for (SAN). */
+  names: string[]
+}
+
+export interface TlsInfo {
+  protocol: string | null
+  cipher: string | null
+  /** The chain is trusted and matches the name. */
+  authorized: boolean
+  /** Why not (Node's code, e.g. CERT_HAS_EXPIRED, ERR_TLS_CERT_ALTNAME_INVALID). */
+  error: string | null
+  chain: CertInfo[]
+}
+
+/** A website checked the way a browser reaches it: redirects, security headers, TLS. */
+export interface SiteReport {
+  url: string
+  hops: { url: string; status: number }[]
+  status: number
+  server: string | null
+  headers: { key: SecHeader; value: string | null }[]
+  tls: TlsInfo | null
+  /** Typed without https: whether plain http moved to https (null when it started on https). */
+  upgrade: boolean | null
+}
+
 /** An open port found by the scanner, with what the service said about itself. */
 export interface ScanHit {
   port: number

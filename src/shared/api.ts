@@ -25,6 +25,7 @@ import type {
   ShareRequest,
   ShareRequestDetail,
   ShareState,
+  SiteReport,
   Snapshot,
   Traffic,
   Usage,
@@ -120,6 +121,8 @@ export interface Api {
   dnsQuery(name: string, type: RecordType): Promise<DnsReport>
   /** Who holds a domain or IP block, from the registry through rdap.org. Throws E_NO_RDAP, E_RDAP. */
   whois(query: string): Promise<Whois>
+  /** Redirects, security headers and TLS of a website, the way a browser reaches it. Throws E_SITE|reason. */
+  inspectSite(input: string): Promise<SiteReport>
   /** Asks api.ipify.org for the address the internet sees. Throws E_PUBLIC_IP. */
   publicIp(): Promise<PublicIp>
   /** Checks adapter → address → router → DNS → internet. */

@@ -425,6 +425,22 @@ try {
     await shot('tools-whois')
   })
 
+  await step('website check', async () => {
+    const http = await import('node:http')
+    const site = http.createServer((q, r) => (q.url === '/' ? r.writeHead(301, { location: '/home' }).end() : r.writeHead(200, { 'x-content-type-options': 'nosniff', server: 'E2E' }).end('hi')))
+    await new Promise((r) => site.listen(0, '127.0.0.1', r))
+    try {
+      await until('Website', clickText, 'Website')
+      await inPage(fill, 0, `http://127.0.0.1:${site.address().port}/`)
+      await until('Check', clickText, 'Check')
+      await until('the redirect and the verdicts', () => document.querySelectorAll('.hops li').length === 2 && document.body.innerText.includes('1 of 6 protective headers'))
+      await until('the plain-http warning', hasText, 'No encryption')
+      await shot('tools-web')
+    } finally {
+      site.close()
+    }
+  })
+
   await step('share page', async () => {
     // A site running here is found by itself and offered by its page title.
     const http = await import('node:http')

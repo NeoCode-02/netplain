@@ -319,3 +319,9 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .dns-records { display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
 .ip-link { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted var(--text-3); text-underline-offset: 3px; }
 .ip-link:hover { color: var(--accent); }
+.verdicts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.verdicts li { display: flex; align-items: center; gap: 10px; }
+.verdicts li.ok svg { color: var(--ok); }
+.verdicts li.bad svg { color: var(--danger); }
+.sub-head { font-size: 15px; margin-bottom: 12px; }
+.hops li.hop-url { grid-template-columns: 36px minmax(0, 1fr); }
