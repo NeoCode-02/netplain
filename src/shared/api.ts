@@ -9,6 +9,8 @@ import type {
   Finding,
   GeoInfo,
   Hop,
+  HostsEntry,
+  HostsOp,
   LookupResult,
   Neighbor,
   PacketBatch,
@@ -161,6 +163,10 @@ export interface Api {
   updateDefinitions(): Promise<void>
   /** Has Defender clean every active threat (UAC). */
   removeThreats(): Promise<void>
+  /** Address lines of the hosts file (reading needs no admin rights). */
+  hosts(): Promise<HostsEntry[]>
+  /** Adds, removes or switches one line (admin prompt; the previous file is kept as hosts.netplain.bak). Throws E_HOSTS_CHANGED. */
+  editHosts(op: HostsOp): Promise<HostsEntry[]>
   /** Ends the program listening on a port (UAC for other users' programs). Throws E_SYSTEM_PROCESS / E_NETPLAIN. */
   stopProcess(pid: number): Promise<void>
   /** Prints a report page to PDF and asks where to save it; false when cancelled. */

@@ -389,7 +389,7 @@ const en = {
   },
   tools: {
     title: 'Tools',
-    tabs: { diagnose: 'Diagnose', speed: 'Speed', wifi: 'Wi-Fi', scan: 'Port scan', dns: 'DNS', whois: 'Whois', web: 'Website', subnet: 'Subnet' },
+    tabs: { diagnose: 'Diagnose', speed: 'Speed', wifi: 'Wi-Fi', scan: 'Port scan', dns: 'DNS', whois: 'Whois', web: 'Website', subnet: 'Subnet', hosts: 'Hosts file' },
     wifi: {
       lead: 'Networks nearby, how crowded each channel is, and whether a quieter one would help.',
       scan: 'Scan again',
@@ -408,6 +408,19 @@ const en = {
       yours: 'Yours',
       where: (band: string, ch: number) => `${band} GHz · channel ${ch}`,
       security: { open: 'Open', wep: 'WEP', wpa: 'WPA', wpa2: 'WPA2', wpa3: 'WPA3', enterprise: 'Enterprise', other: 'Other' } as Record<WifiSecurity, string>
+    },
+    hosts: {
+      lead: 'Names this computer answers by itself, before asking any DNS server. Developers point names at their own machine here; malware uses it to send you to fake sites. Changes ask for admin rights.',
+      ip: 'Address',
+      name: 'Name',
+      add: 'Add',
+      entries: (n: number) => (n === 1 ? '1 entry' : `${n} entries`),
+      empty: 'No entries: every name is asked from DNS.',
+      off: 'Switched off',
+      turnOff: 'Switch off',
+      turnOn: 'Switch on',
+      remove: 'Remove',
+      backup: 'Before each change the previous file is kept next to it as hosts.netplain.bak.'
     },
     speedTest: {
       lead: 'Against Cloudflare’s nearest server, about 20 seconds. Uses 100 MB or more.',
@@ -1030,6 +1043,7 @@ const en = {
     E_ALLOW_CAPTURE: 'Permission was not changed (the password prompt was closed, or there is no “wireshark” group).',
     E_UNSUPPORTED: 'Not available on this system.',
     E_NO_CAPTURE: 'Traffic is not being watched right now.',
+    E_HOSTS_CHANGED: 'The hosts file changed meanwhile; here is what it holds now.',
     E_SYSTEM_PROCESS: 'This belongs to the operating system (or its file is unknown); stopping it could break the computer.',
     E_NETPLAIN: 'This is Netplain itself.',
     E_NO_TSHARK: 'Reading capture files needs Wireshark. The Apps page shows how to install it.',
@@ -1452,7 +1466,7 @@ const uz: Dict = {
   },
   tools: {
     title: 'Asboblar',
-    tabs: { diagnose: 'Tashxis', speed: 'Tezlik', wifi: 'Wi-Fi', scan: 'Port skaner', dns: 'DNS', whois: 'Whois', web: 'Veb-sayt', subnet: 'Subnet' },
+    tabs: { diagnose: 'Tashxis', speed: 'Tezlik', wifi: 'Wi-Fi', scan: 'Port skaner', dns: 'DNS', whois: 'Whois', web: 'Veb-sayt', subnet: 'Subnet', hosts: 'Hosts fayli' },
     wifi: {
       lead: 'Yaqindagi tarmoqlar, kanallar qanchalik band va tinchrog‘i yordam beradimi.',
       scan: 'Qayta skanerlash',
@@ -1471,6 +1485,19 @@ const uz: Dict = {
       yours: 'Sizniki',
       where: (band, ch) => `${band} GHz · ${ch}-kanal`,
       security: { open: 'Ochiq', wep: 'WEP', wpa: 'WPA', wpa2: 'WPA2', wpa3: 'WPA3', enterprise: 'Korporativ', other: 'Boshqa' }
+    },
+    hosts: {
+      lead: 'Bu kompyuter hech qaysi DNS serverdan so‘ramay, o‘zi javob beradigan nomlar. Dasturchilar bu yerda nomni o‘z kompyuteriga yo‘naltiradi; zararli dasturlar esa sizni soxta saytlarga yuborish uchun ishlatadi. O‘zgartirish admin huquqini so‘raydi.',
+      ip: 'Manzil',
+      name: 'Nom',
+      add: 'Qo‘shish',
+      entries: (n) => `${n} ta yozuv`,
+      empty: 'Yozuv yo‘q: har bir nom DNS’dan so‘raladi.',
+      off: 'O‘chirib qo‘yilgan',
+      turnOff: 'O‘chirib qo‘yish',
+      turnOn: 'Yoqish',
+      remove: 'O‘chirish',
+      backup: 'Har o‘zgarishdan oldin avvalgi fayl yonida hosts.netplain.bak bo‘lib saqlanadi.'
     },
     speedTest: {
       lead: 'Cloudflare’ning eng yaqin serveriga nisbatan, ~20 soniya. 100 MB va undan ko‘p sarflaydi.',
@@ -2088,6 +2115,7 @@ const uz: Dict = {
     E_ALLOW_CAPTURE: 'Ruxsat o‘zgarmadi (parol oynasi yopildi yoki “wireshark” guruhi yo‘q).',
     E_UNSUPPORTED: 'Bu tizimda mavjud emas.',
     E_NO_CAPTURE: 'Hozir trafik kuzatilmayapti.',
+    E_HOSTS_CHANGED: 'Hosts fayli shu orada o‘zgardi; hozirgi holati ko‘rsatilmoqda.',
     E_SYSTEM_PROCESS: 'Bu operatsion tizimning qismi (yoki fayli noma’lum); uni to‘xtatish kompyuterni buzishi mumkin.',
     E_NETPLAIN: 'Bu Netplain’ning o‘zi.',
     E_NO_TSHARK: 'Capture fayllarini o‘qish uchun Wireshark kerak. Uni o‘rnatish yo‘li Ilovalar sahifasida.',

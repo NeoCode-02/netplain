@@ -55,6 +55,8 @@ const names: Record<keyof Api, true> = {
   wifiScan: true,
   wake: true,
   exposure: true,
+  hosts: true,
+  editHosts: true,
   stopProcess: true,
   saveReport: true,
   openPcap: true,

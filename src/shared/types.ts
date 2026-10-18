@@ -413,6 +413,18 @@ export interface DnsReport {
   mail: MailPolicy | null
 }
 
+/** One address line of the hosts file; `line` is its index in the file. */
+export interface HostsEntry {
+  line: number
+  ip: string
+  names: string[]
+  on: boolean
+  comment: string
+}
+
+/** A change to the hosts file; remove and toggle name the line and its address, so a moved line is caught. */
+export type HostsOp = { kind: 'add'; ip: string; name: string } | { kind: 'remove' | 'toggle'; line: number; ip: string }
+
 /** What a capture file holds, read with tshark. Times are ms since 1970. */
 export interface PcapReport {
   file: string

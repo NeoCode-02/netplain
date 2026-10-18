@@ -522,6 +522,13 @@ try {
     await shot('tools-subnet')
   })
 
+  // Reading only: every change goes through the admin prompt.
+  await step('hosts file', async () => {
+    await until('Hosts file', clickText, 'Hosts file')
+    await until('the entries', () => /\d+ entr(y|ies)|No entries/.test(document.body.innerText) && document.querySelector('.note.danger') === null)
+    await shot('tools-hosts')
+  })
+
   await step('port scanner', async () => {
     // A device's Ports button opens the scanner on that address and starts it (CI runners may list no device).
     await until('Devices', clickText, 'Devices')

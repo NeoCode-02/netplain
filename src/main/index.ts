@@ -14,6 +14,7 @@ import { allowCaptureLinux, createTrafficWatch } from './traffic'
 import { findTshark, vendorTable } from './tshark'
 import { analyzePcap } from './pcapfile'
 import { stopGuard, stopProcess } from './kill'
+import { applyHosts, parseHosts, readHosts, writeHosts } from './hosts'
 import { isSettings, loadSettings, normalize, saveSettings } from './settings'
 import { autostart, setAutostart } from './autostart'
 import { createTray } from './tray'
@@ -350,6 +351,11 @@ const handlers: Api = {
   startScan: (kind, admin) => scanner.start(kind, admin),
   updateDefinitions: () => scanner.updateDefinitions(),
   removeThreats: () => scanner.removeThreats(),
+  hosts: async () => parseHosts(readHosts()),
+  editHosts: async (op) => {
+    await writeHosts(applyHosts(readHosts(), op), path.join(app.getPath('userData'), 'tmp'))
+    return parseHosts(readHosts())
+  },
   stopProcess: async (pid) => {
     const refused = stopGuard(pid, (await currentConnections()).listening, [process.pid, ...app.getAppMetrics().map((m) => m.pid)])
     if (refused) throw new Error(refused)
@@ -516,6 +522,12 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   startScan: (a) => (a[0] === 'quick' || a[0] === 'full') && typeof a[1] === 'boolean',
   updateDefinitions: none,
   removeThreats: none,
+  hosts: none,
+  editHosts: (a) => {
+    const o = a[0] as Record<string, unknown>
+    if (typeof o !== 'object' || o === null || typeof o.ip !== 'string' || o.ip.length > 64) return false
+    return o.kind === 'add' ? typeof o.name === 'string' && o.name.length <= 253 && Object.keys(o).length === 3 : (o.kind === 'remove' || o.kind === 'toggle') && int(o.line) && Object.keys(o).length === 3
+  },
   stopProcess: (a) => int(a[0]),
   saveReport: (a) => typeof a[0] === 'string' && a[0].length <= 2_000_000,
   blocked: none,
