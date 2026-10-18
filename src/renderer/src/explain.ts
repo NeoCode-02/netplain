@@ -174,6 +174,9 @@ export function company(org: string): string {
 }
 
 /** Country name in the reader's language; the ISO code where the runtime has no name. */
+/** "Company · Country", or what of it is known. */
+export const where = (x: { org: string | null; country: string | null }, lang: string) => [x.org && company(x.org), x.country && countryName(x.country, lang)].filter(Boolean).join(' · ')
+
 export function countryName(code: string, lang: string): string {
   try {
     return new Intl.DisplayNames([lang, 'en'], { type: 'region' }).of(code) ?? code

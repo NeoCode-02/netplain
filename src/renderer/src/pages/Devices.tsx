@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { Adapter, Neighbor } from '../../../shared/types'
 import { adapterOf, randomMac } from '../explain'
-import { errText, useT } from '../i18n'
+import { useAction } from '../hooks'
+import { useT } from '../i18n'
 import { useLive } from '../live'
-import { Empty, Icon, Page } from '../ui'
+import { Empty, ErrNote, Icon, Page } from '../ui'
 import { openTool } from './Tools'
 
 const ipNum = (ip: string) => ip.split('.').reduce((n, p) => n * 256 + Number(p), 0)
@@ -45,32 +46,25 @@ export default function Devices() {
   const d = t.devices
   const { snap } = useLive()
   const [list, setList] = useState<Neighbor[] | null>(null)
-  const [busy, setBusy] = useState(false)
   const [scanned, setScanned] = useState(false)
-  const [err, setErr] = useState<unknown>(null)
   const [woke, setWoke] = useState<string | null>(null)
+  const { busy: running, err, run } = useAction()
+  const busy = running === 'scan'
 
-  useEffect(() => {
-    window.netplain.neighbors().then(setList, setErr)
-  }, [])
+  useEffect(() => void run('load', () => window.netplain.neighbors()).then((l) => l && setList(l)), [run])
 
-  const scan = async () => {
-    setBusy(true)
-    setErr(null)
-    try {
+  const scan = () =>
+    run('scan', async () => {
       setList(await window.netplain.scan())
       setScanned(true)
-    } catch (e) {
-      setErr(e)
-    } finally {
-      setBusy(false)
-    }
-  }
+    })
 
   const wake = (mac: string) => {
-    setErr(null)
     setWoke(null)
-    window.netplain.wake(mac).then(() => setWoke(mac), setErr)
+    void run('wake', async () => {
+      await window.netplain.wake(mac)
+      setWoke(mac)
+    })
   }
 
   const adapters = snap?.adapters ?? []
@@ -100,7 +94,7 @@ export default function Devices() {
         )
       }
     >
-      {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      <ErrNote e={err} />
       {woke && <p className="note">{d.woke(woke)}</p>}
       {noVendors && <p className="note">{d.noVendors}</p>}
       {list && list.length === 0 && <Empty icon="devices" title={d.empty} body={d.emptyBody} />}

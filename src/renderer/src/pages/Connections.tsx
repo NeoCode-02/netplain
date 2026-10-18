@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Conn, Connections as Data } from '../../../shared/types'
 import { addressKind, company, countryName, listJoin, service } from '../explain'
 import { useGeo } from '../geo'
-import { errText, getLang, useT, type Dict } from '../i18n'
-import { AppIcon, Icon, Page } from '../ui'
+import { getLang, useT, type Dict } from '../i18n'
+import { AppIcon, ErrNote, Icon, Page } from '../ui'
 import { openTool } from './Tools'
 import { BlockApp, blockable, ours, TwoStep } from './TwoStep'
 
@@ -205,8 +205,8 @@ export default function Connections() {
           </button>
         </div>
       )}
-      {geo.err !== null && <p className="note danger">{errText(t, geo.err)}</p>}
-      {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      <ErrNote e={geo.err} />
+      <ErrNote e={err} />
 
       <div className="toolbar">
         <label className="search">

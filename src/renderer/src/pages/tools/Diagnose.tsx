@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import type { DiagnoseStep, Hop, LookupResult, PingResult, PortState, PublicIp } from '../../../../shared/types'
-import { addressKind } from '../../explain'
+import { addressKind, where } from '../../explain'
 import { getLang, useT } from '../../i18n'
 import { useLive } from '../../live'
-import { Icon } from '../../ui'
-import { Ask, ErrNote, Tool, useRun, where } from './kit'
+import { ErrNote, Icon } from '../../ui'
+import { Ask, Tool } from './kit'
+import { useRun } from '../../hooks'
 
 /** "Is the internet working?", the classic terminal commands as buttons, and quick fixes. */
 export default function Diagnose() {
@@ -55,7 +56,7 @@ export default function Diagnose() {
             })}
           </ol>
         )}
-        <ErrNote t={t} e={diag.err} />
+        <ErrNote e={diag.err} />
       </section>
 
       <div className="tools-grid section">
@@ -75,7 +76,7 @@ export default function Diagnose() {
               </p>
             </div>
           )}
-          <ErrNote t={t} e={ping.err} />
+          <ErrNote e={ping.err} />
         </Tool>
 
         <Tool title={k.lookup} lead={k.lookupLead}>
@@ -93,7 +94,7 @@ export default function Diagnose() {
               <p className="small faint">{k.took(look.res.ms)}</p>
             </div>
           )}
-          <ErrNote t={t} e={look.err} />
+          <ErrNote e={look.err} />
         </Tool>
 
         <Tool title={k.port} lead={k.portLead}>
@@ -105,7 +106,7 @@ export default function Diagnose() {
             extra={<input className="input sm mono port-input" inputMode="numeric" value={portNo} aria-label="Port" onChange={(e) => setPortNo(e.target.value.replace(/\D/g, '').slice(0, 5))} />}
           />
           {port.res && <p className={`tool-out port-${port.res}`}>{k.ports[port.res]}</p>}
-          <ErrNote t={t} e={port.err} />
+          <ErrNote e={port.err} />
         </Tool>
 
         <Tool title={k.publicIp} lead={k.publicIpLead}>
@@ -121,7 +122,7 @@ export default function Diagnose() {
               <p className="small muted">{where(pub.res, lang)}</p>
             </div>
           )}
-          <ErrNote t={t} e={pub.err} />
+          <ErrNote e={pub.err} />
         </Tool>
       </div>
 
@@ -144,7 +145,7 @@ export default function Diagnose() {
             ))}
           </ol>
         )}
-        <ErrNote t={t} e={trace.err} />
+        <ErrNote e={trace.err} />
       </section>
 
       <section className="section">
@@ -174,7 +175,7 @@ export default function Diagnose() {
           ))}
         </div>
         {fix.res && <p className="note">{`${k[fix.res as 'flush'][0]}: ${k.done}`}</p>}
-        <ErrNote t={t} e={fix.err} />
+        <ErrNote e={fix.err} />
       </section>
     </>
   )

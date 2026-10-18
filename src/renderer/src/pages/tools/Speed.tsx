@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import type { SpeedPhase, SpeedResult } from '../../../../shared/types'
 import { bytes } from '../../format'
 import { getLang, useT } from '../../i18n'
-import { Icon } from '../../ui'
-import { ErrNote } from './kit'
+import { ErrNote, Icon } from '../../ui'
 
 const PHASES: SpeedPhase[] = ['latency', 'down', 'up']
 const mb = (v: number | null) => (v === null ? '—' : `${v < 10 ? v.toFixed(1) : Math.round(v)} Mbit/s`)
@@ -93,7 +92,7 @@ export default function Speed() {
           </ul>
         )}
         {r && !phase && r.up !== null && <p className="small faint tool-out">{k.foot(r.server, bytes(r.bytes), r.jitter, when(r.at))}</p>}
-        <ErrNote t={t} e={err} />
+        <ErrNote e={err} />
       </section>
 
       {hist.length > 1 && (

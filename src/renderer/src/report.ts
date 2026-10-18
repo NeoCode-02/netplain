@@ -1,7 +1,6 @@
 import type { Exposure, Finding, Security } from '../../shared/types'
-import { service } from './explain'
+import { service, where } from './explain'
 import type { Dict } from './i18n'
-import { where } from './pages/tools/kit'
 
 const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 const MARK: Record<Finding['level'], string> = { bad: '●', warn: '▲', info: '·', ok: '✓' }

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { AlertKind, BlocklistInfo, Settings } from '../../../shared/types'
-import { errText, getLang, useT } from '../i18n'
+import { useAction } from '../hooks'
+import { getLang, useT } from '../i18n'
 import { alertText, setAlerts, useLive } from '../live'
-import { Empty, Icon, Page, type IconName } from '../ui'
+import { Empty, ErrNote, Icon, type IconName, Page } from '../ui'
 
 const ICON: Record<AlertKind, IconName> = { newApp: 'globe', exposed: 'link', plain: 'alert', blocklist: 'shield', outage: 'pulse', monitorDown: 'pulse', monitorUp: 'pulse', certExpiry: 'shield', dataCap: 'chart', newDevice: 'devices', arpSpoof: 'router', netChange: 'globe' }
 const KINDS = Object.keys(ICON) as AlertKind[]
@@ -16,8 +17,7 @@ export default function Alerts() {
   const [draft, setDraft] = useState('')
   const [saved, setSaved] = useState(false)
   const [info, setInfo] = useState<BlocklistInfo | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState<unknown>(null)
+  const { busy, err, run } = useAction()
 
   useEffect(() => {
     void window.netplain.getSettings().then((s) => {
@@ -33,15 +33,8 @@ export default function Alerts() {
     setInfo(await window.netplain.blocklistInfo())
   }
   const firehol = async (remove: boolean) => {
-    setBusy(true)
-    setErr(null)
-    try {
-      setInfo(remove ? await window.netplain.removeFirehol() : await window.netplain.updateFirehol())
-    } catch (e) {
-      setErr(e)
-    } finally {
-      setBusy(false)
-    }
+    const next = await run('firehol', () => (remove ? window.netplain.removeFirehol() : window.netplain.updateFirehol()))
+    if (next) setInfo(next)
   }
   const when = (ms: number) => new Date(ms).toLocaleString(lang, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
@@ -152,17 +145,17 @@ export default function Alerts() {
             </div>
             <div className="row">
               {info?.firehol != null && (
-                <button className="btn quiet sm" onClick={() => void firehol(true)} disabled={busy}>
+                <button className="btn quiet sm" onClick={() => void firehol(true)} disabled={busy !== null}>
                   {a.remove}
                 </button>
               )}
-              <button className="btn sm" onClick={() => void firehol(false)} disabled={busy}>
+              <button className="btn sm" onClick={() => void firehol(false)} disabled={busy !== null}>
                 <Icon name={info?.firehol != null ? 'refresh' : 'down'} className={busy ? 'spin' : undefined} />
                 {info?.firehol != null ? a.update : a.download}
               </button>
             </div>
           </div>
-          {err !== null && <p className="note danger">{errText(t, err)}</p>}
+          <ErrNote e={err} />
         </div>
       </section>
     </Page>

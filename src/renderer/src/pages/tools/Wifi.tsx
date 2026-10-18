@@ -3,9 +3,9 @@ import type { WifiNet } from '../../../../shared/types'
 import { quality } from '../../explain'
 import { useT } from '../../i18n'
 import { useLive } from '../../live'
-import { Icon } from '../../ui'
+import { ErrNote, Icon } from '../../ui'
 import { advice, perChannel, weak } from '../../wifi'
-import { ErrNote, useRun } from './kit'
+import { useRun } from '../../hooks'
 
 /** Wi-Fi networks around: how crowded each channel is, which is quieter for your router, and which networks are unsafe. */
 export default function Wifi() {
@@ -60,7 +60,7 @@ export default function Wifi() {
             )}
           </ul>
         )}
-        <ErrNote t={t} e={q.err} />
+        <ErrNote e={q.err} />
       </section>
 
       {q.res &&

@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { DetailNode, PacketDetail, PacketRow, PcapReport } from '../../../shared/types'
 import { describePacket, layerKey, PRESETS } from '../explain'
 import { bytes } from '../format'
-import { errText, useT, type Dict } from '../i18n'
+import { useAction } from '../hooks'
+import { useT, type Dict } from '../i18n'
 import { useLive } from '../live'
-import { Icon, Page } from '../ui'
+import { ErrNote, Icon, Page } from '../ui'
 import { Blocked } from './Apps'
 import PcapView from './PcapView'
 
@@ -47,7 +48,7 @@ function Detail({ n, onClose, t }: { n: number; onClose(): void; t: Dict }) {
           ×
         </button>
       </div>
-      {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      <ErrNote e={err} />
       {d?.tree.map((layer, i) => {
         const key = layerKey(layer.text)
         return (
@@ -77,11 +78,10 @@ export default function Packets() {
   const [app, setApp] = useState('')
   const [expr, setExpr] = useState('')
   const [matches, setMatches] = useState<Set<number> | null>(null)
-  const [err, setErr] = useState<unknown>(null)
+  const { busy, err, run } = useAction()
   const [saved, setSaved] = useState(false)
   const [sel, setSel] = useState<number | null>(null)
   const [file, setFile] = useState<PcapReport | null>(null)
-  const [opening, setOpening] = useState(false)
   const pos = useRef({ session: 0, after: 0 })
   const box = useRef<HTMLDivElement>(null)
   const [view, setView] = useState({ top: 0, height: 600 })
@@ -123,45 +123,24 @@ export default function Packets() {
     if (stick.current && box.current) box.current.scrollTop = box.current.scrollHeight
   }, [shown.length])
 
-  const applyFilter = async () => {
-    setErr(null)
-    if (!expr.trim()) return setMatches(null)
-    try {
-      setMatches(new Set(await window.netplain.packetFilter(expr.trim())))
-    } catch (e) {
-      setErr(e)
-    }
-  }
-  const save = async () => {
-    setErr(null)
-    try {
+  const applyFilter = () =>
+    expr.trim()
+      ? run('filter', async () => setMatches(new Set(await window.netplain.packetFilter(expr.trim()))))
+      : setMatches(null)
+  const save = () =>
+    run('save', async () => {
       setSaved(await window.netplain.savePackets())
       setTimeout(() => setSaved(false), 2500)
-    } catch (e) {
-      setErr(e)
-    }
-  }
-
-  const openFile = async () => {
-    setOpening(true)
-    setErr(null)
-    try {
-      const r = await window.netplain.openPcap()
-      if (r) setFile(r)
-    } catch (e) {
-      setErr(e)
-    } finally {
-      setOpening(false)
-    }
-  }
+    })
+  const openFile = () => run('open', async () => setFile((await window.netplain.openPcap()) ?? file))
   // Reading a file needs Wireshark's engine, not a running capture.
   const openButton = traffic?.state !== 'missing' && (
-    <button className="btn sm" onClick={() => void openFile()} disabled={opening}>
-      {opening && <Icon name="refresh" className="spin" />}
+    <button className="btn sm" onClick={() => void openFile()} disabled={busy === 'open'}>
+      {busy === 'open' && <Icon name="refresh" className="spin" />}
       {k.openFile}
     </button>
   )
-  const errNote = err !== null && <p className="note danger">{errText(t, err)}</p>
+  const errNote = <ErrNote e={err} />
 
   if (file)
     return (
@@ -211,7 +190,7 @@ export default function Packets() {
               <Icon name="down" />
               {saved ? k.saved : k.save}
             </button>
-            <button className="btn sm" onClick={() => void window.netplain.openInWireshark().catch(setErr)}>
+            <button className="btn sm" onClick={() => void run('wireshark', () => window.netplain.openInWireshark())}>
               {k.open}
             </button>
           </div>

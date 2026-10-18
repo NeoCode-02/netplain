@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import type { LocalSite, ShareProvider, ShareRequest, ShareRequestDetail, ShareState } from '../../../shared/types'
 import { countryName } from '../explain'
 import { bytes } from '../format'
-import { errText, getLang, useT, type Dict } from '../i18n'
-import { Icon, Page } from '../ui'
+import { useAction } from '../hooks'
+import { getLang, useT, type Dict } from '../i18n'
+import { ErrNote, Icon, Page } from '../ui'
 
 function Switch({ on, label, onChange, disabled }: { on: boolean; label: string; onChange(on: boolean): void; disabled?: boolean }) {
   return <button className={`switch ${on ? 'on' : ''}`} role="switch" aria-checked={on} aria-label={label} disabled={disabled} onClick={() => onChange(!on)} />
@@ -28,8 +29,7 @@ function Form({ t, state }: { t: Dict; state: ShareState }) {
   const [https, setHttps] = useState(state.options?.https ?? false)
   const [password, setPassword] = useState(state.options?.password ?? true)
   const [provider, setProvider] = useState<ShareProvider>(state.options?.provider ?? 'cloudflare')
-  const [busy, setBusy] = useState<string | null>(null)
-  const [err, setErr] = useState<unknown>(null)
+  const { busy, err, run } = useAction()
 
   // Sites come and go as they are started and stopped; the first of the user's own is picked.
   useEffect(() => {
@@ -74,20 +74,9 @@ function Form({ t, state }: { t: Dict; state: ShareState }) {
   const site = other ? undefined : sites?.find((x) => x.port === port)
   const start = async () => {
     if (port === null) return
-    setErr(null)
-    try {
-      // Cloudflare's connector is fetched on the first share, not as a separate step.
-      if (provider === 'cloudflare' && !state.cloudflared) {
-        setBusy(s.gettingCf)
-        await window.netplain.installCloudflared()
-      }
-      setBusy(s.starting)
-      await window.netplain.shareStart({ port, https: site ? site.https : https, password, provider })
-    } catch (e) {
-      setErr(e)
-    } finally {
-      setBusy(null)
-    }
+    // Cloudflare's connector is fetched on the first share, not as a separate step.
+    if (provider === 'cloudflare' && !state.cloudflared && !(await run(s.gettingCf, () => window.netplain.installCloudflared().then(() => true)))) return
+    await run(s.starting, () => window.netplain.shareStart({ port, https: site ? site.https : https, password, provider }))
   }
 
   return (
@@ -166,7 +155,7 @@ function Form({ t, state }: { t: Dict; state: ShareState }) {
           {busy ?? (port === null ? s.start : s.shareSite(site?.title ?? `localhost:${port}`))}
         </button>
       </div>
-      {(err !== null || state.error) && <p className="note danger">{errText(t, err ?? state.error)}</p>}
+      <ErrNote e={err ?? state.error} />
     </>
   )
 }

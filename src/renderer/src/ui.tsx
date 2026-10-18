@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { AdapterKind } from '../../shared/types'
+import { errText, useT } from './i18n'
 
 const PATHS = {
   wifi: 'M2 8.8a15 15 0 0 1 20 0M5 12.4a10 10 0 0 1 14 0M8.5 15.9a5 5 0 0 1 7 0M12 19.5h.01',
@@ -138,4 +139,10 @@ export function AppIcon({ path }: { path: string | null }) {
     }
   }, [path])
   return <span className="app-icon">{src ? <img src={src} alt="" /> : <Icon name="box" size={16} />}</span>
+}
+
+/** An error from the main process in the reader's language; nothing when there is none. */
+export function ErrNote({ e }: { e: unknown }) {
+  const t = useT()
+  return e === null || e === undefined ? null : <p className="note danger">{errText(t, e)}</p>
 }

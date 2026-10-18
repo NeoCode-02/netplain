@@ -1,27 +1,21 @@
 import { useEffect, useState } from 'react'
 import type { GeoInfo } from '../../shared/types'
+import { useAction } from './hooks'
 
 /** The location database's state, and the download behind the button that offers it. */
 export function useGeo(onReady?: () => void) {
   const [info, setInfo] = useState<GeoInfo | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState<unknown>(null)
+  const { busy, err, run } = useAction()
 
   useEffect(() => {
     void window.netplain.geoInfo().then(setInfo)
   }, [])
 
   const update = async () => {
-    setBusy(true)
-    setErr(null)
-    try {
-      setInfo(await window.netplain.geoUpdate())
-      onReady?.()
-    } catch (e) {
-      setErr(e)
-    } finally {
-      setBusy(false)
-    }
+    const next = await run('geo', () => window.netplain.geoUpdate())
+    if (!next) return
+    setInfo(next)
+    onReady?.()
   }
-  return { info, busy, err, update }
+  return { info, busy: busy !== null, err, update }
 }

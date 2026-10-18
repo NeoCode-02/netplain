@@ -1,8 +1,8 @@
 import type { Exposure as Data } from '../../../shared/types'
-import { RISKY, service } from '../explain'
+import { RISKY, service, where } from '../explain'
 import { getLang, type Dict } from '../i18n'
-import { Fact, Icon } from '../ui'
-import { ErrNote, where, type useRun } from './tools/kit'
+import { ErrNote, Fact, Icon } from '../ui'
+import { useRun } from '../hooks'
 
 const SHOW_VULNS = 12
 const nvd = (cve: string) => `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(cve)}`
@@ -25,7 +25,7 @@ export default function Exposure({ t, q }: { t: Dict; q: ReturnType<typeof useRu
             {x.run}
           </button>
         </div>
-        <ErrNote t={t} e={q.err} />
+        <ErrNote e={q.err} />
       </section>
 
       {e && (

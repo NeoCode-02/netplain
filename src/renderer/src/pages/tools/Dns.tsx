@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { DnsAnswer, DnsReport, RecordType } from '../../../../shared/types'
 import { useT } from '../../i18n'
-import { Fact } from '../../ui'
-import { Ask, ErrNote, useRun } from './kit'
+import { ErrNote, Fact } from '../../ui'
+import { Ask } from './kit'
+import { useRun } from '../../hooks'
 
 const TYPES: RecordType[] = ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'CAA', 'SRV']
 const same = (a: DnsAnswer, b: DnsAnswer) => a.records.join('\n') === b.records.join('\n')
@@ -32,7 +33,7 @@ export default function Dns() {
           </div>
         </div>
         <p className="small faint tool-out">{k.types[type]}</p>
-        <ErrNote t={t} e={q.err} />
+        <ErrNote e={q.err} />
       </section>
 
       {r && main && (

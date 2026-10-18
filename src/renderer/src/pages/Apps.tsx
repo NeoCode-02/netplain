@@ -2,9 +2,10 @@ import { useState } from 'react'
 import type { AppTraffic, Traffic } from '../../../shared/types'
 import { company, countryName } from '../explain'
 import { bits, bytes } from '../format'
-import { errText, getLang, useT, type Dict } from '../i18n'
+import { useAction } from '../hooks'
+import { getLang, useT, type Dict } from '../i18n'
 import { useLive } from '../live'
-import { AppIcon, Empty, Icon, Page } from '../ui'
+import { AppIcon, Empty, ErrNote, Icon, Page } from '../ui'
 import { BlockApp, blockable } from './TwoStep'
 
 const OS = /Windows/.test(navigator.userAgent) ? 'Win' : /Mac/.test(navigator.userAgent) ? 'Mac' : 'Linux'
@@ -70,20 +71,10 @@ function AppRow({ a, max, t }: { a: AppTraffic; max: number; t: Dict }) {
 /** What to show instead of the list while traffic can't be watched. */
 export function Blocked({ tr, t }: { tr: Traffic; t: Dict }) {
   const a = t.apps
-  const [busy, setBusy] = useState(false)
-  const [msg, setMsg] = useState<string | null>(null)
+  const { busy, err, run } = useAction()
+  const [allowed, setAllowed] = useState(false)
   const retry = () => void window.netplain.retryCapture()
-  const allow = async () => {
-    setBusy(true)
-    try {
-      await window.netplain.allowCapture()
-      setMsg(a.allowed)
-    } catch (e) {
-      setMsg(errText(t, e))
-    } finally {
-      setBusy(false)
-    }
-  }
+  const allow = async () => setAllowed((await run('allow', () => window.netplain.allowCapture().then(() => true))) ?? false)
   if (tr.state === 'missing')
     return (
       <Empty icon="down" title={a.missingTitle} body={a.missingBody}>
@@ -101,10 +92,11 @@ export function Blocked({ tr, t }: { tr: Traffic; t: Dict }) {
   if (tr.state === 'denied')
     return (
       <Empty icon="alert" title={a.deniedTitle} body={a[`denied${OS}`]}>
-        {msg && <p className="small muted">{msg}</p>}
+        {allowed && <p className="small muted">{a.allowed}</p>}
+        <ErrNote e={err} />
         <div className="row">
           {OS === 'Linux' && (
-            <button className="btn primary" onClick={allow} disabled={busy}>
+            <button className="btn primary" onClick={allow} disabled={busy !== null}>
               {a.allow}
             </button>
           )}

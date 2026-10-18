@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import type { DataCap, NetworkUse, Settings as Prefs } from '../../../shared/types'
 import { bytes } from '../format'
 import { useGeo } from '../geo'
-import { errText, getLang, LANGS, setLang, useT, type Dict, type Lang } from '../i18n'
-import { Icon, Page } from '../ui'
+import { getLang, LANGS, setLang, useT, type Dict, type Lang } from '../i18n'
+import { ErrNote, Icon, Page } from '../ui'
 import { showSetup } from './Setup'
 
 /** The monthly data limit: which network, how many GB, and the day the count starts again. */
@@ -155,7 +155,7 @@ export default function Settings() {
         <div className="panel panel-pad stack">
           {toggle('background', s.background, s.backgroundWhy)}
           {toggle('autostart', info.platform === 'win32' ? s.autostartWin : s.autostart, s.autostartWhy)}
-          {err !== null && <p className="note danger">{errText(t, err)}</p>}
+          <ErrNote e={err} />
         </div>
       </section>
       {prefs && <CapForm t={t} cap={prefs.cap} onSave={(cap) => set({ cap })} />}
@@ -172,7 +172,7 @@ export default function Settings() {
             </button>
           </div>
           <p className="small muted">{s.geoWhy}</p>
-          {geo.err !== null && <p className="note danger">{errText(t, geo.err)}</p>}
+          <ErrNote e={geo.err} />
         </div>
       </section>
       <section className="section">

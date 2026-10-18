@@ -1,34 +1,25 @@
 import { useEffect, useState } from 'react'
 import type { HostsEntry, HostsOp } from '../../../../shared/types'
+import { useAction } from '../../hooks'
 import { useT } from '../../i18n'
-import { Icon } from '../../ui'
-import { ErrNote } from './kit'
+import { ErrNote, Icon } from '../../ui'
 
 /** The hosts file: names this computer answers itself, before any DNS server. */
 export default function Hosts() {
   const t = useT()
   const k = t.tools.hosts
   const [list, setList] = useState<HostsEntry[] | null>(null)
-  const [busy, setBusy] = useState<string | null>(null)
-  const [err, setErr] = useState<unknown>(null)
+  const { busy, err, run } = useAction()
   const [ip, setIp] = useState('127.0.0.1')
   const [name, setName] = useState('')
 
-  useEffect(() => void window.netplain.hosts().then(setList, setErr), [])
+  useEffect(() => void run('load', () => window.netplain.hosts()).then((l) => l && setList(l)), [run])
 
   const edit = async (key: string, op: HostsOp) => {
-    setBusy(key)
-    setErr(null)
-    try {
-      setList(await window.netplain.editHosts(op))
-      if (op.kind === 'add') setName('')
-    } catch (e) {
-      setErr(e)
-      // The file may have changed meanwhile: show what is there now.
-      window.netplain.hosts().then(setList, () => {})
-    } finally {
-      setBusy(null)
-    }
+    const next = await run(key, () => window.netplain.editHosts(op))
+    if (next && op.kind === 'add') setName('')
+    // On failure the file may have changed meanwhile: show what is there now.
+    setList(next ?? (await window.netplain.hosts().catch(() => list)))
   }
 
   return (
@@ -49,7 +40,7 @@ export default function Hosts() {
             {k.add}
           </button>
         </form>
-        <ErrNote t={t} e={err} />
+        <ErrNote e={err} />
       </section>
 
       {list && (

@@ -1,7 +1,8 @@
 import type { SiteReport } from '../../../../shared/types'
 import { useT } from '../../i18n'
-import { Fact, Icon } from '../../ui'
-import { Ask, ErrNote, useRun } from './kit'
+import { ErrNote, Fact, Icon } from '../../ui'
+import { Ask } from './kit'
+import { useRun } from '../../hooks'
 
 const DAY = 86_400_000
 
@@ -21,7 +22,7 @@ export default function Web() {
       <section className="panel panel-pad tool">
         <p className="small muted">{k.lead}</p>
         <Ask placeholder={k.placeholder} label={k.run} busy={q.busy} onRun={(v) => void q.run(() => window.netplain.inspectSite(v))} />
-        <ErrNote t={t} e={q.err} />
+        <ErrNote e={q.err} />
       </section>
 
       {r && (

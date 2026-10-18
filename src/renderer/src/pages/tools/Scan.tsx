@@ -3,7 +3,7 @@ import type { ScanHit } from '../../../../shared/types'
 import { COMMON_PORTS, parsePorts, RISKY, service } from '../../explain'
 import { getLang, useT } from '../../i18n'
 import { useLive } from '../../live'
-import { ErrNote } from './kit'
+import { ErrNote } from '../../ui'
 
 type Sets = 'common' | 'low' | 'all' | 'custom'
 const SETS: Sets[] = ['common', 'low', 'all', 'custom']
@@ -131,7 +131,7 @@ export default function Scan({ initial }: { initial?: string }) {
           {!run.busy && run.hits.length === 0 && err === null && <p className="muted">{k.none}</p>}
         </section>
       )}
-      <ErrNote t={t} e={err} />
+      <ErrNote e={err} />
     </>
   )
 }

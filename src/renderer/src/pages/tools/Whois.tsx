@@ -2,8 +2,9 @@ import { useEffect } from 'react'
 import type { Whois as Data } from '../../../../shared/types'
 import { company, countryName } from '../../explain'
 import { getLang, useT } from '../../i18n'
-import { Fact } from '../../ui'
-import { Ask, ErrNote, useRun } from './kit'
+import { ErrNote, Fact } from '../../ui'
+import { Ask } from './kit'
+import { useRun } from '../../hooks'
 
 const DAY = 86_400_000
 
@@ -27,7 +28,7 @@ export default function Whois({ initial }: { initial?: string }) {
       <section className="panel panel-pad tool">
         <p className="small muted">{k.lead}</p>
         <Ask key={initial} initial={initial} placeholder={k.placeholder} label={k.run} busy={q.busy} onRun={(v) => void q.run(() => window.netplain.whois(v))} />
-        <ErrNote t={t} e={q.err} />
+        <ErrNote e={q.err} />
       </section>
 
       {w && (

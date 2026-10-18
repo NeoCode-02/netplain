@@ -2,7 +2,7 @@ import type { PcapReport } from '../../../shared/types'
 import { bytes } from '../format'
 import { getLang, type Dict } from '../i18n'
 import { Fact } from '../ui'
-import { where } from './tools/kit'
+import { where } from '../explain'
 
 /** A capture file in brief: what to worry about first, then what was in it. */
 export default function PcapView({ r, t }: { r: PcapReport; t: Dict }) {

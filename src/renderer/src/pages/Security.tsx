@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Exposure as ExposureData, Finding, ScanKind, ScanState, SecService, Security as Data, SecurityTab } from '../../../shared/types'
 import { behavioural, threatParts } from '../explain'
 import { errText, getLang, useT, type Dict } from '../i18n'
-import { Icon, Page, Tabs, type IconName } from '../ui'
+import { ErrNote, Icon, type IconName, Page, Tabs } from '../ui'
 import Blocked from './Blocked'
 import Exposure from './Exposure'
-import { useRun } from './tools/kit'
 import { reportHtml } from '../report'
+import { useRun } from '../hooks'
 
 const WINDOWS = /Windows/.test(navigator.userAgent)
 const MARK: Record<Finding['level'], IconName> = { bad: 'alert', warn: 'alert', info: 'dot', ok: 'shield' }
@@ -42,7 +42,7 @@ function Status({ sec, t, onTab, onFixed }: { sec: Data; t: Dict; onTab(tab: Sec
           <p className="small muted">{s.honest}</p>
         </div>
       </section>
-      {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      <ErrNote e={err} />
       <div className="list section">
         {sec.findings.map((f) => {
           const [title, body] = s.findings[f.key] ?? [f.key, () => '']
@@ -192,7 +192,7 @@ function Antivirus({ sec, t, onChanged }: { sec: Data; t: Dict; onChanged(): voi
           </button>
         </div>
         {note && <p className="small muted">{note}</p>}
-        {err !== null && <p className="note danger">{errText(t, err)}</p>}
+        <ErrNote e={err} />
       </section>
 
       <section className="section">
@@ -260,7 +260,7 @@ function Startup({ sec, t, onChanged, onTab }: { sec: Data; t: Dict; onChanged()
   return (
     <>
       <p className="muted section-lead">{v.lead}</p>
-      {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      <ErrNote e={err} />
       {entries.length === 0 ? (
         <p className="list-empty">{v.empty}</p>
       ) : (
@@ -363,7 +363,7 @@ function Services({ sec, t, onChanged }: { sec: Data; t: Dict; onChanged(): void
         </div>
         <span className="small faint">{v.count(list.length)}</span>
       </div>
-      {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      <ErrNote e={err} />
       <div className="list">
         {list.map((s) => (
           <div className="list-row finding svc-row" key={s.name}>
@@ -441,7 +441,7 @@ function Users({ sec, t, onChanged }: { sec: Data; t: Dict; onChanged(): void })
   return (
     <>
       <p className="muted section-lead">{u.lead}</p>
-      {err !== null && <p className="note danger">{errText(t, err)}</p>}
+      <ErrNote e={err} />
       <div className="list">
         {users.map((x) => {
           const builtin = u.builtin[x.sid.split('-').at(-1) ?? '']
@@ -550,7 +550,7 @@ export default function Security() {
       tabs={TABS.length > 1 && <Tabs value={tab} options={TABS} text={(x) => s.tabs[x]} onChange={setTab} />}
     >
       {!WINDOWS && <p className="note">{s.windowsOnly}</p>}
-      {reportErr !== null && <p className="note danger">{errText(t, reportErr)}</p>}
+      <ErrNote e={reportErr} />
       {tab === 'exposure' && <Exposure t={t} q={view} />}
       {tab === 'blocked' && <Blocked t={t} />}
       {err !== null && !alone && <p className="note danger">{errText(t, err)}</p>}
