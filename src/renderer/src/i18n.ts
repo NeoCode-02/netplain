@@ -715,6 +715,12 @@ const en = {
     },
     ms: (v: number) => `${v} ms`
   },
+  report: {
+    title: 'Netplain security report',
+    made: (when: string, version: string) => `${when} · Netplain ${version}`,
+    save: 'Report (PDF)',
+    saved: 'Saved'
+  },
   alerts: {
     title: 'Alerts',
     lead: 'What Netplain noticed, what it means and what to do.',
@@ -1764,6 +1770,12 @@ const uz: Dict = {
       return m < 60 ? `${m} daqiqa` : `${Math.floor(m / 60)} soat ${m % 60} daqiqa`
     },
     ms: (v) => `${v} ms`
+  },
+  report: {
+    title: 'Netplain xavfsizlik hisoboti',
+    made: (when, version) => `${when} · Netplain ${version}`,
+    save: 'Hisobot (PDF)',
+    saved: 'Saqlandi'
   },
   alerts: {
     title: 'Signallar',

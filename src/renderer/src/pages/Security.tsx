@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { Finding, ScanKind, ScanState, SecService, Security as Data, SecurityTab } from '../../../shared/types'
+import type { Exposure as ExposureData, Finding, ScanKind, ScanState, SecService, Security as Data, SecurityTab } from '../../../shared/types'
 import { behavioural, threatParts } from '../explain'
 import { errText, getLang, useT, type Dict } from '../i18n'
 import { Icon, Page, Tabs, type IconName } from '../ui'
 import Blocked from './Blocked'
 import Exposure from './Exposure'
+import { useRun } from './tools/kit'
+import { reportHtml } from '../report'
 
 const WINDOWS = /Windows/.test(navigator.userAgent)
 const MARK: Record<Finding['level'], IconName> = { bad: 'alert', warn: 'alert', info: 'dot', ok: 'shield' }
@@ -493,6 +495,23 @@ export default function Security() {
   const [sec, setSec] = useState<Data | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<unknown>(null)
+  const view = useRun<ExposureData>()
+  const [report, setReport] = useState<'idle' | 'busy' | 'saved'>('idle')
+  const [reportErr, setReportErr] = useState<unknown>(null)
+
+  const saveReport = async () => {
+    setReport('busy')
+    setReportErr(null)
+    try {
+      const { version } = await window.netplain.appInfo()
+      const saved = await window.netplain.saveReport(reportHtml(t, getLang(), sec, view.res, version))
+      setReport(saved ? 'saved' : 'idle')
+      if (saved) setTimeout(() => setReport('idle'), 2500)
+    } catch (e) {
+      setReportErr(e)
+      setReport('idle')
+    }
+  }
 
   const load = useCallback((fresh: boolean) => {
     setBusy(true)
@@ -512,21 +531,27 @@ export default function Security() {
       title={s.title}
       note={s.lead}
       actions={
-        WINDOWS &&
-        !alone && (
-          <>
-            {sec && <span className="small faint">{s.checkedAt(new Date(sec.at).toLocaleTimeString(getLang(), { hour: '2-digit', minute: '2-digit' }))}</span>}
+        <>
+          {WINDOWS && !alone && sec && <span className="small faint">{s.checkedAt(new Date(sec.at).toLocaleTimeString(getLang(), { hour: '2-digit', minute: '2-digit' }))}</span>}
+          {WINDOWS && !alone && (
             <button className="btn sm" onClick={() => load(true)} disabled={busy || !sec}>
               <Icon name="refresh" className={busy ? 'spin' : undefined} />
               {s.recheck}
             </button>
-          </>
-        )
+          )}
+          {(sec || view.res) && (
+            <button className="btn sm" onClick={() => void saveReport()} disabled={report === 'busy'}>
+              <Icon name={report === 'busy' ? 'refresh' : 'down'} className={report === 'busy' ? 'spin' : undefined} />
+              {report === 'saved' ? t.report.saved : t.report.save}
+            </button>
+          )}
+        </>
       }
       tabs={TABS.length > 1 && <Tabs value={tab} options={TABS} text={(x) => s.tabs[x]} onChange={setTab} />}
     >
       {!WINDOWS && <p className="note">{s.windowsOnly}</p>}
-      {tab === 'exposure' && <Exposure t={t} />}
+      {reportErr !== null && <p className="note danger">{errText(t, reportErr)}</p>}
+      {tab === 'exposure' && <Exposure t={t} q={view} />}
       {tab === 'blocked' && <Blocked t={t} />}
       {err !== null && !alone && <p className="note danger">{errText(t, err)}</p>}
       {WINDOWS && !sec && err === null && !alone && <p className="muted">{s.reading}</p>}

@@ -2,15 +2,15 @@ import type { Exposure as Data } from '../../../shared/types'
 import { RISKY, service } from '../explain'
 import { getLang, type Dict } from '../i18n'
 import { Fact, Icon } from '../ui'
-import { ErrNote, useRun, where } from './tools/kit'
+import { ErrNote, where, type useRun } from './tools/kit'
 
 const SHOW_VULNS = 12
 const nvd = (cve: string) => `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(cve)}`
 
 /** The network as strangers on the internet see it: Shodan's record of the public address, and UPnP openings. */
-export default function Exposure({ t }: { t: Dict }) {
+/** `q` lives in the page, so the report can include the last check. */
+export default function Exposure({ t, q }: { t: Dict; q: ReturnType<typeof useRun<Data>> }) {
   const x = t.security.exposure
-  const q = useRun<Data>()
   const e = q.res
   const nat = e && x.nat[e.nat]
   const db = e?.db

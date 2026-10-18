@@ -349,6 +349,22 @@ const handlers: Api = {
   startScan: (kind, admin) => scanner.start(kind, admin),
   updateDefinitions: () => scanner.updateDefinitions(),
   removeThreats: () => scanner.removeThreats(),
+  saveReport: async (html) => {
+    // A page of its own with scripts off; the report's CSP also stops it loading anything.
+    const page = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } })
+    try {
+      await page.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+      const pdf = await page.webContents.printToPDF({ pageSize: 'A4', printBackground: true })
+      const stamp = new Date().toISOString().slice(0, 10)
+      // NETPLAIN_REPORT: the e2e test's file, as the native dialog cannot be driven.
+      const file = process.env.NETPLAIN_REPORT ?? (await dialog.showSaveDialog(win!, { defaultPath: `netplain-report-${stamp}.pdf`, filters: [{ name: 'PDF', extensions: ['pdf'] }] })).filePath
+      if (!file) return false
+      fs.writeFileSync(file, pdf)
+      return true
+    } finally {
+      page.destroy()
+    }
+  },
   blocked: () => windowsOnly(blockedList),
   block: (target) =>
     windowsOnly(async () => {
@@ -494,6 +510,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   startScan: (a) => (a[0] === 'quick' || a[0] === 'full') && typeof a[1] === 'boolean',
   updateDefinitions: none,
   removeThreats: none,
+  saveReport: (a) => typeof a[0] === 'string' && a[0].length <= 2_000_000,
   blocked: none,
   // Only programs seen running (their paths come from this computer, like icons) and public addresses.
   block: (a) => {

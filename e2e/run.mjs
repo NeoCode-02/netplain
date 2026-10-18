@@ -49,7 +49,7 @@ const require_ = (await import('node:module')).createRequire(import.meta.url)
 const electron = require_('electron')
 // --inspect opens the main process too (unpacked Electron only), for what the page cannot do, such as a real window close.
 const args = [root, '--remote-debugging-port=0', '--inspect=0', ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [])]
-const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000', NETPLAIN_LAN_MS: '3000', NETPLAIN_PCAP: pcapFile }, stdio: ['ignore', 'pipe', 'pipe'] })
+const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000', NETPLAIN_LAN_MS: '3000', NETPLAIN_PCAP: pcapFile, NETPLAIN_REPORT: path.join(data, 'report.pdf') }, stdio: ['ignore', 'pipe', 'pipe'] })
 let appLog = ''
 app.stdout.on('data', (d) => (appLog += d))
 const devtools = await new Promise((resolve, reject) => {
@@ -380,6 +380,13 @@ try {
     }
     await shot('security')
     if (await inPage(() => document.querySelector('.verdict') !== null)) {
+      // The report goes to the e2e folder's file instead of the native Save dialog.
+      const pdf = path.join(data, 'report.pdf')
+      await until('Report (PDF)', clickText, 'Report (PDF)')
+      const end = Date.now() + 30_000
+      while (!fs.existsSync(pdf) && Date.now() < end) await new Promise((r) => setTimeout(r, 300))
+      if (!fs.existsSync(pdf) || fs.readFileSync(pdf).subarray(0, 5).toString() !== '%PDF-') throw new Error('no PDF report')
+      fs.copyFileSync(pdf, path.join(shots, 'security-report.pdf'))
       await until('Antivirus tab', clickText, 'Antivirus')
       await until('defender cards', () => document.querySelectorAll('.kpi').length === 4)
       await shot('security-antivirus')

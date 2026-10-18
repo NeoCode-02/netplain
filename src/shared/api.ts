@@ -161,6 +161,8 @@ export interface Api {
   updateDefinitions(): Promise<void>
   /** Has Defender clean every active threat (UAC). */
   removeThreats(): Promise<void>
+  /** Prints a report page to PDF and asks where to save it; false when cancelled. */
+  saveReport(html: string): Promise<boolean>
   /** Windows firewall rules Netplain made. */
   blocked(): Promise<Blocked[]>
   /** Cuts a running program off the internet, or blocks a public address both ways (UAC). */
