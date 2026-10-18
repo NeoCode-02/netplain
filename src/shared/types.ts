@@ -432,7 +432,26 @@ export interface Whois {
   nameservers: string[]
 }
 
-export type SecHeader = 'hsts' | 'csp' | 'frames' | 'nosniff' | 'referrer' | 'permissions'
+export type SpeedPhase = 'latency' | 'down' | 'up'
+
+/** One speed test; rates in Mbit/s, times in ms. Filled in phase by phase. */
+export interface SpeedResult {
+  at: number
+  down: number | null
+  up: number | null
+  /** Latency with nothing else going on. */
+  idle: number | null
+  jitter: number | null
+  /** Latency while downloading / uploading at full speed (bufferbloat). */
+  loadedDown: number | null
+  loadedUp: number | null
+  /** Cloudflare's site that answered (airport code, e.g. "FRA"). */
+  server: string | null
+  /** Data the test moved. */
+  bytes: number
+}
+
+export type SecHeader ='hsts' | 'csp' | 'frames' | 'nosniff' | 'referrer' | 'permissions'
 
 /** One certificate of a chain; dates are YYYY-MM-DD. */
 export interface CertInfo {

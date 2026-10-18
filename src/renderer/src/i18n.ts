@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { AlertKind, OutageCause, RecordType, SecHeader } from '../../shared/types'
+import type { AlertKind, OutageCause, RecordType, SecHeader, SpeedPhase } from '../../shared/types'
 import { bytes } from './format'
 
 const en = {
@@ -355,7 +355,27 @@ const en = {
   tools: {
     title: 'Tools',
     lead: 'What you would type in a terminal, as buttons — with the answer explained.',
-    tabs: { diagnose: 'Diagnose', scan: 'Port scan', dns: 'DNS', whois: 'Whois', web: 'Website', subnet: 'Subnet' },
+    tabs: { diagnose: 'Diagnose', speed: 'Speed', scan: 'Port scan', dns: 'DNS', whois: 'Whois', web: 'Website', subnet: 'Subnet' },
+    speedTest: {
+      title: 'Internet speed',
+      lead: 'Download, upload and delay, measured against Cloudflare’s nearest server in about 20 seconds. It moves a lot of data: on a metered connection, think twice.',
+      run: 'Start test',
+      phases: { latency: 'Measuring delay…', down: 'Measuring download…', up: 'Measuring upload…' } as Record<SpeedPhase, string>,
+      down: 'Download',
+      up: 'Upload',
+      idle: 'Delay (ping)',
+      loaded: 'Delay under load',
+      downUse: { uhd: 'Enough for 4K video and big downloads.', hd: 'Enough for HD video and everyday use.', sd: 'Enough for the web, calls and SD video; HD may pause to load.', slow: 'Slow: pages load slowly and video stutters.' },
+      upUse: { great: 'Video calls and sending big files go smoothly.', calls: 'Video calls work; big uploads take a while.', weak: 'Weak upload: video calls may freeze.' },
+      bloat: {
+        good: 'The line stays quick when full: calls and games are fine during downloads.',
+        fair: 'A full line adds some delay: calls may stutter during big downloads.',
+        poor: 'A full line makes everything lag (bufferbloat). A router setting called “SQM” or “smart queue” fixes it.'
+      },
+      foot: (server: string | null, used: string, jitter: number | null, when: string) => `${when} · Cloudflare ${server ?? ''} · ${used} used${jitter !== null ? ` · jitter ${jitter} ms` : ''}`,
+      history: 'Earlier tests',
+      when: 'When'
+    },
     web: {
       title: 'Website check',
       lead: 'How a browser reaches a site: where it redirects, whether its certificate is trusted, and which protective headers it sends.',
@@ -931,6 +951,8 @@ const en = {
     E_CLOUDFLARED_SIGNATURE: 'The downloaded file is not signed by Cloudflare, so it was deleted.',
     E_NO_RDAP: 'No registration found: the name is not registered, or its registry does not publish this data.',
     E_RDAP: 'The registry did not answer. Check the internet connection and try again in a minute.',
+    E_SPEED: 'The speed test server could not be reached. Check the internet connection.',
+    E_BUSY: 'A test is already running.',
     E_SITE: (m: string) =>
       `The site did not answer: ${({ ENOTFOUND: 'no such name', ECONNREFUSED: 'nothing accepts connections there', timeout: 'no answer within 10 seconds', ECONNRESET: 'the connection was cut' } as Record<string, string>)[m] ?? m}.`,
     unknown: (m: string) => `Something went wrong: ${m}`
@@ -1290,7 +1312,27 @@ const uz: Dict = {
   tools: {
     title: 'Asboblar',
     lead: 'Terminalda yoziladigan buyruqlar — tugma ko‘rinishida, javobi tushuntirilgan holda.',
-    tabs: { diagnose: 'Tashxis', scan: 'Port skaner', dns: 'DNS', whois: 'Whois', web: 'Veb-sayt', subnet: 'Subnet' },
+    tabs: { diagnose: 'Tashxis', speed: 'Tezlik', scan: 'Port skaner', dns: 'DNS', whois: 'Whois', web: 'Veb-sayt', subnet: 'Subnet' },
+    speedTest: {
+      title: 'Internet tezligi',
+      lead: 'Yuklab olish, yuklash va kechikish — Cloudflare’ning eng yaqin serveriga nisbatan, taxminan 20 soniyada o‘lchanadi. Ko‘p ma’lumot sarflaydi: limitli internetda o‘ylab ko‘ring.',
+      run: 'Testni boshlash',
+      phases: { latency: 'Kechikish o‘lchanmoqda…', down: 'Yuklab olish o‘lchanmoqda…', up: 'Yuklash o‘lchanmoqda…' },
+      down: 'Yuklab olish',
+      up: 'Yuklash',
+      idle: 'Kechikish (ping)',
+      loaded: 'Yuklamadagi kechikish',
+      downUse: { uhd: '4K video va katta yuklamalar uchun yetarli.', hd: 'HD video va kundalik ishlar uchun yetarli.', sd: 'Sayt, qo‘ng‘iroq va oddiy video uchun yetarli; HD to‘xtab-to‘xtab yuklanishi mumkin.', slow: 'Sekin: sahifalar sekin ochiladi, video to‘xtab qoladi.' },
+      upUse: { great: 'Video qo‘ng‘iroq va katta fayl yuborish bemalol.', calls: 'Video qo‘ng‘iroq ishlaydi; katta yuklamalar vaqt oladi.', weak: 'Yuklash kuchsiz: video qo‘ng‘iroq qotib qolishi mumkin.' },
+      bloat: {
+        good: 'Liniya to‘lganda ham tez: yuklab olish paytida qo‘ng‘iroq va o‘yinlar yaxshi.',
+        fair: 'Liniya to‘lsa biroz kechikish qo‘shiladi: katta yuklamada qo‘ng‘iroq uzilib-uzilib ketishi mumkin.',
+        poor: 'Liniya to‘lsa hammasi qotadi (bufferbloat). Routerdagi “SQM” yoki “smart queue” sozlamasi buni tuzatadi.'
+      },
+      foot: (server, used, jitter, when) => `${when} · Cloudflare ${server ?? ''} · ${used} sarflandi${jitter !== null ? ` · jitter ${jitter} ms` : ''}`,
+      history: 'Oldingi testlar',
+      when: 'Qachon'
+    },
     web: {
       title: 'Veb-saytni tekshirish',
       lead: 'Brauzer saytga qanday yetadi: qayerga yo‘naltiradi, sertifikatiga ishonsa bo‘ladimi va qaysi himoya sarlavhalarini yuboradi.',
@@ -1861,6 +1903,8 @@ const uz: Dict = {
     E_CLOUDFLARED_SIGNATURE: 'Yuklangan fayl Cloudflare imzosiga ega emas, shuning uchun o‘chirildi.',
     E_NO_RDAP: 'Ro‘yxat topilmadi: nom ro‘yxatdan o‘tmagan yoki uning reyestri bu ma’lumotni e’lon qilmaydi.',
     E_RDAP: 'Reyestr javob bermadi. Internet ulanishini tekshiring va bir daqiqadan keyin qayta urinib ko‘ring.',
+    E_SPEED: 'Tezlik o‘lchash serveriga ulanib bo‘lmadi. Internet ulanishini tekshiring.',
+    E_BUSY: 'Test allaqachon ketyapti.',
     E_SITE: (m) =>
       `Sayt javob bermadi: ${({ ENOTFOUND: 'bunday nom yo‘q', ECONNREFUSED: 'u yerda hech narsa ulanish qabul qilmaydi', timeout: '10 soniyada javob kelmadi', ECONNRESET: 'ulanish uzildi' } as Record<string, string>)[m] ?? m}.`,
     unknown: (m) => `Nimadir xato ketdi: ${m}`

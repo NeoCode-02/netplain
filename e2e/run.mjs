@@ -441,6 +441,17 @@ try {
     }
   })
 
+  await step('speed test', async () => {
+    await until('Speed', clickText, 'Speed')
+    await until('the start button', hasText, 'Start test')
+    // E2E_SPEED=1: a real test (about 20 s, and a lot of data).
+    if (process.env.E2E_SPEED) {
+      await until('Start test', clickText, 'Start test')
+      await until(['the verdicts', 60_000], () => document.querySelectorAll('.verdicts li').length >= 2 && !document.body.innerText.includes('Measuring'))
+      await shot('tools-speed')
+    }
+  })
+
   await step('share page', async () => {
     // A site running here is found by itself and offered by its page title.
     const http = await import('node:http')

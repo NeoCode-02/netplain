@@ -23,6 +23,7 @@ import { checkPort, diagnose, isHost, lookup, ping, publicIp, scanPorts, trace }
 import { dnsQuery, RECORD_TYPES } from './dnskit'
 import { whois } from './whois'
 import { inspectSite } from './webcheck'
+import { createSpeed } from './speed'
 import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
 import { createSecurity } from './security'
 import { createScanner } from './defender'
@@ -129,6 +130,7 @@ const scanner = createScanner(() => void security?.get(true).catch(console.error
 const cap = createCap(dataDir, { cap: () => settings.cap, used: usage.used, tell: (step, name, used, limit) => alerts.dataCap(settings.alerts, step, name, used, limit) })
 const monitors = primary ? createMonitors(dataDir, (e, target) => alerts.monitor(settings.alerts, e, target)) : null
 const uptime = primary ? createUptime({ dir: dataDir, snapshot: () => latest, on: () => settings.uptime, onEnd: (o) => alerts.outage(settings.alerts, o) }) : null
+const speed = createSpeed(dataDir)
 
 if (primary) {
   setInterval(() => {
@@ -299,6 +301,8 @@ const handlers: Api = {
   dnsQuery: (name, type) => dnsQuery(name, type),
   whois: (q) => whois(q),
   inspectSite: (input) => inspectSite(input),
+  speedTest: (phase) => speed.phase(phase),
+  speedHistory: () => speed.history(),
   publicIp: () => publicIp(geo.lookup),
   diagnose: () => diagnose(latest),
   flushDns: () => flushDns(),
@@ -422,6 +426,8 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   dnsQuery: (a) => isHost(a[0]) && RECORD_TYPES.includes(a[1] as RecordType),
   whois: (a) => isHost(a[0]),
   inspectSite: (a) => typeof a[0] === 'string' && a[0].length > 0 && a[0].length <= 2048,
+  speedTest: (a) => a[0] === 'latency' || a[0] === 'down' || a[0] === 'up',
+  speedHistory: none,
   publicIp: none,
   diagnose: none,
   flushDns: none,

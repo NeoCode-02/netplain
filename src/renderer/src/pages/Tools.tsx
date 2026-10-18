@@ -4,11 +4,12 @@ import { GO } from '../live'
 import Diagnose from './tools/Diagnose'
 import Dns from './tools/Dns'
 import Scan from './tools/Scan'
+import Speed from './tools/Speed'
 import Subnet from './tools/Subnet'
 import Web from './tools/Web'
 import Whois from './tools/Whois'
 
-const TABS = ['diagnose', 'scan', 'dns', 'whois', 'web', 'subnet'] as const
+const TABS = ['diagnose', 'speed', 'scan', 'dns', 'whois', 'web', 'subnet'] as const
 export type ToolTab = (typeof TABS)[number]
 
 let pending: { tab: ToolTab; value: string } | null = null
@@ -42,6 +43,7 @@ export default function Tools() {
         ))}
       </div>
       {tab === 'diagnose' && <Diagnose />}
+      {tab === 'speed' && <Speed />}
       {tab === 'scan' && <Scan initial={initial} />}
       {tab === 'dns' && <Dns />}
       {tab === 'whois' && <Whois initial={initial} />}

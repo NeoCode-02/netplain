@@ -26,6 +26,8 @@ import type {
   ShareRequestDetail,
   ShareState,
   SiteReport,
+  SpeedPhase,
+  SpeedResult,
   Snapshot,
   Traffic,
   Usage,
@@ -123,6 +125,10 @@ export interface Api {
   whois(query: string): Promise<Whois>
   /** Redirects, security headers and TLS of a website, the way a browser reaches it. Throws E_SITE|reason. */
   inspectSite(input: string): Promise<SiteReport>
+  /** One phase of the Cloudflare speed test (latency, then down, then up); the up phase saves it. Throws E_SPEED, E_BUSY. */
+  speedTest(phase: SpeedPhase): Promise<SpeedResult>
+  /** Earlier speed tests, oldest first. */
+  speedHistory(): SpeedResult[]
   /** Asks api.ipify.org for the address the internet sees. Throws E_PUBLIC_IP. */
   publicIp(): Promise<PublicIp>
   /** Checks adapter → address → router → DNS → internet. */

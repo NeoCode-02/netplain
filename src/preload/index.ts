@@ -50,6 +50,8 @@ const names: Record<keyof Api, true> = {
   dnsQuery: true,
   whois: true,
   inspectSite: true,
+  speedTest: true,
+  speedHistory: true,
   publicIp: true,
   diagnose: true,
   flushDns: true,

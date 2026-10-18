@@ -325,3 +325,6 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .verdicts li.bad svg { color: var(--danger); }
 .sub-head { font-size: 15px; margin-bottom: 12px; }
 .hops li.hop-url { grid-template-columns: 36px minmax(0, 1fr); }
+.speed-now { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 6px; }
+.verdicts.tool-out { margin-top: 16px; gap: 8px; }
+.uptime-tile.live strong { color: var(--accent); }
