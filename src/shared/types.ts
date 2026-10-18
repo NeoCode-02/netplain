@@ -650,7 +650,7 @@ export interface Finding {
   level: FindingLevel
   params: Record<string, string | number>
   /** Action the app can take for it. */
-  fix?: 'firewallOn' | 'openDefender'
+  fix?: 'firewallOn' | 'openDefender' | 'openFirewall'
   /** Tab that shows the details. */
   tab?: SecurityTab
 }
@@ -663,6 +663,8 @@ export interface Security {
   services: SecService[]
   startup: SecStartup[]
   firewall: { name: string; on: boolean }[]
+  /** Programs and ports allowed to take connections on public networks (café, airport Wi-Fi). */
+  openRules: string[]
   uac: { lua: number; consent: number }
   rdpDenied: number
   sac: number | null

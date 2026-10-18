@@ -63,6 +63,7 @@ export function findings(s: Omit<Security, 'findings'>, c: Context): Finding[] {
 
   const off = s.firewall.filter((f) => !f.on).map((f) => f.name)
   add(off.length ? { key: 'firewallOff', level: 'bad', params: { profiles: off.join(', ') }, fix: 'firewallOn' } : { key: 'firewallOk', level: 'ok', params: {} })
+  if (s.openRules.length) add({ key: 'publicOpen', level: 'info', params: { n: s.openRules.length, names: names(s.openRules) }, fix: 'openFirewall' })
 
   if (s.uac.lua === 0) add({ key: 'uacOff', level: 'bad', params: {} })
   else if (s.uac.consent === 0) add({ key: 'uacSilent', level: 'warn', params: {} })

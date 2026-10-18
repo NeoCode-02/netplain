@@ -49,6 +49,7 @@ describe('findings', () => {
       { name: 'Private', on: true },
       { name: 'Public', on: true }
     ],
+    openRules: [],
     uac: { lua: 1, consent: 5 },
     rdpDenied: 1,
     sac: 1,
@@ -69,6 +70,7 @@ describe('findings', () => {
       defender: { ...clean.defender!, rt: false, sigAge: 12, quickAge: 30 },
       threats: [{ id: '1', name: 'Trojan:Win32/X', severity: 5, active: true, resources: [], at: null, status: 1 }],
       firewall: [{ name: 'Public', on: false }],
+      openRules: ['Steam', 'node.exe'],
       uac: { lua: 1, consent: 0 },
       rdpDenied: 0,
       users: [{ ...clean.users[0], enabled: true }, clean.users[1], { name: 'helper', enabled: true, last: null, sid: 'S-1-5-21-1-1005', admin: true, me: false }],
@@ -95,6 +97,7 @@ describe('findings', () => {
       'warn:proxyOn',
       'warn:updatesOld',
       'info:scanOld',
+      'info:publicOpen',
       'info:otherAdmins',
       'info:dnsProvider',
       'ok:sacOn'
@@ -102,6 +105,7 @@ describe('findings', () => {
     expect(f.find((x) => x.key === 'hostsRedirect')?.params.lines).toBe('6.6.6.6 www.mybank.com')
     expect(f.find((x) => x.key === 'dnsProvider')?.params).toEqual({ servers: '77.88.8.8', org: 'Uzbektelekom' })
     expect(f.find((x) => x.key === 'firewallOff')?.fix).toBe('firewallOn')
+    expect(f.find((x) => x.key === 'publicOpen')?.params).toEqual({ n: 2, names: 'Steam, node.exe' })
   })
 
   it('does not call Store apps unsigned (they are signed as a package)', () => {

@@ -29,6 +29,8 @@ $sh = New-Object -ComObject WScript.Shell
 foreach ($f in @(@('HKCU', [Environment]::GetFolderPath('Startup')), @('HKLM', [Environment]::GetFolderPath('CommonStartup')))) { $ap = Get-ItemProperty ($f[0] + ':\' + $sa + '\StartupFolder'); Get-ChildItem -LiteralPath $f[1] -File | Where-Object { $_.Name -ne 'desktop.ini' } | ForEach-Object { $b = $null; if ($ap) { $b = $ap.($_.Name) }; $target = $_.FullName; if ($_.Extension -eq '.lnk') { $target = $sh.CreateShortcut($_.FullName).TargetPath }; [void]$run.Add(@{ hive = $f[0]; key = 'StartupFolder'; approved = ($sa + '\StartupFolder'); name = [string]$_.Name; command = [string]$target; enabled = ((-not $b) -or (($b[0] -band 1) -eq 0)) }) } }
 $o.startup = @($run)
 $o.firewall = @(Get-NetFirewallProfile | ForEach-Object { @{ name = [string]$_.Name; on = ([string]$_.Enabled -eq 'True') } })
+# Allowed in by the user or an installer (Windows's own rules belong to a group).
+$o.openRules = @(Get-NetFirewallRule -Enabled True -Direction Inbound -Action Allow | Where-Object { ([string]$_.Profile) -match 'Public|Any' -and -not $_.Group } | ForEach-Object { [string]$_.DisplayName } | Select-Object -Unique)
 $u = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'
 $o.uac = @{ lua = [int]$u.EnableLUA; consent = [int]$u.ConsentPromptBehaviorAdmin }
 $o.rdpDenied = [int](Get-ItemProperty 'HKLM:\System\CurrentControlSet\Control\Terminal Server').fDenyTSConnections
@@ -69,6 +71,7 @@ interface Raw {
   tasks: { path: string; state: string; exec: string[] | string | null }[] | null
   startup: { hive: string; key: string; approved: string; name: string; command: string; enabled: boolean }[] | null
   firewall: Security['firewall'] | null
+  openRules: string[] | string | null
   uac: Security['uac']
   rdpDenied: number
   sac: number | null
@@ -177,6 +180,7 @@ export function createSecurity(deps: Deps) {
       services,
       startup,
       firewall: list(raw.firewall),
+      openRules: list(raw.openRules),
       uac: raw.uac,
       rdpDenied: raw.rdpDenied,
       sac: raw.sac ?? null,

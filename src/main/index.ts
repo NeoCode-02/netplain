@@ -395,6 +395,7 @@ const handlers: Api = {
   },
   fixFinding: async (fix) => {
     if (fix === 'openDefender') return void shell.openExternal('windowsdefender:')
+    if (fix === 'openFirewall') return void shell.openPath(path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'wf.msc'))
     await elevate('netsh advfirewall set allprofiles state on')
   }
 }
@@ -488,7 +489,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   renewIp: (a) => typeof a[0] === 'string' && a[0].length <= 200,
   restartAdapter: (a) => typeof a[0] === 'string' && a[0].length <= 200,
   security: (a) => a[0] === undefined || typeof a[0] === 'boolean',
-  fixFinding: (a) => a[0] === 'firewallOn' || a[0] === 'openDefender',
+  fixFinding: (a) => a[0] === 'firewallOn' || a[0] === 'openDefender' || a[0] === 'openFirewall',
   scanState: none,
   startScan: (a) => (a[0] === 'quick' || a[0] === 'full') && typeof a[1] === 'boolean',
   updateDefinitions: none,

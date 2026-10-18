@@ -224,7 +224,7 @@ const en = {
     verdictOk: 'No warning signs found',
     honest: 'These checks catch the common signs of trouble, but no list can prove a computer is clean. For a deep check, run a full scan in the Antivirus tab.',
     open: 'Details',
-    fix: { firewallOn: 'Turn the firewall on', openDefender: 'Open Windows Security' },
+    fix: { firewallOn: 'Turn the firewall on', openDefender: 'Open Windows Security', openFirewall: 'Open firewall rules' },
     fixed: 'Done. Checking again…',
     blocked: {
       lead: 'Programs Netplain cut off from the internet, and addresses it blocked. Windows Firewall keeps them blocked even when Netplain is closed.',
@@ -365,6 +365,10 @@ const en = {
       scanOld: ['No recent scan', (p) => `The last quick scan was ${p.days} days ago. Run one in the Antivirus tab.`],
       firewallOff: ['Firewall is off', (p) => `Off for: ${p.profiles}. Programs on the network can reach this computer freely.`],
       firewallOk: ['Firewall is on', () => 'Windows Firewall guards every kind of network.'],
+      publicOpen: [
+        'Programs that accept connections on public Wi-Fi',
+        (p) => `${p.n} programs or ports may be reached by others on café or airport networks, such as ${p.names}. Each was allowed once, when Windows or an installer asked. In the firewall rules (Inbound), turn off the ones you don’t need.`
+      ],
       uacOff: ['User Account Control is off', () => 'Programs get administrator rights without asking. Turn UAC back on.'],
       uacSilent: ['UAC never asks', () => 'Administrator rights are given without a prompt. Set User Account Control to notify you.'],
       uacOk: ['User Account Control is on', () => 'Windows asks before a program gets administrator rights.'],
@@ -1271,7 +1275,7 @@ const uz: Dict = {
     verdictOk: 'Xavotirli belgi topilmadi',
     honest: 'Bu tekshiruvlar keng tarqalgan belgilarni ushlaydi, lekin hech bir ro‘yxat kompyuter toza ekanini isbotlay olmaydi. Chuqur tekshirish uchun Antivirus tab’ida to‘liq skan qiling.',
     open: 'Batafsil',
-    fix: { firewallOn: 'Firewall’ni yoqish', openDefender: 'Windows Security’ni ochish' },
+    fix: { firewallOn: 'Firewall’ni yoqish', openDefender: 'Windows Security’ni ochish', openFirewall: 'Firewall qoidalarini ochish' },
     fixed: 'Bajarildi. Qayta tekshirilmoqda…',
     blocked: {
       lead: 'Netplain internetdan uzgan dasturlar va bloklagan manzillar. Netplain yopiq bo‘lsa ham Windows Firewall ularni bloklab turadi.',
@@ -1412,6 +1416,10 @@ const uz: Dict = {
       scanOld: ['Yaqinda skan qilinmagan', (p) => `Oxirgi tez skan ${p.days} kun oldin bo‘lgan. Antivirus tab’ida skan qiling.`],
       firewallOff: ['Firewall o‘chiq', (p) => `O‘chiq profillar: ${p.profiles}. Tarmoqdagi dasturlar bu kompyuterga bemalol yetib keladi.`],
       firewallOk: ['Firewall yoqilgan', () => 'Windows Firewall har turdagi tarmoqda himoya qilmoqda.'],
+      publicOpen: [
+        'Ommaviy Wi-Fi’da ulanish qabul qiladigan dasturlar',
+        (p) => `${p.n} ta dastur yoki portga kafe va aeroport tarmoqlarida boshqalar ulanishi mumkin, masalan ${p.names}. Har biriga Windows yoki o‘rnatuvchi so‘raganda bir marta ruxsat berilgan. Firewall qoidalarida (Inbound) keraksizlarini o‘chiring.`
+      ],
       uacOff: ['Foydalanuvchi hisobi nazorati (UAC) o‘chiq', () => 'Dasturlar so‘ramasdan administrator huquqini oladi. UAC’ni qayta yoqing.'],
       uacSilent: ['UAC hech qachon so‘ramaydi', () => 'Administrator huquqi so‘rovsiz beriladi. UAC’ni sizga xabar beradigan qilib qo‘ying.'],
       uacOk: ['Foydalanuvchi hisobi nazorati yoqilgan', () => 'Dastur administrator huquqini olishidan oldin Windows so‘raydi.'],
