@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import dns from 'node:dns/promises'
 import net from 'node:net'
-import type { DiagnoseStep, Hop, LookupResult, PingResult, PortState, PublicIp, Snapshot } from '../shared/types'
+import type { DiagnoseStep, Hop, LookupResult, PingResult, PortState, PublicIp, ScanHit, Snapshot } from '../shared/types'
 
 type Geo = (ip: string) => { country: string | null; org: string | null }
 
@@ -96,6 +96,70 @@ export function checkPort(host: string, port: number, timeout = 3000): Promise<P
     s.once('connect', () => done('open'))
     s.once('error', (e: NodeJS.ErrnoException) => done(e.code === 'ECONNREFUSED' ? 'closed' : 'filtered'))
   })
+}
+
+/** What an open port said: the HTTP `Server` header or status line, "TLS", or its first line of text. */
+export function bannerOf(raw: string): string | null {
+  if (raw.startsWith('\x15\x03')) return 'TLS'
+  const http = /^HTTP\/[\d.]+ \d{3}/.test(raw)
+  const line = (http && /^server:[ \t]*(.+)$/im.exec(raw)?.[1]) || raw.split(/\r?\n/).find((l) => l.trim()) || ''
+  const text = line.replace(/[^\x20-\x7e]+/g, ' ').trim().slice(0, 120)
+  return text || null
+}
+
+/**
+ * One port: undefined when nothing accepts the connection, else what it says. A silent service is asked
+ * `HEAD /` once, which names web servers on any port (and makes most others answer with an error that names them).
+ */
+function probe(ip: string, host: string, port: number, timeout: number): Promise<string | null | undefined> {
+  return new Promise((resolve) => {
+    const s = net.connect({ host: ip, port })
+    let data = ''
+    let open = false
+    let asked = false
+    const done = (v: string | null | undefined) => {
+      clearTimeout(timer)
+      s.destroy()
+      resolve(v)
+    }
+    const wait = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        if (data || asked) return done(bannerOf(data))
+        asked = true
+        s.write(`HEAD / HTTP/1.0\r\nHost: ${host}\r\n\r\n`)
+        wait()
+      }, 700)
+    }
+    let timer = setTimeout(() => done(undefined), timeout)
+    s.once('connect', () => {
+      open = true
+      wait()
+    })
+    s.on('data', (b: Buffer) => {
+      data += b.toString('latin1')
+      if (data.length > 4096 || (asked ? /\r?\n\r?\n/ : /\n/).test(data)) done(bannerOf(data))
+    })
+    s.once('error', () => done(open ? bannerOf(data) : undefined))
+    s.once('end', () => done(bannerOf(data)))
+  })
+}
+
+/** Connects to `ports`, `width` at a time, and returns the open ones in order. The name is looked up once; throws E_NOT_FOUND. */
+export async function scanPorts(host: string, ports: number[], width = 200, timeout = 1200): Promise<ScanHit[]> {
+  const ip = net.isIP(host) ? host : (await dns.lookup(host).catch(() => null))?.address
+  if (!ip) throw new Error('E_NOT_FOUND')
+  const hits: ScanHit[] = []
+  let next = 0
+  const worker = async () => {
+    while (next < ports.length) {
+      const port = ports[next++]
+      const banner = await probe(ip, host, port, timeout)
+      if (banner !== undefined) hits.push({ port, banner })
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(width, ports.length) }, worker))
+  return hits.sort((a, b) => a.port - b.port)
 }
 
 /** Asks ipify (the only service contacted) for the address the internet sees; company and country come from the local database. */

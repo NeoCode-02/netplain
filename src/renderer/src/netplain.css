@@ -312,3 +312,7 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .setup-mark { flex-shrink: 0; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-text); font-size: 12px; font-weight: 600; }
 .setup-row.done .setup-mark { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
 .devices-hint { margin-bottom: 4px; }
+
+/* port scan */
+.scan-port { width: 56px; flex-shrink: 0; font-weight: 600; }
+.scan-meter { margin-bottom: 12px; }

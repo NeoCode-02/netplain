@@ -14,6 +14,7 @@ import type {
   PortState,
   PublicIp,
   Release,
+  ScanHit,
   ScanKind,
   ScanState,
   Security,
@@ -110,6 +111,8 @@ export interface Api {
   /** Name → addresses, or IP → names. Throws E_NOT_FOUND. */
   lookup(name: string): Promise<LookupResult>
   checkPort(host: string, port: number): Promise<PortState>
+  /** Open ports among up to 1000 given ones, with what each service says (the page asks in batches). */
+  scanPorts(host: string, ports: number[]): Promise<ScanHit[]>
   /** Asks api.ipify.org for the address the internet sees. Throws E_PUBLIC_IP. */
   publicIp(): Promise<PublicIp>
   /** Checks adapter → address → router → DNS → internet. */

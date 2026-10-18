@@ -373,6 +373,31 @@ try {
     await shot('tools-subnet')
   })
 
+  await step('port scanner', async () => {
+    // A device's Ports button opens the scanner on that address.
+    await until('Devices', clickText, 'Devices')
+    const ip = await until('a device', () => {
+      const row = document.querySelector('.dev-row')
+      row?.querySelector('button').click()
+      return row?.querySelector('.mono').textContent
+    })
+    await until('the scanner on that device', (v) => document.querySelector('[role=tab][aria-selected=true]')?.textContent === 'Port scan' && document.querySelector('.tool-form input')?.value === v, ip)
+    const net = await import('node:net')
+    const greeter = net.createServer((c) => c.end('SSH-2.0-E2E\r\n'))
+    await new Promise((r) => greeter.listen(0, '127.0.0.1', r))
+    try {
+      await inPage(fill, 0, '127.0.0.1')
+      await until('Custom', clickText, 'Custom')
+      await inPage(fill, 1, `${greeter.address().port}, 1-50`)
+      await until('Scan', clickText, 'Scan')
+      await until('the open port and what it said', hasText, 'SSH-2.0-E2E')
+      await until('the end of the scan', () => /open ports? on 127\.0\.0\.1/.test(document.body.innerText))
+      await shot('tools-scan')
+    } finally {
+      greeter.close()
+    }
+  })
+
   await step('share page', async () => {
     // A site running here is found by itself and offered by its page title.
     const http = await import('node:http')

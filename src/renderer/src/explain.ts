@@ -113,7 +113,25 @@ const PORTS: Record<string, string> = {
   'tcp:5357': 'wsd',
   'tcp:3000': 'dev',
   'tcp:5173': 'dev',
-  'tcp:8000': 'dev'
+  'tcp:8000': 'dev',
+  'tcp:1521': 'db',
+  'tcp:9200': 'db',
+  'tcp:11211': 'db',
+  'tcp:5900': 'vnc',
+  'tcp:5555': 'adb',
+  'tcp:7547': 'routerAdmin',
+  'tcp:8291': 'routerAdmin',
+  'tcp:8728': 'routerAdmin',
+  'tcp:554': 'camera',
+  'tcp:34567': 'camera',
+  'tcp:37777': 'camera',
+  'tcp:515': 'printer',
+  'tcp:631': 'printer',
+  'tcp:9100': 'printer',
+  'tcp:1883': 'mqtt',
+  'tcp:5985': 'winrm',
+  'tcp:5986': 'winrm',
+  'tcp:2375': 'docker'
 }
 
 /** Well-known service on a port, as a key of the `services` dictionary. */
@@ -121,6 +139,29 @@ export const service = (proto: string, port: number | null) => (port === null ? 
 
 /** Services that send their content as readable text. */
 export const PLAIN = new Set(['http', 'httpAlt', 'dns', 'ftp', 'telnet', 'mailPlain'])
+
+/** Services that should not be reachable from the internet: remote control, file sharing, databases, unencrypted logins. */
+export const RISKY = new Set(['telnet', 'ftp', 'smb', 'rpc', 'rdp', 'vnc', 'adb', 'docker', 'winrm', 'db', 'routerAdmin', 'mqtt', 'camera'])
+
+/** Ports the scanner tries first: everyday services plus the ones routers, cameras and IoT boxes leave open. */
+export const COMMON_PORTS = [
+  21, 22, 23, 25, 53, 80, 81, 88, 110, 111, 135, 139, 143, 389, 443, 445, 465, 515, 548, 554, 587, 631, 636, 873, 993, 995, 1080, 1433, 1521, 1723, 1883, 2049, 2082, 2083, 2375,
+  2376, 3000, 3128, 3306, 3389, 3690, 4000, 4443, 5000, 5001, 5060, 5173, 5222, 5357, 5432, 5555, 5601, 5672, 5900, 5985, 5986, 6379, 6443, 7001, 7547, 8000, 8008, 8009, 8080,
+  8081, 8086, 8088, 8123, 8291, 8443, 8728, 8883, 8888, 9000, 9042, 9090, 9092, 9100, 9200, 9418, 9443, 10000, 11211, 15672, 25565, 27017, 32400, 34567, 37777, 49152, 62078
+]
+
+/** "22, 80, 8000-8100" → those ports, sorted, each once; null when a part is not a port or a range. */
+export function parsePorts(text: string): number[] | null {
+  const ports = new Set<number>()
+  for (const part of text.split(/[\s,]+/).filter(Boolean)) {
+    const m = /^(\d{1,5})(?:-(\d{1,5}))?$/.exec(part)
+    const from = Number(m?.[1])
+    const to = Number(m?.[2] ?? m?.[1])
+    if (!m || from < 1 || to > 65535 || from > to) return null
+    for (let p = from; p <= to; p++) ports.add(p)
+  }
+  return ports.size ? [...ports].sort((a, b) => a - b) : null
+}
 
 /** "Google LLC" → "Google", "\"Uzbektelekom\" Joint Stock Company" → "Uzbektelekom". */
 export function company(org: string): string {

@@ -121,7 +121,9 @@ const en = {
     emptyBody: 'Scan the network to find the devices around you.',
     device: 'Device',
     ip: 'IP address',
-    mac: 'MAC address'
+    mac: 'MAC address',
+    ports: 'Ports',
+    portsNote: 'Scan this device’s open ports'
   },
   share: {
     title: 'Share a site',
@@ -353,7 +355,30 @@ const en = {
   tools: {
     title: 'Tools',
     lead: 'What you would type in a terminal, as buttons — with the answer explained.',
-    tabs: { diagnose: 'Diagnose', subnet: 'Subnet' },
+    tabs: { diagnose: 'Diagnose', scan: 'Port scan', subnet: 'Subnet' },
+    scan: {
+      title: 'Port scanner',
+      lead: 'Which services a device offers: open ports, what answers on each, and which ones are risky. It starts with your router.',
+      which: 'Ports to try',
+      sets: {
+        common: (n: string) => `Common (${n})`,
+        low: () => '1–1024',
+        all: () => 'All 65,535',
+        custom: () => 'Custom'
+      },
+      badPorts: 'Write ports and ranges, e.g. 22, 80, 8000-8100.',
+      allNote: 'All ports take a few minutes.',
+      only: 'Scan only your own devices, or ones you are allowed to check.',
+      run: 'Scan',
+      stop: 'Stop',
+      scanning: (host: string) => `Scanning ${host}…`,
+      found: (n: number, host: string) => (n === 0 ? `Nothing open on ${host}` : n === 1 ? `1 open port on ${host}` : `${n} open ports on ${host}`),
+      progress: (done: string, total: string) => `${done} of ${total} checked`,
+      none: 'No open ports among those tried: the device is off, or its firewall answers nothing.',
+      unknown: 'Unknown service',
+      risky: 'Keep off the internet',
+      riskyNote: 'Fine inside your home or office network; reachable from the internet it invites break-ins.'
+    },
     subnet: {
       title: 'Subnet calculator',
       lead: 'An address with its prefix (/24) or mask (255.255.255.0); IPv6 works too. It starts with your own network.',
@@ -768,7 +793,15 @@ const en = {
     delivery: ['Delivery Optimization', 'Windows sharing updates with other computers'],
     cdp: ['Connected devices', 'Windows phone link and nearby sharing'],
     wsd: ['Device discovery', 'Windows finding network printers and scanners'],
-    dev: ['Development server', 'Probably a program you are building']
+    dev: ['Development server', 'Probably a program you are building'],
+    vnc: ['VNC', 'Remote control of a screen, often with a weak password'],
+    adb: ['Android debugging', 'Full control of an Android phone or TV box'],
+    routerAdmin: ['Router management', 'Remote management of a router (TR-069 or MikroTik)'],
+    camera: ['Camera stream', 'Video from an IP camera or video recorder'],
+    printer: ['Printer', 'Printing over the network'],
+    mqtt: ['MQTT', 'Smart-home and IoT messages, often unencrypted'],
+    winrm: ['Windows remote management', 'Running commands on a Windows computer remotely'],
+    docker: ['Docker API', 'Control of Docker without a password: whoever reaches it controls the machine']
   } as Record<string, [string, string]>,
   errors: {
     E_COLLECT: 'Can’t read the network adapters right now. Retrying…',
@@ -919,7 +952,9 @@ const uz: Dict = {
     emptyBody: 'Atrofingizdagi qurilmalarni topish uchun tarmoqni skanerlang.',
     device: 'Qurilma',
     ip: 'IP manzil',
-    mac: 'MAC manzil'
+    mac: 'MAC manzil',
+    ports: 'Portlar',
+    portsNote: 'Bu qurilmaning ochiq portlarini skanerlash'
   },
   share: {
     title: 'Saytni ulashish',
@@ -1151,7 +1186,30 @@ const uz: Dict = {
   tools: {
     title: 'Asboblar',
     lead: 'Terminalda yoziladigan buyruqlar — tugma ko‘rinishida, javobi tushuntirilgan holda.',
-    tabs: { diagnose: 'Tashxis', subnet: 'Subnet' },
+    tabs: { diagnose: 'Tashxis', scan: 'Port skaner', subnet: 'Subnet' },
+    scan: {
+      title: 'Port skaner',
+      lead: 'Qurilma qanday xizmatlar taklif qiladi: ochiq portlar, har birida nima javob beradi va qaysilari xavfli. Routeringizdan boshlanadi.',
+      which: 'Tekshiriladigan portlar',
+      sets: {
+        common: (n) => `Asosiylar (${n})`,
+        low: () => '1–1024',
+        all: () => 'Hammasi, 65 535',
+        custom: () => 'O‘zim yozaman'
+      },
+      badPorts: 'Port va oraliqlarni yozing, masalan 22, 80, 8000-8100.',
+      allNote: 'Hamma portlar bir necha daqiqa oladi.',
+      only: 'Faqat o‘zingizning yoki tekshirishga ruxsat berilgan qurilmalarni skanerlang.',
+      run: 'Skanerlash',
+      stop: 'To‘xtatish',
+      scanning: (host) => `${host} skanerlanmoqda…`,
+      found: (n, host) => (n === 0 ? `${host} da ochiq port yo‘q` : `${host} da ${n} ta ochiq port`),
+      progress: (done, total) => `${total} tadan ${done} tasi tekshirildi`,
+      none: 'Tekshirilganlar orasida ochiq port yo‘q: qurilma o‘chiq yoki xavfsizlik devori hech narsaga javob bermaydi.',
+      unknown: 'Noma’lum xizmat',
+      risky: 'Internetga ochmang',
+      riskyNote: 'Uy yoki ofis tarmog‘ida normal; internetdan ochiq bo‘lsa, buzib kirishga yo‘l ochadi.'
+    },
     subnet: {
       title: 'Subnet kalkulyatori',
       lead: 'Manzil va uning prefiksi (/24) yoki maskasi (255.255.255.0); IPv6 ham ishlaydi. Sizning tarmog‘ingizdan boshlanadi.',
@@ -1561,7 +1619,15 @@ const uz: Dict = {
     delivery: ['Delivery Optimization', 'Windows yangilanishlarini boshqa kompyuterlar bilan ulashish'],
     cdp: ['Bog‘langan qurilmalar', 'Windows telefon aloqasi va yaqin atrofga ulashish'],
     wsd: ['Qurilmalarni topish', 'Windows tarmoqdagi printer va skanerlarni qidiradi'],
-    dev: ['Dasturlash serveri', 'Ehtimol siz yozayotgan dastur']
+    dev: ['Dasturlash serveri', 'Ehtimol siz yozayotgan dastur'],
+    vnc: ['VNC', 'Ekranni masofadan boshqarish, ko‘pincha zaif parol bilan'],
+    adb: ['Android sozlash (ADB)', 'Android telefon yoki TV pristavkani to‘liq boshqarish'],
+    routerAdmin: ['Routerni boshqarish', 'Routerni masofadan boshqarish (TR-069 yoki MikroTik)'],
+    camera: ['Kamera oqimi', 'IP kamera yoki videoyozuvchidan video'],
+    printer: ['Printer', 'Tarmoq orqali chop etish'],
+    mqtt: ['MQTT', 'Aqlli uy va IoT xabarlari, ko‘pincha shifrlanmagan'],
+    winrm: ['Windows masofaviy boshqaruvi', 'Windows kompyuterda masofadan buyruq bajarish'],
+    docker: ['Docker API', 'Docker’ni parolsiz boshqarish: unga yetgan har kim mashinani boshqaradi']
   },
   errors: {
     E_COLLECT: 'Tarmoq adapterlarini hozir o‘qib bo‘lmayapti. Qayta urinilmoqda…',

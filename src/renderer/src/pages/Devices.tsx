@@ -4,6 +4,7 @@ import { adapterOf, randomMac } from '../explain'
 import { errText, useT } from '../i18n'
 import { useLive } from '../live'
 import { Empty, Icon } from '../ui'
+import { openTool } from './Tools'
 
 const ipNum = (ip: string) => ip.split('.').reduce((n, p) => n * 256 + Number(p), 0)
 
@@ -24,6 +25,9 @@ function DeviceRow({ n, adapter }: { n: Neighbor; adapter?: Adapter }) {
       </div>
       <span className="mono">{n.ip}</span>
       <span className="mono faint dev-mac">{n.mac}</span>
+      <button className="btn sm quiet" title={d.portsNote} onClick={() => openTool('scan', n.ip)}>
+        {d.ports}
+      </button>
     </div>
   )
 }

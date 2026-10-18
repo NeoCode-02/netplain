@@ -384,6 +384,12 @@ export interface LookupResult {
 
 export type PortState = 'open' | 'closed' | 'filtered'
 
+/** An open port found by the scanner, with what the service said about itself. */
+export interface ScanHit {
+  port: number
+  banner: string | null
+}
+
 export interface PublicIp {
   ip: string
   org: string | null

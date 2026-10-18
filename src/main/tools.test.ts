@@ -1,7 +1,8 @@
+import http from 'node:http'
 import net from 'node:net'
 import { describe, expect, it } from 'vitest'
 import { safeName, serviceCommand, startupChange, uacScript, userCommand, userGuard } from './admin'
-import { checkPort, isHost, lookup, parsePing, parseTestConnection, parseTrace, ping } from './tools'
+import { bannerOf, checkPort, isHost, lookup, parsePing, parseTestConnection, parseTrace, ping, scanPorts } from './tools'
 
 describe('parsers', () => {
   it('reads Windows Test-Connection and Unix ping', () => {
@@ -70,6 +71,38 @@ describe('live', () => {
       server.close()
     }
   }, 30_000)
+
+  it('scans ports and names what answers', async () => {
+    const listen = async (s: net.Server) => (await new Promise<void>((r) => s.listen(0, '127.0.0.1', r)), (s.address() as net.AddressInfo).port)
+    const greeter = net.createServer((c) => c.end('SSH-2.0-Test_1.0\r\n'))
+    const web = http.createServer((_q, r) => r.setHeader('Server', 'TestWeb/2').end())
+    const mute = net.createServer(() => {})
+    const closed = net.createServer()
+    const [a, b, c, d] = await Promise.all([greeter, web, mute, closed].map(listen))
+    closed.close()
+    try {
+      expect(await scanPorts('127.0.0.1', [d, c, b, a])).toEqual(
+        [
+          { port: a, banner: 'SSH-2.0-Test_1.0' },
+          { port: b, banner: 'TestWeb/2' },
+          { port: c, banner: null }
+        ].sort((x, y) => x.port - y.port)
+      )
+    } finally {
+      for (const s of [greeter, web, mute]) s.close()
+    }
+  }, 30_000)
+})
+
+describe('banners', () => {
+  it('prefers the Server header, spots TLS and drops control bytes', () => {
+    expect(bannerOf('HTTP/1.1 200 OK\r\nServer: nginx/1.25\r\n\r\n')).toBe('nginx/1.25')
+    expect(bannerOf('HTTP/1.0 404 Not Found\r\n\r\n')).toBe('HTTP/1.0 404 Not Found')
+    expect(bannerOf('\x15\x03\x01\x00\x02\x02\x46')).toBe('TLS')
+    expect(bannerOf('\n\nJ\x00\x00\x00\n8.0.33\x00')).toBe('J')
+    expect(bannerOf('-ERR unknown command')).toBe('-ERR unknown command')
+    expect(bannerOf('')).toBeNull()
+  })
 })
 
 describe('defender commands', () => {

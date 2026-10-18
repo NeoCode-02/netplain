@@ -19,7 +19,7 @@ import { createUptime } from './uptime'
 import { createMonitors } from './monitors'
 import { createCap } from './cap'
 import { createUsage } from './usage'
-import { checkPort, diagnose, isHost, lookup, ping, publicIp, trace } from './tools'
+import { checkPort, diagnose, isHost, lookup, ping, publicIp, scanPorts, trace } from './tools'
 import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
 import { createSecurity } from './security'
 import { createScanner } from './defender'
@@ -292,6 +292,7 @@ const handlers: Api = {
   trace: (host) => trace(host, geo.lookup),
   lookup: (name) => lookup(name, geo.lookup),
   checkPort: (host, port) => checkPort(host, port),
+  scanPorts: (host, ports) => scanPorts(host, ports),
   publicIp: () => publicIp(geo.lookup),
   diagnose: () => diagnose(latest),
   flushDns: () => flushDns(),
@@ -362,6 +363,7 @@ const isShare = (v: unknown): v is ShareOptions => {
   return typeof v === 'object' && v !== null && Number.isInteger(o.port) && o.port > 0 && o.port < 65536 && typeof o.https === 'boolean' && ['cloudflare', 'ssh'].includes(o.provider) && typeof o.password === 'boolean'
 }
 const int = (v: unknown) => Number.isSafeInteger(v) && (v as number) >= 0
+const isPort = (v: unknown) => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 65535
 const httpsUrl = (v: unknown) => {
   try {
     return typeof v === 'string' && v.length < 2048 && new URL(v).protocol === 'https:'
@@ -409,7 +411,8 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   ping: (a) => isHost(a[0]),
   trace: (a) => isHost(a[0]),
   lookup: (a) => isHost(a[0]),
-  checkPort: (a) => isHost(a[0]) && int(a[1]) && (a[1] as number) >= 1 && (a[1] as number) <= 65535,
+  checkPort: (a) => isHost(a[0]) && isPort(a[1]),
+  scanPorts: (a) => isHost(a[0]) && Array.isArray(a[1]) && a[1].length >= 1 && a[1].length <= 1000 && a[1].every(isPort),
   publicIp: none,
   diagnose: none,
   flushDns: none,

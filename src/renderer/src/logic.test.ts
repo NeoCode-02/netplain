@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Adapter, PacketRow, Snapshot } from '../../shared/types'
-import { addressKind, authKey, bandKey, behavioural, daySummary, describePacket, layerKey, PRESETS, quality, randomMac, summary, threatParts, what } from './explain'
+import { addressKind, authKey, bandKey, behavioural, COMMON_PORTS, daySummary, describePacket, layerKey, parsePorts, PRESETS, quality, randomMac, RISKY, service, summary, threatParts, what } from './explain'
 import { bits, bytes } from './format'
 import { errText, LANGS } from './i18n'
 import { advance, KEEP } from './live'
@@ -110,5 +110,23 @@ describe('uptime', () => {
     expect(daySummary(minutes(10), drops, now)).toEqual({ online: 0.9, drops: 1, longest: 60_000 })
     // A drop still going counts up to now.
     expect(daySummary(minutes(10), [{ ...drops[0], end: null }], now)?.longest).toBe(5 * 60_000)
+  })
+})
+
+describe('port lists', () => {
+  it('reads ports and ranges, each once and in order', () => {
+    expect(parsePorts('443, 22 8000-8002,22')).toEqual([22, 443, 8000, 8001, 8002])
+    expect(parsePorts('1-65535')).toHaveLength(65535)
+    for (const bad of ['', '0', '65536', '80-79', '80-', 'http', '1.5']) expect(parsePorts(bad), bad).toBeNull()
+  })
+  it('keeps the common list sorted, unique and named where risky', () => {
+    expect([...new Set(COMMON_PORTS)].sort((a, b) => a - b)).toEqual(COMMON_PORTS)
+    expect(COMMON_PORTS.length).toBeLessThanOrEqual(1000)
+    const en = LANGS.en.services
+    for (const p of COMMON_PORTS) {
+      const s = service('tcp', p)
+      if (s) expect(en[s], s).toBeDefined()
+    }
+    for (const s of RISKY) expect(en[s], s).toBeDefined()
   })
 })
