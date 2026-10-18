@@ -592,7 +592,8 @@ const en = {
     apps: 'Apps',
     adapters: 'Adapters',
     noApps: 'History per app is recorded while traffic watching (Wireshark) is on.',
-    empty: 'Nothing recorded for this period yet. History is written from the first start of Netplain on — check back in an hour.'
+    empty: 'Nothing recorded for this period. Netplain records only while it runs, in its window or in the tray.',
+    gaps: 'Netplain records only while it runs, so days it was off stay empty. Start it with the computer to keep every day.'
   },
   cap: {
     title: 'Monthly data limit',
@@ -1563,7 +1564,8 @@ const uz: Dict = {
     apps: 'Ilovalar',
     adapters: 'Adapterlar',
     noApps: 'Ilovalar bo‘yicha tarix trafik kuzatuvi (Wireshark) yoqilganda yoziladi.',
-    empty: 'Bu davr uchun hali hech narsa yozilmagan. Tarix Netplain birinchi ishga tushgandan boshlab yoziladi — bir soatdan keyin qarang.'
+    empty: 'Bu davr uchun hech narsa yozilmagan. Netplain faqat ishlab turganda (oynada yoki trayda) yozadi.',
+    gaps: 'Netplain faqat ishlab turganda yozadi, u o‘chiq bo‘lgan kunlar bo‘sh qoladi. Har kun yozilishi uchun uni kompyuter bilan birga ishga tushiring.'
   },
   cap: {
     title: 'Oylik trafik limiti',

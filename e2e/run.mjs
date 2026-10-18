@@ -281,7 +281,17 @@ try {
   await step('history page', async () => {
     await until('History', clickText, 'History')
     await until('history data', () => document.querySelector('.rate-plot, .list-empty') !== null)
+    // Earlier days show without a click; a fresh profile has no autostart, so the gaps hint is up.
+    const picked = (want) => document.querySelector('.page-tabs [aria-selected="true"]')?.textContent === want
+    await until('opens on 7 days', picked, '7 days')
+    await until('gaps hint', hasText, 'days it was off stay empty')
     await shot('history')
+    // The period picked is kept for the next visit.
+    await until('Today', clickText, 'Today')
+    await until('Overview', clickText, 'Overview')
+    await until('History', clickText, 'History')
+    await until('still Today', picked, 'Today')
+    await until('7 days', clickText, '7 days')
   })
 
   await step('an open port raises an alert', async () => {

@@ -1,10 +1,21 @@
 import { useEffect, useState } from 'react'
-import type { CapState, Usage, UsageRange, UsageRow } from '../../../shared/types'
+import type { CapState, Settings, Usage, UsageRange, UsageRow } from '../../../shared/types'
 import CapMeter from '../CapMeter'
 import { bytes } from '../format'
 import { useT } from '../i18n'
 import { AppIcon, Page, Tabs } from '../ui'
 import UsageChart from '../UsageChart'
+
+const KEY = 'netplain.historyRange'
+/** The period picked last time; a week at first, so earlier days show without a click. */
+const savedRange = (): UsageRange => {
+  try {
+    const v = localStorage.getItem(KEY)
+    return v === 'day' || v === 'month' ? v : 'week'
+  } catch {
+    return 'week'
+  }
+}
 
 function Rows({ rows, icons }: { rows: UsageRow[]; icons: boolean }) {
   const t = useT()
@@ -35,7 +46,23 @@ function Rows({ rows, icons }: { rows: UsageRow[]; icons: boolean }) {
 export default function History() {
   const t = useT()
   const h = t.history
-  const [range, setRange] = useState<UsageRange>('day')
+  const [range, setRange] = useState(savedRange)
+  const [prefs, setPrefs] = useState<Settings | null>(null)
+  const pick = (r: UsageRange) => {
+    setRange(r)
+    try {
+      localStorage.setItem(KEY, r)
+    } catch {
+      // not remembered; picked for now
+    }
+  }
+  useEffect(() => void window.netplain.getSettings().then(setPrefs), [])
+  const autostart = () =>
+    prefs &&
+    void window.netplain
+      .saveSettings({ ...prefs, autostart: true })
+      .then(() => window.netplain.getSettings())
+      .then(setPrefs)
   const [u, setU] = useState<Usage | null>(null)
   const [cap, setCap] = useState<CapState | null>(null)
 
@@ -50,7 +77,16 @@ export default function History() {
   }, [range])
 
   return (
-    <Page title={h.title} note={h.lead} tabs={<Tabs value={range} options={['day', 'week', 'month'] as const} text={(r) => h.ranges[r]} onChange={setRange} />}>
+    <Page title={h.title} note={h.lead} tabs={<Tabs value={range} options={['day', 'week', 'month'] as const} text={(r) => h.ranges[r]} onChange={pick} />}>
+      {/* History is written only while the app runs; without autostart, days it was off stay empty. */}
+      {prefs && !prefs.autostart && (
+        <div className="note row devices-hint">
+          <span className="spacer">{h.gaps}</span>
+          <button className="btn sm" onClick={autostart}>
+            {t.setup.turnOn}
+          </button>
+        </div>
+      )}
       {cap && <CapMeter t={t} c={cap} />}
       {u && (
         <>
