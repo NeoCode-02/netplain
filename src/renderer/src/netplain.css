@@ -191,8 +191,8 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .alert-title { font-weight: 600; }
 .alert-row.unread { background: color-mix(in srgb, var(--accent) 5%, transparent); }
 .alert-row.unread .alert-title::after { content: ''; display: inline-block; width: 7px; height: 7px; margin-left: 8px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
-.ad-icon.alert-plain, .ad-icon.alert-exposed, .ad-icon.alert-outage, .ad-icon.alert-certExpiry, .ad-icon.alert-dataCap { color: var(--warn); background: var(--warn-soft); }
-.ad-icon.alert-blocklist, .ad-icon.alert-monitorDown { color: var(--danger); background: var(--danger-soft); }
+.ad-icon.alert-plain, .ad-icon.alert-exposed, .ad-icon.alert-outage, .ad-icon.alert-certExpiry, .ad-icon.alert-dataCap, .ad-icon.alert-newDevice, .ad-icon.alert-netChange { color: var(--warn); background: var(--warn-soft); }
+.ad-icon.alert-blocklist, .ad-icon.alert-monitorDown, .ad-icon.alert-arpSpoof { color: var(--danger); background: var(--danger-soft); }
 .ad-icon.alert-monitorUp { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
 .setting > div:first-child { min-width: 0; }
 

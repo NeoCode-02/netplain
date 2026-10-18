@@ -16,7 +16,7 @@ const require_ = (await import('node:module')).createRequire(import.meta.url)
 const electron = require_('electron')
 // --inspect opens the main process too (unpacked Electron only), for what the page cannot do, such as a real window close.
 const args = [root, '--remote-debugging-port=0', '--inspect=0', ...(process.platform === 'linux' && process.env.CI ? ['--no-sandbox'] : [])]
-const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000' }, stdio: ['ignore', 'pipe', 'pipe'] })
+const app = spawn(electron, args, { env: { ...process.env, NETPLAIN_DATA: data, NETPLAIN_CHECK_MS: '2000', NETPLAIN_LAN_MS: '3000' }, stdio: ['ignore', 'pipe', 'pipe'] })
 let appLog = ''
 app.stdout.on('data', (d) => (appLog += d))
 const devtools = await new Promise((resolve, reject) => {
@@ -308,6 +308,21 @@ try {
     } finally {
       server.close()
     }
+  })
+
+  await step('home network watch', async () => {
+    // The first check records the proxy and, on a network with a router, its devices, router and DNS.
+    const file = path.join(data, 'data', 'lan.json')
+    const deadline = Date.now() + 20_000
+    while (!fs.existsSync(file) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 300))
+    const lan = JSON.parse(fs.readFileSync(file, 'utf8'))
+    if (typeof lan.proxy !== 'string') throw new Error(`no proxy recorded: ${JSON.stringify(lan).slice(0, 200)}`)
+    const gateway = await inPage(async () => {
+      const s = await window.netplain.snapshot()
+      return s?.adapters.find((a) => a.id === s.defaultId)?.gateway ?? null
+    })
+    if (gateway && !Object.keys(lan.nets).some((k) => k.endsWith(`|${gateway}`))) throw new Error(`the network was not recorded: ${Object.keys(lan.nets)}`)
+    await until('the new alert kinds', hasText, 'Router address taken over')
   })
 
   await step('security status', async () => {

@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { Alert, AlertKind, BlocklistInfo, Connections, Outage } from '../shared/types'
 import { createBlocklist } from './blocklist'
+import type { LanKind } from './lanwatch'
 import type { MonitorEvent } from './monitors'
 import { dayKey } from './usage'
 
@@ -103,6 +104,11 @@ export function createAlerts(dir: string, emit: (a: Alert) => void) {
     /** A watched site or server went down, came back, or its certificate runs out soon. */
     monitor(rules: Rules, [kind, detail]: MonitorEvent, target: string) {
       push(rules, kind, target, detail)
+    },
+
+    /** A stranger on the home network, a taken-over router address, or a changed DNS server or proxy. */
+    lan(rules: Rules, kind: LanKind, app: string, detail: string) {
+      push(rules, kind, app, detail)
     },
 
     /** A program sent something readable by anyone on the way (HTTP, FTP, Telnet). */

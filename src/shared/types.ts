@@ -246,7 +246,7 @@ export interface Usage {
   tx: number
 }
 
-export type AlertKind = 'newApp' | 'exposed' | 'plain' | 'blocklist' | 'outage' | 'monitorDown' | 'monitorUp' | 'certExpiry' | 'dataCap'
+export type AlertKind = 'newApp' | 'exposed' | 'plain' | 'blocklist' | 'outage' | 'monitorDown' | 'monitorUp' | 'certExpiry' | 'dataCap' | 'newDevice' | 'arpSpoof' | 'netChange'
 
 /** A network as History counts it: "wifi:<name>" for Wi-Fi, "<kind>:<adapter>" otherwise. */
 export interface NetworkUse {

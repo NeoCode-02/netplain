@@ -6,7 +6,7 @@ const THEMES: readonly Settings['theme'][] = ['system', 'light', 'dark']
 const defaults = (): Settings => ({
   theme: 'system',
   capture: true,
-  alerts: { newApp: true, exposed: true, plain: true, blocklist: true, outage: true, monitorDown: true, monitorUp: true, certExpiry: true, dataCap: true },
+  alerts: { newApp: true, exposed: true, plain: true, blocklist: true, outage: true, monitorDown: true, monitorUp: true, certExpiry: true, dataCap: true, newDevice: true, arpSpoof: true, netChange: true },
   blocklist: '',
   updates: true,
   // Some Linux desktops show no tray icon; a closed window would leave the app unreachable there.

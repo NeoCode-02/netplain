@@ -1,9 +1,9 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, powerMonitor, shell, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, powerMonitor, session, shell, type IpcMainInvokeEvent } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { CHANNELS, type Api } from '../shared/api'
-import type { RecordType, Release, Snapshot } from '../shared/types'
+import type { Neighbor, RecordType, Release, Snapshot } from '../shared/types'
 import { createAlerts } from './alerts'
 import { collector } from './collectors'
 import { join } from './connections'
@@ -23,6 +23,7 @@ import { checkPort, diagnose, isHost, lookup, ping, publicIp, scanPorts, trace, 
 import { dnsQuery, RECORD_TYPES } from './dnskit'
 import { whois } from './whois'
 import { exposure } from './exposure'
+import { createLanWatch } from './lanwatch'
 import { inspectSite } from './webcheck'
 import { createSpeed } from './speed'
 import { wifiScan } from './wifiscan'
@@ -133,6 +134,7 @@ const cap = createCap(dataDir, { cap: () => settings.cap, used: usage.used, tell
 const monitors = primary ? createMonitors(dataDir, (e, target) => alerts.monitor(settings.alerts, e, target)) : null
 const uptime = primary ? createUptime({ dir: dataDir, snapshot: () => latest, on: () => settings.uptime, onEnd: (o) => alerts.outage(settings.alerts, o) }) : null
 const speed = createSpeed(dataDir)
+const lan = createLanWatch(path.join(dataDir, 'lan.json'), (kind, app, detail) => alerts.lan(settings.alerts, kind, app, detail))
 
 if (primary) {
   setInterval(() => {
@@ -143,6 +145,7 @@ if (primary) {
   }, 60_000)
   // Signals are checked in the background, whichever page is open.
   setInterval(() => currentConnections().then((c) => alerts.connections(c, settings.alerts), console.error), Number(process.env.NETPLAIN_CHECK_MS) || 15_000)
+  setInterval(() => watchLan().catch(console.error), Number(process.env.NETPLAIN_LAN_MS) || 120_000)
   // The first security reading takes ~10 s (file signatures); have it ready before the page is opened.
   setTimeout(() => security?.get().catch(console.error), 15_000)
 }
@@ -174,6 +177,13 @@ const stopWatch = primary
 async function devices() {
   const [list, vendors] = await Promise.all([collector.neighbors(), vendorTable()])
   return realDevices(list).map((n) => ({ ...n, vendor: vendors.get(n.mac.slice(0, 8)) ?? null }))
+}
+
+/** The home network's devices, router, DNS and the system proxy against what they were; `list` comes from the user's scan. */
+async function watchLan(list?: Neighbor[]) {
+  const a = latest?.adapters.find((x) => x.id === latest?.defaultId)
+  if (a) lan.check(a, list ?? (await devices()), !!list)
+  lan.proxy(await session.defaultSession.resolveProxy('https://example.com/'))
 }
 
 const overlay = () => ({ color: '#00000000', symbolColor: nativeTheme.shouldUseDarkColors ? '#a1a4ab' : '#3f4148', height: 48 })
@@ -256,7 +266,9 @@ const handlers: Api = {
     const ip = await internetIp()
     if (!ip) throw new Error('E_OFFLINE')
     await sweep(ip)
-    return devices()
+    const list = await devices()
+    if (primary) await watchLan(list).catch(console.error)
+    return list
   },
   openUrl: (url) => void shell.openExternal(url),
   connections: currentConnections,

@@ -719,7 +719,10 @@ const en = {
       monitorDown: ['Site or server down', 'When a site or server you watch stops answering.'],
       monitorUp: ['Site or server back', 'When it answers again.'],
       certExpiry: ['Certificate running out', 'When a watched site’s https certificate has 14 days or less left.'],
-      dataCap: ['Monthly data limit', 'At 80% and at 100% of the monthly limit set in Settings.']
+      dataCap: ['Monthly data limit', 'At 80% and at 100% of the monthly limit set in Settings.'],
+      newDevice: ['New device on your network', 'When a device your network has not had before shows up. A network’s first day is for learning who belongs.'],
+      arpSpoof: ['Router address taken over', 'When the router’s address suddenly leads to another device, a sign someone may be reading your traffic (ARP spoofing).'],
+      netChange: ['DNS or proxy changed', 'When a known network’s DNS servers or the system proxy change. Malware does this to send you to fake sites.']
     } satisfies Record<AlertKind, [string, string]>,
     say: {
       newApp: (app: string, d: string) => [`${app} went online for the first time`, `It connected to ${d}. If you don’t know this program, check where it came from.`],
@@ -744,6 +747,24 @@ const en = {
         const [step, used, limit] = d.split('|').map(Number)
         const on = network ? ` on ${network}` : ''
         return [step >= 100 ? `The monthly data limit is used up${on}` : `${step}% of the monthly data limit is used${on}`, `${bytes(used)} of ${bytes(limit)}. The count starts again on the day you set.`]
+      },
+      newDevice: (maker: string, d: string): [string, string] => {
+        const [ip, mac] = d.split('|')
+        return [`New device on your network: ${maker || 'unknown maker'}`, `${ip} (${mac}). If you don’t know it, check the Devices page and change the Wi-Fi password.`]
+      },
+      arpSpoof: (_: string, d: string): [string, string] => {
+        const [ip, was, now, twin] = d.split('|')
+        return [
+          'Your router’s address now leads to another device',
+          `${ip} was ${was}, now ${now}${twin ? `, the card of ${twin}` : ''}. If you did not replace the router, someone on this network may be reading your traffic: disconnect and look at the Devices page.`
+        ]
+      },
+      netChange: (_: string, d: string): [string, string] => {
+        const [what, was, now] = d.split('|')
+        const show = (p: string) => (p === 'DIRECT' ? 'none' : p)
+        return what === 'dns'
+          ? ['The DNS servers changed', `${was} → ${now}. If you or your provider did not change them, malware may be sending you to fake sites.`]
+          : ['The system proxy changed', `${show(was)} → ${show(now)}. If you did not set it, a program may be reading your web traffic.`]
       }
     } satisfies Record<AlertKind, (app: string, detail: string) => [string, string]>,
     unknownApp: 'Unknown program',
@@ -1711,7 +1732,10 @@ const uz: Dict = {
       monitorDown: ['Sayt yoki server ishlamay qoldi', 'Siz kuzatayotgan sayt yoki server javob bermay qolganda.'],
       monitorUp: ['Sayt yoki server qayta ishladi', 'U yana javob bera boshlaganda.'],
       certExpiry: ['Sertifikat muddati tugayapti', 'Kuzatilayotgan saytning https sertifikatiga 14 kun yoki undan kam qolganda.'],
-      dataCap: ['Oylik trafik limiti', 'Sozlamalarda belgilangan oylik limitning 80% va 100% ida.']
+      dataCap: ['Oylik trafik limiti', 'Sozlamalarda belgilangan oylik limitning 80% va 100% ida.'],
+      newDevice: ['Tarmoqda yangi qurilma', 'Tarmog‘ingizda ilgari bo‘lmagan qurilma paydo bo‘lganda. Tarmoqning birinchi kuni kim o‘zinikiligini o‘rganishga ketadi.'],
+      arpSpoof: ['Router manzili egallab olindi', 'Router manzili to‘satdan boshqa qurilmaga olib borsa: kimdir trafikingizni o‘qiyotgan bo‘lishi mumkin (ARP spoofing).'],
+      netChange: ['DNS yoki proxy o‘zgardi', 'Tanish tarmoqning DNS serverlari yoki tizim proxy’si o‘zgarganda. Zararli dasturlar sizni soxta saytlarga yuborish uchun shunday qiladi.']
     },
     say: {
       newApp: (app, d) => [`${app} birinchi marta internetga chiqdi`, `U ${d} ga ulandi. Bu dasturni tanimasangiz, qayerdan kelganini tekshiring.`],
@@ -1733,6 +1757,24 @@ const uz: Dict = {
         const [step, used, limit] = d.split('|').map(Number)
         const on = network ? ` (${network})` : ''
         return [step >= 100 ? `Oylik trafik limiti tugadi${on}` : `Oylik trafik limitining ${step}% i ishlatildi${on}`, `${bytes(limit)} dan ${bytes(used)} ishlatildi. Hisob siz belgilagan kuni qaytadan boshlanadi.`]
+      },
+      newDevice: (maker, d) => {
+        const [ip, mac] = d.split('|')
+        return [`Tarmoqda yangi qurilma: ${maker || 'ishlab chiqaruvchisi noma’lum'}`, `${ip} (${mac}). Tanimasangiz, Qurilmalar sahifasini ko‘ring va Wi-Fi parolini almashtiring.`]
+      },
+      arpSpoof: (_, d) => {
+        const [ip, was, now, twin] = d.split('|')
+        return [
+          'Router manzili endi boshqa qurilmaga olib boryapti',
+          `${ip} avval ${was} edi, endi ${now}${twin ? `, ya’ni ${twin} ning kartasi` : ''}. Routerni almashtirmagan bo‘lsangiz, shu tarmoqdagi kimdir trafikingizni o‘qiyotgan bo‘lishi mumkin: tarmoqdan uzilib, Qurilmalar sahifasini ko‘ring.`
+        ]
+      },
+      netChange: (_, d) => {
+        const [what, was, now] = d.split('|')
+        const show = (p: string) => (p === 'DIRECT' ? 'yo‘q' : p)
+        return what === 'dns'
+          ? ['DNS serverlari o‘zgardi', `${was} → ${now}. Buni siz yoki provayder qilmagan bo‘lsa, zararli dastur sizni soxta saytlarga yuborayotgan bo‘lishi mumkin.`]
+          : ['Tizim proxy’si o‘zgardi', `${show(was)} → ${show(now)}. Uni siz o‘rnatmagan bo‘lsangiz, biror dastur veb-trafikingizni o‘qiyotgan bo‘lishi mumkin.`]
       }
     },
     unknownApp: 'Noma’lum dastur',
