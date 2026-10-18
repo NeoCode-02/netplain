@@ -101,6 +101,10 @@
 .conn-table th:first-child { width: 34%; }
 .conn-table th:nth-child(4) { width: 14%; }
 .conn-table td { vertical-align: top; }
+.conn-table td.conn-block { text-align: right; white-space: nowrap; }
+.conn-actions { justify-content: flex-end; padding: 0 16px 8px; }
+.block-button { gap: 8px; justify-content: flex-end; }
+.danger-text { color: var(--danger); }
 .conn-table small { font-size: 12px; }
 .port-row { gap: 14px; padding: 10px 18px 10px 14px; }
 .port { width: 56px; text-align: right; color: var(--text-2); }

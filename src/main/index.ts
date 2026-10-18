@@ -24,6 +24,7 @@ import { dnsQuery, RECORD_TYPES } from './dnskit'
 import { whois } from './whois'
 import { exposure } from './exposure'
 import { createLanWatch } from './lanwatch'
+import { blockCommand, blockedList, publicIp as isPublicIp, unblockCommand } from './firewall'
 import { inspectSite } from './webcheck'
 import { createSpeed } from './speed'
 import { wifiScan } from './wifiscan'
@@ -333,6 +334,18 @@ const handlers: Api = {
   startScan: (kind, admin) => scanner.start(kind, admin),
   updateDefinitions: () => scanner.updateDefinitions(),
   removeThreats: () => scanner.removeThreats(),
+  blocked: () => windowsOnly(blockedList),
+  block: (target) =>
+    windowsOnly(async () => {
+      await elevate(blockCommand(target))
+      return blockedList()
+    }),
+  unblock: (name) =>
+    windowsOnly(async () => {
+      if (!(await blockedList()).some((b) => b.name === name)) throw new Error('E_BAD_ARGS')
+      await elevate(unblockCommand(name))
+      return blockedList()
+    }),
   setStartup: async (id, on) => {
     const e = (await security!.get()).startup.find((x) => x.id === id)
     if (!e) throw new Error('E_BAD_ARGS')
@@ -376,6 +389,10 @@ function show() {
   if (win.isMinimized()) win.restore()
   win.show()
   win.focus()
+}
+
+function windowsOnly<T>(f: () => Promise<T>): Promise<T> {
+  return process.platform === 'win32' ? f() : Promise.reject(new Error('E_UNSUPPORTED'))
 }
 
 function adapter(id: string) {
@@ -459,6 +476,13 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   startScan: (a) => (a[0] === 'quick' || a[0] === 'full') && typeof a[1] === 'boolean',
   updateDefinitions: none,
   removeThreats: none,
+  blocked: none,
+  // Only programs seen running (their paths come from this computer, like icons) and public addresses.
+  block: (a) => {
+    const t = a[0] as Record<string, unknown>
+    return a.length === 1 && typeof t === 'object' && t !== null && Object.keys(t).length === 1 && ((typeof t.program === 'string' && knownPaths.has(t.program) && t.program !== process.execPath) || (typeof t.ip === 'string' && isPublicIp(t.ip)))
+  },
+  unblock: (a) => typeof a[0] === 'string' && a[0].length <= 1000,
   setStartup: (a) => typeof a[0] === 'string' && a[0].length <= 1000 && typeof a[1] === 'boolean',
   setService: (a) => typeof a[0] === 'string' && safeService(a[0]) && ['start', 'stop', 'auto', 'manual', 'disabled'].includes(a[1] as string),
   setUser: (a) => typeof a[0] === 'string' && safeUser(a[0]) && (a[1] === 'disable' || a[1] === 'enable' || a[1] === 'unadmin'),

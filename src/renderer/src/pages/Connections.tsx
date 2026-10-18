@@ -8,6 +8,45 @@ import { openTool } from './Tools'
 
 type Filter = 'internet' | 'local' | 'all'
 
+const WINDOWS = /Windows/.test(navigator.userAgent)
+/** Windows's own parts carry DNS and updates; the main process refuses to block them too. */
+const blockable = (path: string | null): path is string => WINDOWS && !!path && !/^[a-z]:\\windows\\/i.test(path)
+
+/** A firewall block in two clicks: the first asks, the second runs it through the UAC prompt. */
+function BlockButton({ t, label, title, target }: { t: Dict; label: string; title: string; target: { program: string } | { ip: string } }) {
+  const c = t.connections
+  const [state, setState] = useState<'idle' | 'armed' | 'busy' | 'done'>('idle')
+  const [err, setErr] = useState<unknown>(null)
+  // An unanswered question goes away by itself.
+  useEffect(() => {
+    if (state !== 'armed') return
+    const timer = setTimeout(() => setState('idle'), 4000)
+    return () => clearTimeout(timer)
+  }, [state])
+  if (state === 'done') return <span className="tag ok">{c.done}</span>
+  const click = async () => {
+    if (state === 'idle') return setState('armed')
+    setState('busy')
+    setErr(null)
+    try {
+      await window.netplain.block(target)
+      setState('done')
+    } catch (e) {
+      setErr(e)
+      setState('idle')
+    }
+  }
+  return (
+    <span className="row block-button">
+      <button className={`btn sm ${state === 'idle' ? 'quiet' : 'danger'}`} title={title} disabled={state === 'busy'} onClick={() => void click()}>
+        {state === 'busy' && <Icon name="refresh" className="spin" />}
+        {state === 'idle' ? label : c.sure}
+      </button>
+      {err !== null && <small className="danger-text">{errText(t, err)}</small>}
+    </span>
+  )
+}
+
 /** Grouping key: the same in every language. */
 const label = (c: Conn) => c.title ?? c.app
 const shown = (c: Conn, t: Dict) => c.title ?? t.procs[c.app] ?? c.app
@@ -73,6 +112,11 @@ function AppGroup({ g, t, lang }: { g: Group; t: Dict; lang: string }) {
         </span>
         <Icon name="chevron" className="chev" />
       </button>
+      {open && blockable(g.path) && (
+        <div className="row conn-actions">
+          <BlockButton t={t} label={t.connections.blockApp} title={t.connections.blockAppNote} target={{ program: g.path }} />
+        </div>
+      )}
       {open && (
         <table className="table conn-table">
           <thead>
@@ -81,6 +125,7 @@ function AppGroup({ g, t, lang }: { g: Group; t: Dict; lang: string }) {
               <th>{t.connections.company}</th>
               <th>{t.connections.service}</th>
               <th>{t.connections.state}</th>
+              {WINDOWS && <th aria-label={t.connections.blockIp} />}
             </tr>
           </thead>
           <tbody>
@@ -104,6 +149,9 @@ function AppGroup({ g, t, lang }: { g: Group; t: Dict; lang: string }) {
                   <Service t={t} c={c} port={c.remotePort} />
                 </td>
                 <td>{t.connections.states[c.state] ?? c.state}</td>
+                {WINDOWS && (
+                  <td className="conn-block">{c.remoteIp && addressKind(c.remoteIp) === 'public' && <BlockButton t={t} label={t.connections.blockIp} title={t.connections.blockIpNote} target={{ ip: c.remoteIp }} />}</td>
+                )}
               </tr>
             ))}
           </tbody>

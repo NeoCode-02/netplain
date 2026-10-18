@@ -361,6 +361,35 @@ try {
     }
   })
 
+  // Reads the firewall and arms a block button once; the second click (UAC, a real rule) never happens here.
+  if (process.platform === 'win32')
+    await step('firewall block asks first', async () => {
+      await until('Blocked tab', clickText, 'Blocked')
+      await until('the rules', () => document.querySelector('.empty, .list') !== null)
+      if (await inPage(() => document.querySelector('.note.danger') !== null)) throw new Error('reading the firewall failed')
+      await shot('security-blocked')
+      await until('Connections', clickText, 'Connections')
+      await until('a group', () => document.querySelector('.ad-toggle') !== null)
+      const armed = await inPage(async () => {
+        for (const g of document.querySelectorAll('.ad-toggle')) {
+          if (g.getAttribute('aria-expanded') !== 'true') g.click()
+          await new Promise((r) => setTimeout(r, 150))
+          const b = document.querySelector('.block-button button')
+          if (b) {
+            b.focus()
+            b.click()
+            return true
+          }
+        }
+        return false
+      })
+      if (armed) {
+        await until('asks first', hasText, 'Click again to block')
+        await shot('connections-block')
+        await until('back to idle by itself', () => !document.body.innerText.includes('Click again to block'))
+      }
+    })
+
   await step('tools page', async () => {
     await until('Tools', clickText, 'Tools')
     await until('Check', clickText, 'Check')

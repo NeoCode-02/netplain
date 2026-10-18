@@ -413,6 +413,13 @@ export interface DnsReport {
   mail: MailPolicy | null
 }
 
+/** A firewall rule Netplain made: a program cut off from the internet, or an address blocked both ways. */
+export interface Blocked {
+  name: string
+  program: string | null
+  ip: string | null
+}
+
 /** What Shodan's InternetDB saw open on an address the last time it looked. */
 export interface InternetDb {
   ports: number[]
@@ -618,7 +625,7 @@ export interface SecThreat {
 }
 
 export type FindingLevel = 'ok' | 'info' | 'warn' | 'bad'
-export type SecurityTab = 'status' | 'exposure' | 'antivirus' | 'users' | 'services' | 'startup'
+export type SecurityTab = 'status' | 'exposure' | 'antivirus' | 'users' | 'services' | 'startup' | 'blocked'
 
 /** One check of the "was I hacked?" list; its text lives in the renderer's dictionary under `key`. */
 export interface Finding {

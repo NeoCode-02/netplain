@@ -1,5 +1,6 @@
 import type {
   Alert,
+  Blocked,
   BlocklistInfo,
   Connections,
   DiagnoseStep,
@@ -155,6 +156,12 @@ export interface Api {
   updateDefinitions(): Promise<void>
   /** Has Defender clean every active threat (UAC). */
   removeThreats(): Promise<void>
+  /** Windows firewall rules Netplain made. */
+  blocked(): Promise<Blocked[]>
+  /** Cuts a running program off the internet, or blocks a public address both ways (UAC). */
+  block(target: { program: string } | { ip: string }): Promise<Blocked[]>
+  /** Removes one of Netplain's rules (UAC). */
+  unblock(name: string): Promise<Blocked[]>
   /** Turns a startup entry on or off (Task Manager's reversible switch; UAC for machine-wide entries). */
   setStartup(id: string, on: boolean): Promise<void>
   /** Starts/stops a service or sets how it starts (UAC). */

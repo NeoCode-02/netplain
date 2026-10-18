@@ -3,12 +3,13 @@ import type { Finding, ScanKind, ScanState, SecService, Security as Data, Securi
 import { behavioural, threatParts } from '../explain'
 import { errText, getLang, useT, type Dict } from '../i18n'
 import { Icon, Page, Tabs, type IconName } from '../ui'
+import Blocked from './Blocked'
 import Exposure from './Exposure'
 
 const WINDOWS = /Windows/.test(navigator.userAgent)
 const MARK: Record<Finding['level'], IconName> = { bad: 'alert', warn: 'alert', info: 'dot', ok: 'shield' }
 // Only the view from the internet works outside Windows.
-const TABS: SecurityTab[] = WINDOWS ? ['status', 'exposure', 'antivirus', 'users', 'services', 'startup'] : ['exposure']
+const TABS: SecurityTab[] = WINDOWS ? ['status', 'exposure', 'antivirus', 'users', 'services', 'startup', 'blocked'] : ['exposure']
 
 function Status({ sec, t, onTab, onFixed }: { sec: Data; t: Dict; onTab(tab: SecurityTab): void; onFixed(): void }) {
   const s = t.security
@@ -487,6 +488,8 @@ export default function Security() {
   const t = useT()
   const s = t.security
   const [tab, setTab] = useState<SecurityTab>(TABS[0])
+  // Tabs with their own data, not the security reading.
+  const alone = tab === 'exposure' || tab === 'blocked'
   const [sec, setSec] = useState<Data | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<unknown>(null)
@@ -510,7 +513,7 @@ export default function Security() {
       note={s.lead}
       actions={
         WINDOWS &&
-        tab !== 'exposure' && (
+        !alone && (
           <>
             {sec && <span className="small faint">{s.checkedAt(new Date(sec.at).toLocaleTimeString(getLang(), { hour: '2-digit', minute: '2-digit' }))}</span>}
             <button className="btn sm" onClick={() => load(true)} disabled={busy || !sec}>
@@ -524,8 +527,9 @@ export default function Security() {
     >
       {!WINDOWS && <p className="note">{s.windowsOnly}</p>}
       {tab === 'exposure' && <Exposure t={t} />}
-      {err !== null && tab !== 'exposure' && <p className="note danger">{errText(t, err)}</p>}
-      {WINDOWS && !sec && err === null && tab !== 'exposure' && <p className="muted">{s.reading}</p>}
+      {tab === 'blocked' && <Blocked t={t} />}
+      {err !== null && !alone && <p className="note danger">{errText(t, err)}</p>}
+      {WINDOWS && !sec && err === null && !alone && <p className="muted">{s.reading}</p>}
       {sec && tab === 'status' && <Status sec={sec} t={t} onTab={setTab} onFixed={() => load(true)} />}
       {sec && tab === 'antivirus' && <Antivirus sec={sec} t={t} onChanged={() => load(true)} />}
       {sec && tab === 'users' && <Users sec={sec} t={t} onChanged={() => load(true)} />}
