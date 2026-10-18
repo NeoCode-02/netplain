@@ -472,6 +472,18 @@ try {
         await shot('connections-block')
         await until('back to idle by itself', () => !document.body.innerText.includes('Click again to block'))
       }
+      // The Apps page offers the same for a program with traffic (when Wireshark watches it).
+      await until('Apps', clickText, 'Apps')
+      const offered = await inPage(async () => {
+        for (const g of document.querySelectorAll('.ad-toggle')) {
+          if (g.getAttribute('aria-expanded') !== 'true') g.click()
+          await new Promise((r) => setTimeout(r, 150))
+          if ([...document.querySelectorAll('.block-button button')].some((b) => b.textContent === 'Cut off from the internet')) return 'yes'
+        }
+        return document.querySelector('.ad-toggle') ? 'no' : 'no apps'
+      })
+      if (offered === 'no') throw new Error('no block button on the Apps page')
+      process.stdout.write(`(apps: ${offered}) `)
     })
 
   await step('tools page', async () => {

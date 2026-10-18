@@ -1,52 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { systemFile } from '../../../shared/paths'
 import type { Conn, Connections as Data } from '../../../shared/types'
 import { addressKind, company, countryName, listJoin, service } from '../explain'
 import { useGeo } from '../geo'
 import { errText, getLang, useT, type Dict } from '../i18n'
 import { AppIcon, Icon, Page } from '../ui'
 import { openTool } from './Tools'
+import { BlockApp, blockable, ours, TwoStep } from './TwoStep'
 
 type Filter = 'internet' | 'local' | 'all'
 
 const WINDOWS = /Windows/.test(navigator.userAgent)
-/** The system's own programs are neither blocked nor stopped (the main process refuses them too). */
-const ours = (path: string | null): path is string => !!path && !systemFile(path)
-const blockable = (path: string | null): path is string => WINDOWS && ours(path)
-
-/** An action in two clicks: the first asks, the second does it (through the admin prompt when needed). */
-function TwoStep({ t, label, title, sure, done, run }: { t: Dict; label: string; title: string; sure: string; done: string; run(): Promise<unknown> }) {
-  const [state, setState] = useState<'idle' | 'armed' | 'busy' | 'done'>('idle')
-  const [err, setErr] = useState<unknown>(null)
-  // An unanswered question goes away by itself.
-  useEffect(() => {
-    if (state !== 'armed') return
-    const timer = setTimeout(() => setState('idle'), 4000)
-    return () => clearTimeout(timer)
-  }, [state])
-  if (state === 'done') return <span className="tag ok">{done}</span>
-  const click = async () => {
-    if (state === 'idle') return setState('armed')
-    setState('busy')
-    setErr(null)
-    try {
-      await run()
-      setState('done')
-    } catch (e) {
-      setErr(e)
-      setState('idle')
-    }
-  }
-  return (
-    <span className="row block-button">
-      <button className={`btn sm ${state === 'idle' ? 'quiet' : 'danger'}`} title={title} disabled={state === 'busy'} onClick={() => void click()}>
-        {state === 'busy' && <Icon name="refresh" className="spin" />}
-        {state === 'idle' ? label : sure}
-      </button>
-      {err !== null && <small className="danger-text">{errText(t, err)}</small>}
-    </span>
-  )
-}
 
 /** Grouping key: the same in every language. */
 const label = (c: Conn) => c.title ?? c.app
@@ -113,11 +76,7 @@ function AppGroup({ g, t, lang }: { g: Group; t: Dict; lang: string }) {
         </span>
         <Icon name="chevron" className="chev" />
       </button>
-      {open && blockable(g.path) && (
-        <div className="row conn-actions">
-          <TwoStep t={t} label={t.connections.blockApp} title={t.connections.blockAppNote} sure={t.connections.sure} done={t.connections.done} run={() => window.netplain.block({ program: g.path! })} />
-        </div>
-      )}
+      {open && blockable(g.path) && <BlockApp t={t} path={g.path} />}
       {open && (
         <table className="table conn-table">
           <thead>

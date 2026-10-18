@@ -5,6 +5,7 @@ import { bits, bytes } from '../format'
 import { errText, getLang, useT, type Dict } from '../i18n'
 import { useLive } from '../live'
 import { AppIcon, Empty, Icon, Page } from '../ui'
+import { BlockApp, blockable } from './TwoStep'
 
 const OS = /Windows/.test(navigator.userAgent) ? 'Win' : /Mac/.test(navigator.userAgent) ? 'Mac' : 'Linux'
 
@@ -36,6 +37,7 @@ function AppRow({ a, max, t }: { a: AppTraffic; max: number; t: Dict }) {
         </div>
         <Icon name="chevron" className="chev" />
       </button>
+      {open && blockable(a.path) && <BlockApp t={t} path={a.path} />}
       {open && (
         <table className="table conn-table">
           <thead>
