@@ -452,6 +452,13 @@ try {
     }
   })
 
+  await step('wi-fi around', async () => {
+    await until('Wi-Fi', clickText, 'Wi-Fi')
+    // CI runners have no Wi-Fi: then the page says so.
+    await until('the networks or a reason', () => document.querySelector('.chan-chart') !== null || document.querySelector('.note.danger') !== null)
+    await shot('tools-wifi')
+  })
+
   await step('share page', async () => {
     // A site running here is found by itself and offered by its page title.
     const http = await import('node:http')

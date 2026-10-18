@@ -38,7 +38,8 @@ import type {
   MonitorState,
   Uptime,
   UsageRange,
-  Whois
+  Whois,
+  WifiNet
 } from './types'
 
 /** Main → renderer pushes. */
@@ -129,6 +130,8 @@ export interface Api {
   speedTest(phase: SpeedPhase): Promise<SpeedResult>
   /** Earlier speed tests, oldest first. */
   speedHistory(): SpeedResult[]
+  /** Nearby Wi-Fi networks after a fresh scan. Throws E_NO_WIFI, E_WIFI_ACCESS. */
+  wifiScan(): Promise<WifiNet[]>
   /** Asks api.ipify.org for the address the internet sees. Throws E_PUBLIC_IP. */
   publicIp(): Promise<PublicIp>
   /** Checks adapter → address → router → DNS → internet. */

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { Adapter, PacketRow, Snapshot } from '../../shared/types'
+import type { Adapter, PacketRow, Snapshot, WifiNet } from '../../shared/types'
 import { addressKind, authKey, bandKey, behavioural, COMMON_PORTS, daySummary, describePacket, layerKey, parsePorts, PRESETS, quality, randomMac, RISKY, service, summary, threatParts, what } from './explain'
 import { bits, bytes } from './format'
 import { errText, LANGS } from './i18n'
 import { advance, KEEP } from './live'
 import { niceMax } from './RateChart'
+import { advice, load, perChannel } from './wifi'
 
 const base: Adapter = { id: 'w', name: 'WiFi', description: '', kind: 'wifi', up: true, mac: '', speed: null, ipv4: ['192.168.0.2/24'], ipv6: [], gateway: '192.168.0.1', dns: [], dhcp: true, rx: 0, tx: 0, wifi: null }
 const snap = (at: number, rx: number, tx: number): Snapshot => ({ at, defaultId: 'w', adapters: [{ ...base, rx, tx }] })
@@ -128,5 +129,31 @@ describe('port lists', () => {
       if (s) expect(en[s], s).toBeDefined()
     }
     for (const s of RISKY) expect(en[s], s).toBeDefined()
+  })
+})
+
+describe('wifi channels', () => {
+  const net = (channel: number, signal: number, band: '2.4' | '5' = '2.4', bssid = `00:00:5e:00:53:${channel}`): WifiNet => ({ ssid: 'x', bssid, signal, dbm: null, channel, band, security: 'wpa2', tkip: false, vendor: null })
+  it('weighs overlap on 2.4 GHz and neighbours on 5 GHz', () => {
+    expect(load([net(6, 100)], '2.4', 6)).toBe(1)
+    expect(load([net(6, 100)], '2.4', 8)).toBe(0.6)
+    expect(load([net(6, 100)], '2.4', 11)).toBe(0)
+    expect(load([net(36, 80, '5'), net(40, 80, '5')], '5', 36)).toBe(1.2)
+  })
+  it('suggests a quieter channel only when it is clearly better, ignoring your own router', () => {
+    const mine = net(6, 100, '2.4', 'aa')
+    const nets = [mine, net(6, 90), net(5, 70), net(1, 40)]
+    expect(advice(nets, '2.4', 6, (n) => n === mine)).toEqual({ best: 11, move: true })
+    expect(advice([mine, net(1, 20)], '2.4', 6, (n) => n === mine)).toEqual({ best: 6, move: false })
+  })
+  it('counts networks per channel', () => {
+    expect(perChannel([net(1, 50), net(1, 60), net(44, 50, '5')], '2.4').slice(0, 2)).toEqual([
+      { ch: 1, count: 2 },
+      { ch: 2, count: 0 }
+    ])
+    expect(perChannel([net(44, 50, '5')], '5', [36])).toEqual([
+      { ch: 36, count: 0 },
+      { ch: 44, count: 1 }
+    ])
   })
 })

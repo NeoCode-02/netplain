@@ -52,6 +52,7 @@ const names: Record<keyof Api, true> = {
   inspectSite: true,
   speedTest: true,
   speedHistory: true,
+  wifiScan: true,
   publicIp: true,
   diagnose: true,
   flushDns: true,

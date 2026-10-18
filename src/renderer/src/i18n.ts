@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { AlertKind, OutageCause, RecordType, SecHeader, SpeedPhase } from '../../shared/types'
+import type { AlertKind, OutageCause, RecordType, SecHeader, SpeedPhase, WifiSecurity } from '../../shared/types'
 import { bytes } from './format'
 
 const en = {
@@ -355,7 +355,27 @@ const en = {
   tools: {
     title: 'Tools',
     lead: 'What you would type in a terminal, as buttons — with the answer explained.',
-    tabs: { diagnose: 'Diagnose', speed: 'Speed', scan: 'Port scan', dns: 'DNS', whois: 'Whois', web: 'Website', subnet: 'Subnet' },
+    tabs: { diagnose: 'Diagnose', speed: 'Speed', wifi: 'Wi-Fi', scan: 'Port scan', dns: 'DNS', whois: 'Whois', web: 'Website', subnet: 'Subnet' },
+    wifi: {
+      title: 'Wi-Fi around you',
+      lead: 'Networks nearby, how crowded each channel is, and whether a quieter one would make your Wi-Fi faster. Nothing is sent anywhere.',
+      scan: 'Scan again',
+      scanning: 'Scanning…',
+      count: (n: number) => (n === 1 ? '1 network nearby.' : `${n} networks nearby.`),
+      move: (from: number, to: number) => `Your router is on a busy channel (${from}). Channel ${to} is quieter: choosing it in the router’s Wi-Fi settings means fewer slowdowns.`,
+      stay: (ch: number) => `Your router’s channel (${ch}) is a good choice: none nearby is clearly quieter.`,
+      mineSafe: { wpa3: 'Your network uses WPA3, the strongest protection.', wpa2: 'Your network uses WPA2: fine, as long as its password is long.' },
+      mineWeak: 'Your network’s protection is weak (open, WEP, WPA or TKIP): neighbours can read or join it. Switch the router to WPA2 or WPA3.',
+      othersWeak: (n: number) => `${n === 1 ? '1 network nearby is' : `${n} networks nearby are`} open or weakly protected: on them others can read whatever is not encrypted, so use them only with https or a VPN.`,
+      band: (b: string) => `${b} GHz channels`,
+      chartNote: 'Networks per channel · yours in colour · the suggested one in green',
+      onChannel: (n: number, ch: number) => `${n} on channel ${ch}`,
+      networks: 'Networks',
+      hidden: 'Hidden network',
+      yours: 'Yours',
+      where: (band: string, ch: number) => `${band} GHz · channel ${ch}`,
+      security: { open: 'Open', wep: 'WEP', wpa: 'WPA', wpa2: 'WPA2', wpa3: 'WPA3', enterprise: 'Enterprise', other: 'Other' } as Record<WifiSecurity, string>
+    },
     speedTest: {
       title: 'Internet speed',
       lead: 'Download, upload and delay, measured against Cloudflare’s nearest server in about 20 seconds. It moves a lot of data: on a metered connection, think twice.',
@@ -953,6 +973,8 @@ const en = {
     E_RDAP: 'The registry did not answer. Check the internet connection and try again in a minute.',
     E_SPEED: 'The speed test server could not be reached. Check the internet connection.',
     E_BUSY: 'A test is already running.',
+    E_NO_WIFI: 'No Wi-Fi networks found: this computer has no Wi-Fi adapter, or it is turned off.',
+    E_WIFI_ACCESS: 'Windows did not allow the Wi-Fi scan. Turn on Settings → Privacy & security → Location → “Let desktop apps access your location”.',
     E_SITE: (m: string) =>
       `The site did not answer: ${({ ENOTFOUND: 'no such name', ECONNREFUSED: 'nothing accepts connections there', timeout: 'no answer within 10 seconds', ECONNRESET: 'the connection was cut' } as Record<string, string>)[m] ?? m}.`,
     unknown: (m: string) => `Something went wrong: ${m}`
@@ -1312,7 +1334,27 @@ const uz: Dict = {
   tools: {
     title: 'Asboblar',
     lead: 'Terminalda yoziladigan buyruqlar — tugma ko‘rinishida, javobi tushuntirilgan holda.',
-    tabs: { diagnose: 'Tashxis', speed: 'Tezlik', scan: 'Port skaner', dns: 'DNS', whois: 'Whois', web: 'Veb-sayt', subnet: 'Subnet' },
+    tabs: { diagnose: 'Tashxis', speed: 'Tezlik', wifi: 'Wi-Fi', scan: 'Port skaner', dns: 'DNS', whois: 'Whois', web: 'Veb-sayt', subnet: 'Subnet' },
+    wifi: {
+      title: 'Atrofdagi Wi-Fi',
+      lead: 'Yaqindagi tarmoqlar, har bir kanal qanchalik band va tinchroq kanal Wi-Fi’ingizni tezlashtiradimi. Hech narsa hech qayerga yuborilmaydi.',
+      scan: 'Qayta skanerlash',
+      scanning: 'Skanerlanmoqda…',
+      count: (n) => `Yaqinda ${n} ta tarmoq bor.`,
+      move: (from, to) => `Routeringiz band kanalda (${from}). ${to}-kanal tinchroq: router Wi-Fi sozlamalarida uni tanlasangiz, sekinlashish kamayadi.`,
+      stay: (ch) => `Routeringiz kanali (${ch}) yaxshi tanlov: yaqinda aniq tinchroq kanal yo‘q.`,
+      mineSafe: { wpa3: 'Tarmog‘ingiz eng kuchli himoya — WPA3’dan foydalanadi.', wpa2: 'Tarmog‘ingiz WPA2’dan foydalanadi: paroli uzun bo‘lsa, yaxshi.' },
+      mineWeak: 'Tarmog‘ingiz himoyasi kuchsiz (ochiq, WEP, WPA yoki TKIP): qo‘shnilar uni o‘qishi yoki ulanishi mumkin. Routerni WPA2 yoki WPA3’ga o‘tkazing.',
+      othersWeak: (n) => `Yaqindagi ${n} ta tarmoq ochiq yoki kuchsiz himoyalangan: ularda shifrlanmagan narsani boshqalar o‘qiy oladi, shuning uchun faqat https yoki VPN bilan foydalaning.`,
+      band: (b) => `${b} GHz kanallari`,
+      chartNote: 'Har kanaldagi tarmoqlar · sizniki rangli · tavsiya etilgani yashil',
+      onChannel: (n, ch) => `${ch}-kanalda ${n} ta`,
+      networks: 'Tarmoqlar',
+      hidden: 'Yashirin tarmoq',
+      yours: 'Sizniki',
+      where: (band, ch) => `${band} GHz · ${ch}-kanal`,
+      security: { open: 'Ochiq', wep: 'WEP', wpa: 'WPA', wpa2: 'WPA2', wpa3: 'WPA3', enterprise: 'Korporativ', other: 'Boshqa' }
+    },
     speedTest: {
       title: 'Internet tezligi',
       lead: 'Yuklab olish, yuklash va kechikish — Cloudflare’ning eng yaqin serveriga nisbatan, taxminan 20 soniyada o‘lchanadi. Ko‘p ma’lumot sarflaydi: limitli internetda o‘ylab ko‘ring.',
@@ -1905,6 +1947,8 @@ const uz: Dict = {
     E_RDAP: 'Reyestr javob bermadi. Internet ulanishini tekshiring va bir daqiqadan keyin qayta urinib ko‘ring.',
     E_SPEED: 'Tezlik o‘lchash serveriga ulanib bo‘lmadi. Internet ulanishini tekshiring.',
     E_BUSY: 'Test allaqachon ketyapti.',
+    E_NO_WIFI: 'Wi-Fi tarmoqlari topilmadi: kompyuterda Wi-Fi adapteri yo‘q yoki u o‘chiq.',
+    E_WIFI_ACCESS: 'Windows Wi-Fi skaneriga ruxsat bermadi. Sozlamalar → Maxfiylik va xavfsizlik → Joylashuv → “Ish stoli ilovalariga joylashuvdan foydalanishga ruxsat”ni yoqing.',
     E_SITE: (m) =>
       `Sayt javob bermadi: ${({ ENOTFOUND: 'bunday nom yo‘q', ECONNREFUSED: 'u yerda hech narsa ulanish qabul qilmaydi', timeout: '10 soniyada javob kelmadi', ECONNRESET: 'ulanish uzildi' } as Record<string, string>)[m] ?? m}.`,
     unknown: (m) => `Nimadir xato ketdi: ${m}`

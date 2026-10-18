@@ -24,6 +24,7 @@ import { dnsQuery, RECORD_TYPES } from './dnskit'
 import { whois } from './whois'
 import { inspectSite } from './webcheck'
 import { createSpeed } from './speed'
+import { wifiScan } from './wifiscan'
 import { elevate, flushDns, renewIp, restartAdapter, safeService, safeUser, serviceCommand, startupChange, userCommand, userGuard } from './admin'
 import { createSecurity } from './security'
 import { createScanner } from './defender'
@@ -303,6 +304,7 @@ const handlers: Api = {
   inspectSite: (input) => inspectSite(input),
   speedTest: (phase) => speed.phase(phase),
   speedHistory: () => speed.history(),
+  wifiScan: () => wifiScan(),
   publicIp: () => publicIp(geo.lookup),
   diagnose: () => diagnose(latest),
   flushDns: () => flushDns(),
@@ -428,6 +430,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   inspectSite: (a) => typeof a[0] === 'string' && a[0].length > 0 && a[0].length <= 2048,
   speedTest: (a) => a[0] === 'latency' || a[0] === 'down' || a[0] === 'up',
   speedHistory: none,
+  wifiScan: none,
   publicIp: none,
   diagnose: none,
   flushDns: none,

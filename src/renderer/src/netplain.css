@@ -328,3 +328,14 @@ details.more[open] > summary svg { transform: rotate(90deg); }
 .speed-now { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 6px; }
 .verdicts.tool-out { margin-top: 16px; gap: 8px; }
 .uptime-tile.live strong { color: var(--accent); }
+
+/* wi-fi channels */
+.chan-chart { display: flex; gap: 6px; height: 160px; }
+.chan { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.chan-track { flex: 1; width: 100%; max-width: 28px; display: flex; align-items: flex-end; }
+.chan-bar { width: 100%; min-height: 2px; border-radius: 4px 4px 0 0; background: var(--text-3); opacity: 0.5; }
+.chan.mine .chan-bar { background: var(--accent); opacity: 1; }
+.chan.best .chan-bar { background: var(--ok); opacity: 1; }
+.chan-count, .chan-n { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; min-height: 14px; }
+.chan.mine .chan-n, .chan.best .chan-n { color: var(--text); font-weight: 600; }
+.wifi-meter { width: 90px; flex-shrink: 0; }

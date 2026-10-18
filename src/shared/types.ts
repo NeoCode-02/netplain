@@ -432,7 +432,27 @@ export interface Whois {
   nameservers: string[]
 }
 
-export type SpeedPhase = 'latency' | 'down' | 'up'
+/** The weakest protection a Wi-Fi network allows. */
+export type WifiSecurity = 'open' | 'wep' | 'wpa' | 'wpa2' | 'wpa3' | 'enterprise' | 'other'
+
+/** One access point seen in a Wi-Fi scan. */
+export interface WifiNet {
+  /** Empty for a hidden network. */
+  ssid: string
+  /** Null where the OS hides it (macOS). */
+  bssid: string | null
+  /** 0–100 %. */
+  signal: number
+  dbm: number | null
+  channel: number | null
+  band: '2.4' | '5' | '6' | null
+  security: WifiSecurity
+  /** Still offers the broken TKIP cipher. */
+  tkip: boolean
+  vendor: string | null
+}
+
+export type SpeedPhase ='latency' | 'down' | 'up'
 
 /** One speed test; rates in Mbit/s, times in ms. Filled in phase by phase. */
 export interface SpeedResult {
