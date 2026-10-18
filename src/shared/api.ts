@@ -161,6 +161,8 @@ export interface Api {
   updateDefinitions(): Promise<void>
   /** Has Defender clean every active threat (UAC). */
   removeThreats(): Promise<void>
+  /** Ends the program listening on a port (UAC for other users' programs). Throws E_SYSTEM_PROCESS / E_NETPLAIN. */
+  stopProcess(pid: number): Promise<void>
   /** Prints a report page to PDF and asks where to save it; false when cancelled. */
   saveReport(html: string): Promise<boolean>
   /** Windows firewall rules Netplain made. */

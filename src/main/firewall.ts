@@ -1,4 +1,5 @@
 import net from 'node:net'
+import { systemFile } from '../shared/paths'
 import type { Blocked } from '../shared/types'
 import { safeStartup } from './admin'
 import { isPrivate } from './net'
@@ -14,7 +15,7 @@ export const publicIp = (ip: string) => net.isIP(ip) !== 0 && !isPrivate(ip) && 
 export function blockCommand(t: { program: string } | { ip: string }): string {
   if ('program' in t) {
     // Windows's own parts (svchost carries DNS and updates) would take the whole internet down with them.
-    if (!safeStartup(t.program) || !/^[a-z]:\\/i.test(t.program) || /^[a-z]:\\windows\\/i.test(t.program)) throw new Error('E_BAD_ARGS')
+    if (!safeStartup(t.program) || !/^[a-z]:\\/i.test(t.program) || systemFile(t.program)) throw new Error('E_BAD_ARGS')
     return `netsh advfirewall firewall add rule name="${PREFIX}${t.program}" dir=out action=block program="${t.program}" enable=yes`
   }
   if (!publicIp(t.ip)) throw new Error('E_BAD_ARGS')

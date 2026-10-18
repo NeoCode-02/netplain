@@ -370,6 +370,38 @@ try {
     await until('the new alert kinds', hasText, 'Router address taken over')
   })
 
+  // Only a program this test started is stopped.
+  await step('who holds a port, and stopping it', async () => {
+    const child = spawn(process.execPath, ['-e', "require('net').createServer().listen(0, '127.0.0.1', function () { console.log(this.address().port) }); setTimeout(() => {}, 120000)"], { stdio: ['ignore', 'pipe', 'ignore'] })
+    const port = await new Promise((r) => child.stdout.once('data', (d) => r(String(d).trim())))
+    const exited = new Promise((r) => child.once('exit', () => r(true)))
+    try {
+      await until('Connections', clickText, 'Connections')
+      await inPage((v) => {
+        const el = document.querySelector('.search input')
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, v)
+        el.dispatchEvent(new Event('input', { bubbles: true }))
+        return true
+      }, port)
+      const row = (p) => [...document.querySelectorAll('.port-row')].find((r) => r.querySelector('.port')?.textContent === p)
+      const stop = `(${row})`
+      await until('its row with a Stop button', (p, f) => !!eval(f)(p)?.querySelector('.block-button button'), port, stop)
+      await inPage((p, f) => eval(f)(p).querySelector('.block-button button').click(), port, stop)
+      await until('asks first', (p, f) => eval(f)(p)?.textContent.includes('Click again to stop'), port, stop)
+      await inPage((p, f) => eval(f)(p).querySelector('.block-button button').click(), port, stop)
+      const gone = await Promise.race([exited, new Promise((r) => setTimeout(() => r(false), 15_000))])
+      if (!gone) throw new Error('the program was not stopped')
+    } finally {
+      child.kill()
+      await inPage(() => {
+        const el = document.querySelector('.search input')
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, '')
+        el.dispatchEvent(new Event('input', { bubbles: true }))
+        return true
+      })
+    }
+  })
+
   await step('security status', async () => {
     await until('Security', clickText, 'Security')
     // Windows reads its settings (~10 s the first time); elsewhere the page says it is Windows-only.

@@ -13,6 +13,7 @@ import { internetIp, realDevices, sweep } from './net'
 import { allowCaptureLinux, createTrafficWatch } from './traffic'
 import { findTshark, vendorTable } from './tshark'
 import { analyzePcap } from './pcapfile'
+import { stopGuard, stopProcess } from './kill'
 import { isSettings, loadSettings, normalize, saveSettings } from './settings'
 import { autostart, setAutostart } from './autostart'
 import { createTray } from './tray'
@@ -349,6 +350,11 @@ const handlers: Api = {
   startScan: (kind, admin) => scanner.start(kind, admin),
   updateDefinitions: () => scanner.updateDefinitions(),
   removeThreats: () => scanner.removeThreats(),
+  stopProcess: async (pid) => {
+    const refused = stopGuard(pid, (await currentConnections()).listening, [process.pid, ...app.getAppMetrics().map((m) => m.pid)])
+    if (refused) throw new Error(refused)
+    await stopProcess(pid)
+  },
   saveReport: async (html) => {
     // A page of its own with scripts off; the report's CSP also stops it loading anything.
     const page = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } })
@@ -510,6 +516,7 @@ const ARGS: Record<keyof Api, (a: unknown[]) => boolean> = {
   startScan: (a) => (a[0] === 'quick' || a[0] === 'full') && typeof a[1] === 'boolean',
   updateDefinitions: none,
   removeThreats: none,
+  stopProcess: (a) => int(a[0]),
   saveReport: (a) => typeof a[0] === 'string' && a[0].length <= 2_000_000,
   blocked: none,
   // Only programs seen running (their paths come from this computer, like icons) and public addresses.

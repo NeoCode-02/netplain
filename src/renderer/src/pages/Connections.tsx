@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { systemFile } from '../../../shared/paths'
 import type { Conn, Connections as Data } from '../../../shared/types'
 import { addressKind, company, countryName, listJoin, service } from '../explain'
 import { useGeo } from '../geo'
@@ -9,12 +10,12 @@ import { openTool } from './Tools'
 type Filter = 'internet' | 'local' | 'all'
 
 const WINDOWS = /Windows/.test(navigator.userAgent)
-/** Windows's own parts carry DNS and updates; the main process refuses to block them too. */
-const blockable = (path: string | null): path is string => WINDOWS && !!path && !/^[a-z]:\\windows\\/i.test(path)
+/** The system's own programs are neither blocked nor stopped (the main process refuses them too). */
+const ours = (path: string | null): path is string => !!path && !systemFile(path)
+const blockable = (path: string | null): path is string => WINDOWS && ours(path)
 
-/** A firewall block in two clicks: the first asks, the second runs it through the UAC prompt. */
-function BlockButton({ t, label, title, target }: { t: Dict; label: string; title: string; target: { program: string } | { ip: string } }) {
-  const c = t.connections
+/** An action in two clicks: the first asks, the second does it (through the admin prompt when needed). */
+function TwoStep({ t, label, title, sure, done, run }: { t: Dict; label: string; title: string; sure: string; done: string; run(): Promise<unknown> }) {
   const [state, setState] = useState<'idle' | 'armed' | 'busy' | 'done'>('idle')
   const [err, setErr] = useState<unknown>(null)
   // An unanswered question goes away by itself.
@@ -23,13 +24,13 @@ function BlockButton({ t, label, title, target }: { t: Dict; label: string; titl
     const timer = setTimeout(() => setState('idle'), 4000)
     return () => clearTimeout(timer)
   }, [state])
-  if (state === 'done') return <span className="tag ok">{c.done}</span>
+  if (state === 'done') return <span className="tag ok">{done}</span>
   const click = async () => {
     if (state === 'idle') return setState('armed')
     setState('busy')
     setErr(null)
     try {
-      await window.netplain.block(target)
+      await run()
       setState('done')
     } catch (e) {
       setErr(e)
@@ -40,7 +41,7 @@ function BlockButton({ t, label, title, target }: { t: Dict; label: string; titl
     <span className="row block-button">
       <button className={`btn sm ${state === 'idle' ? 'quiet' : 'danger'}`} title={title} disabled={state === 'busy'} onClick={() => void click()}>
         {state === 'busy' && <Icon name="refresh" className="spin" />}
-        {state === 'idle' ? label : c.sure}
+        {state === 'idle' ? label : sure}
       </button>
       {err !== null && <small className="danger-text">{errText(t, err)}</small>}
     </span>
@@ -114,7 +115,7 @@ function AppGroup({ g, t, lang }: { g: Group; t: Dict; lang: string }) {
       </button>
       {open && blockable(g.path) && (
         <div className="row conn-actions">
-          <BlockButton t={t} label={t.connections.blockApp} title={t.connections.blockAppNote} target={{ program: g.path }} />
+          <TwoStep t={t} label={t.connections.blockApp} title={t.connections.blockAppNote} sure={t.connections.sure} done={t.connections.done} run={() => window.netplain.block({ program: g.path! })} />
         </div>
       )}
       {open && (
@@ -150,7 +151,7 @@ function AppGroup({ g, t, lang }: { g: Group; t: Dict; lang: string }) {
                 </td>
                 <td>{t.connections.states[c.state] ?? c.state}</td>
                 {WINDOWS && (
-                  <td className="conn-block">{c.remoteIp && addressKind(c.remoteIp) === 'public' && <BlockButton t={t} label={t.connections.blockIp} title={t.connections.blockIpNote} target={{ ip: c.remoteIp }} />}</td>
+                  <td className="conn-block">{c.remoteIp && addressKind(c.remoteIp) === 'public' && <TwoStep t={t} label={t.connections.blockIp} title={t.connections.blockIpNote} sure={t.connections.sure} done={t.connections.done} run={() => window.netplain.block({ ip: c.remoteIp! })} />}</td>
                 )}
               </tr>
             ))}
@@ -210,7 +211,9 @@ export default function Connections() {
   // A program listening on both IPv4 and IPv6 is one open port.
   const ports = new Map<string, Conn>()
   for (const x of data?.listening ?? []) ports.set(`${x.localPort}|${x.pid}|${x.scope}`, x)
-  const sorted = [...ports.values()].sort((a, b) => a.localPort - b.localPort)
+  // The search box also finds a port by number or by the program holding it ("who has 3000?").
+  const q = query.trim().toLowerCase()
+  const sorted = [...ports.values()].filter((x) => !q || String(x.localPort).startsWith(q) || shown(x, t).toLowerCase().includes(q)).sort((a, b) => a.localPort - b.localPort)
   const exposed = sorted.filter((x) => x.scope !== 'loopback')
   const inside = sorted.filter((x) => x.scope === 'loopback')
   const port = (x: Conn) => (
@@ -226,6 +229,7 @@ export default function Connections() {
       <span className={`tag ${x.scope === 'loopback' ? '' : 'warn'}`} title={x.scope === 'loopback' ? undefined : c.exposedNote}>
         {x.scope === 'loopback' ? c.localOnly : c.exposed}
       </span>
+      {x.pid !== null && ours(x.path) && <TwoStep t={t} label={c.stop} title={c.stopNote} sure={c.stopSure} done={c.stopped} run={() => window.netplain.stopProcess(x.pid!)} />}
     </div>
   )
 
